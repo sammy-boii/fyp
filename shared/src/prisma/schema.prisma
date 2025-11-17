@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../prisma/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Workflow {
+  id       Int    @id @default(autoincrement())
+  authorId String // cuid
+  author   User   @relation(fields: [authorId], references: [id])
+}
+
+model User {
+  id              String     @id @default(cuid())
+  name            String
+  email           String     @unique
+  workflows       Workflow[]
+  password        String
+  avatar          String?
+  isEmailVerified Boolean    @default(false)
+
+  credentials OAuthCredential[]
+}
+
+model OAuthCredential {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  
+  provider String
+  service String?
+  
+  accessToken String
+  refreshToken String?
+  accessTokenExpiresAt DateTime
+  refreshTokenExpiresAt DateTime?
+  expiresAt DateTime?
+  scopes String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // A user can only have one credential for a unique service from a unique provider
+  @@unique([provider, service, userId]) 
+}

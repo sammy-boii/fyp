@@ -1,0 +1,17 @@
+{
+  "name": "backend",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts"
+  },
+  "dependencies": {
+    "@hono/oauth-providers": "^0.8.5",
+    "arctic": "^3.7.0",
+    "hono": "^4.9.7",
+    "jsonwebtoken": "^9.0.2",
+    "shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

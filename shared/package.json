@@ -1,0 +1,13 @@
+{
+  "name": "shared",
+  "version": "0.1.0",
+  "dependencies": {
+    "@prisma/client": "^6.18.0",
+    "dotenv": "^17.2.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.2",
+    "prisma": "^6.18.0"
+  }
+}

@@ -9,9 +9,10 @@ import type { StaticImageData } from 'next/image'
 export interface NodeAction {
   id: string
   label: string
+  fields?: any[]
   description?: string
   icon: LucideIcon
-  configForm: React.ReactNode
+  configForm?: React.ReactNode
 }
 
 // the key for NodeDefinition must be a key of NODE_TYPES

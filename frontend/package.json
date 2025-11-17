@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "vercel-build": "cd .. && npm install && cd frontend && prisma generate && next build",
-    "build": "prisma generate && next build --turbopack",
+    "build": "npx prisma generate && next build --turbopack",
     "start": "next start",
     "lint": "eslint"
+  },
+  "prisma": {
+    "schema": "../shared/src/prisma/schema.prisma"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

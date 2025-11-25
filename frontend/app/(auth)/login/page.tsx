@@ -113,7 +113,7 @@ export default function LoginPage() {
 
                     <Label htmlFor='password'>Password</Label>
                     <Link
-                      href='#'
+                      href='/forgot-password'
                       className='ml-auto text-xs hover:text-foreground text-muted-foreground'
                     >
                       Forgot your password?

@@ -243,7 +243,7 @@ function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => {
+              onClick={async () => {
                 await logout()
                 toast.success('Logged out successfully')
                 router.replace('/login')

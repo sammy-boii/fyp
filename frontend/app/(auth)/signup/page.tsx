@@ -2,7 +2,6 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -89,7 +88,7 @@ const SignUpPage = () => {
                     <div className='relative group'>
                       <FaUser
                         size={15}
-                        className='absolute group-focus-within:text-white left-3 text-muted-foreground top-[10px]'
+                        className='absolute group-focus-within:text-foreground left-3 text-muted-foreground top-[10px]'
                       />
                       <Input
                         className='pl-10'
@@ -112,7 +111,7 @@ const SignUpPage = () => {
                     <div className='relative group'>
                       <IoIosMail
                         size={19}
-                        className='absolute group-focus-within:text-white left-3 text-muted-foreground top-[10px]'
+                        className='absolute group-focus-within:text-foreground left-3 text-muted-foreground top-[10px]'
                       />
                       <Input
                         className='pl-10'
@@ -135,7 +134,7 @@ const SignUpPage = () => {
                     <div className='relative group'>
                       <MdLock
                         size={18}
-                        className='absolute group-focus-within:text-white left-3 text-muted-foreground top-[9px]'
+                        className='absolute group-focus-within:text-foreground left-3 text-muted-foreground top-[9px]'
                       />
                       <Input
                         className='pr-12 pl-10'
@@ -176,7 +175,7 @@ const SignUpPage = () => {
                     <div className='relative group'>
                       <MdLock
                         size={18}
-                        className='absolute group-focus-within:text-white left-3 text-muted-foreground top-[9px]'
+                        className='absolute group-focus-within:text-foreground left-3 text-muted-foreground top-[9px]'
                       />
                       <Input
                         className='pr-12 pl-10'
@@ -217,7 +216,7 @@ const SignUpPage = () => {
 
           <div className='text-muted-foreground text-center text-sm'>
             Already have an account?{' '}
-            <Link className='text-white underline' href='login'>
+            <Link className='text-foreground underline' href='login'>
               Log In
             </Link>
           </div>
@@ -258,7 +257,7 @@ function PasswordCriteria({ password }: { password: string }) {
       {criteria.map((item, index) => (
         <div key={index} className='flex items-center gap-3'>
           <div
-            className={`size-4 rounded-full flex items-center text-white justify-center border ${
+            className={`size-4 rounded-full flex items-center text-foreground justify-center border ${
               item.valid ? 'bg-green-500 border-green-500' : 'bg-red-500'
             }`}
           >

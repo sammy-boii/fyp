@@ -75,7 +75,7 @@ export default function LoginPage() {
                 <div className='grid group relative gap-3'>
                   <IoIosMail
                     size={19}
-                    className='absolute group-focus-within:text-white left-3 text-muted-foreground top-[59%]'
+                    className='absolute group-focus-within:text-foreground left-3 text-muted-foreground top-[59%]'
                   />
                   <Label htmlFor='email'>Email</Label>
                   <Input
@@ -97,7 +97,7 @@ export default function LoginPage() {
                   <div className='flex items-center'>
                     <MdLock
                       size={18}
-                      className='absolute group-focus-within:text-white left-3 text-muted-foreground top-[59%]'
+                      className='absolute group-focus-within:text-foreground left-3 text-muted-foreground top-[59%]'
                     />
 
                     <div
@@ -114,7 +114,7 @@ export default function LoginPage() {
                     <Label htmlFor='password'>Password</Label>
                     <Link
                       href='#'
-                      className='ml-auto text-xs hover:text-white text-muted-foreground hover:underline-offset-4 hover:underline'
+                      className='ml-auto text-xs hover:text-foreground text-muted-foreground'
                     >
                       Forgot your password?
                     </Link>
@@ -153,7 +153,7 @@ export default function LoginPage() {
                 Don&apos;t have an account?{' '}
                 <Link
                   href='/signup'
-                  className='hover:underline text-white underline-offset-4'
+                  className='hover:underline text-foreground underline-offset-4'
                 >
                   Sign up
                 </Link>

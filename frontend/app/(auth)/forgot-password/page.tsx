@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { MoveLeft, ZapIcon } from 'lucide-react'
@@ -15,19 +15,33 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { sendResetOTP } from '@/actions/resend.actions'
+import { toast } from 'sonner'
+import { isEasingArray } from 'motion/react'
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
+  const [isPending, startTransition] = useTransition()
 
-  function handleSubmit(evt: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(evt: React.FormEvent<HTMLFormElement>) {
     evt.preventDefault()
 
-    // In a real app, you would trigger your forgot-password flow here.
-    // For now, we just navigate to the OTP page with the email as a query param.
-    if (!email) return
+    if (!email) {
+      return toast.error('Please enter your email')
+    }
 
-    router.push(`/verify-otp?email=${encodeURIComponent(email)}`)
+    startTransition(async () => {
+      const { error } = await sendResetOTP(email)
+
+      if (error) {
+        toast.error(error.message || 'Failed to send OTP email')
+        return
+      }
+
+      toast.success('An OTP was sent to your email')
+      router.push(`/verify-otp?email=${encodeURIComponent(email)}`)
+    })
   }
 
   return (
@@ -60,7 +74,7 @@ export default function ForgotPasswordPage() {
                 onChange={(evt) => setEmail(evt.target.value)}
               />
             </div>
-            <Button type='submit' className='w-full'>
+            <Button type='submit' className='w-full' disabled={isPending}>
               Continue
             </Button>
 
@@ -75,7 +89,7 @@ export default function ForgotPasswordPage() {
               className='text-center flex justify-center items-end gap-1 hover: hover:underline text-foreground underline-offset-4 text-sm'
             >
               <MoveLeft className='size-4' />
-              Back to login
+              Go back
             </Link>
           </form>
         </CardContent>

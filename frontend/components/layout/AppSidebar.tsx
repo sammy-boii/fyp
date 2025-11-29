@@ -97,7 +97,7 @@ export function AppSidebar() {
               {/* Zap icon only visible when collapsed & not hovered */}
               <ZapIcon
                 className='
-          !size-5 transition-all duration-300
+          size-5! transition-all duration-300
           group-data-[state=collapsed]:opacity-100
           group-data-[state=collapsed]:group-hover:opacity-0
           group-data-[state=expanded]:opacity-100
@@ -165,7 +165,7 @@ function SidebarToggle() {
         <PanelLeft className='size-4 transition-transform duration-300 ' />
       </TooltipTrigger>
       <TooltipContent className='bg-muted'>
-        <Kbd className='!bg-transparent !text-foreground'>Ctrl + B</Kbd>
+        <Kbd className='bg-transparent! text-foreground!'>Ctrl + B</Kbd>
       </TooltipContent>
     </button>
   )

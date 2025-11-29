@@ -19,12 +19,7 @@ import {
 } from '@/components/ui/input-otp'
 import { REGEXP_ONLY_DIGITS } from 'input-otp'
 import { toast } from 'sonner'
-import { sendResetOTP } from '@/actions/resend.actions'
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function handleOtpVerification(_otp: string, _email?: string | null) {
-  // TODO: implement OTP verification
-}
+import { sendResetOTP, verifyResetOTP } from '@/actions/resend.actions'
 
 export default function VerifyOtpPage() {
   const searchParams = useSearchParams()
@@ -44,19 +39,16 @@ export default function VerifyOtpPage() {
     }
   }, [countdown])
 
-  // Handle paste events to strip spaces from OTP when pasting in the form
   useEffect(() => {
-    function handlePaste(e: ClipboardEvent) {
-      const target = e.target as HTMLElement
-      // Only handle paste if it's within the form or OTP container
+    function handlePaste(evt: ClipboardEvent) {
+      const target = evt.target as HTMLElement
       if (target.closest('form') || target.closest('[data-otp-input]')) {
-        const pastedText = e.clipboardData?.getData('text')
+        const pastedText = evt.clipboardData?.getData('text')
         if (pastedText) {
-          // Strip all non-digit characters including spaces
           const digitsOnly = pastedText.replace(/\D/g, '').slice(0, 6)
           if (digitsOnly.length === 6) {
-            e.preventDefault()
-            e.stopPropagation()
+            evt.preventDefault()
+            evt.stopPropagation()
             setOtp(digitsOnly)
           }
         }
@@ -76,7 +68,13 @@ export default function VerifyOtpPage() {
       return toast.error('No email was provided')
     }
 
-    await handleOtpVerification(otp, emailFromQuery)
+    const { error } = await verifyResetOTP(emailFromQuery, otp)
+
+    if (error) {
+      return toast.error(error.message)
+    }
+
+    toast.success('OTP verified successfully')
   }
 
   async function handleResend() {

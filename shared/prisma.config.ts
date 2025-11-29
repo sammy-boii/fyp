@@ -4,6 +4,7 @@ import 'dotenv/config'
 
 export default defineConfig({
   schema: path.resolve(__dirname, 'src/prisma/schema.prisma'),
+
   datasource: {
     url: env('DATABASE_URL')
   },

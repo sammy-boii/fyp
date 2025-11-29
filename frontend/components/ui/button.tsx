@@ -40,6 +40,7 @@ function Button({
   className,
   variant,
   size,
+  hideLoader = false,
   asChild = false,
   disabled,
   children,
@@ -47,6 +48,7 @@ function Button({
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    hideLoader?: boolean
   }) {
   const Comp = asChild ? Slot : 'button'
 
@@ -57,7 +59,11 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >
-      {disabled ? <Loader2 className='animate-spin' /> : children}
+      {disabled && !hideLoader ? (
+        <Loader2 className='animate-spin' />
+      ) : (
+        children
+      )}
     </Comp>
   )
 }

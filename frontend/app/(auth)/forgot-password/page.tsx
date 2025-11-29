@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { MoveLeft, ZapIcon } from 'lucide-react'
+import { ArrowRight, ChevronsLeft, ZapIcon } from 'lucide-react'
 import { IoIosMail } from 'react-icons/io'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sendResetOTP } from '@/actions/resend.actions'
 import { toast } from 'sonner'
-import { isEasingArray } from 'motion/react'
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
@@ -76,20 +75,15 @@ export default function ForgotPasswordPage() {
             </div>
             <Button type='submit' className='w-full' disabled={isPending}>
               Continue
+              <ArrowRight className='size-4' />
             </Button>
 
-            <div className='flex items-center pt-2 gap-2'>
-              <div className='bg-muted h-px flex-1' />
-              <div className='text-muted-foreground text-xs'>OR</div>
-              <div className='bg-muted h-px flex-1' />
-            </div>
-
             <Link
+              className='flex items-end gap-1 text-sm justify-center text-muted-foreground hover:text-foreground'
               href='/login'
-              className='text-center flex justify-center items-end gap-1 hover: hover:underline text-foreground underline-offset-4 text-sm'
             >
-              <MoveLeft className='size-4' />
-              Go back
+              <ChevronsLeft className='size-4' />
+              Back
             </Link>
           </form>
         </CardContent>

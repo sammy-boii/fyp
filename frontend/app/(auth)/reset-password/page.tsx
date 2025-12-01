@@ -1,9 +1,9 @@
 'use client'
 
+import { Suspense, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -35,6 +35,28 @@ import { TResetPasswordForm } from '@/types/auth.types'
 import { resetPassword } from '@/actions/user.actions'
 
 const ResetPasswordPage = () => {
+  return (
+    <Suspense
+      fallback={
+        <Card className='max-w-md w-full mt-12 mx-auto'>
+          <CardHeader>
+            <div className='flex items-center gap-4'>
+              <ZapIcon className='size-6' />
+              <CardTitle className='text-2xl font-bold'>
+                Reset Password
+              </CardTitle>
+            </div>
+            <CardDescription>Loading reset form…</CardDescription>
+          </CardHeader>
+        </Card>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
+  )
+}
+
+const ResetPasswordForm = () => {
   const searchParams = useSearchParams()
   const tokenFromQuery = searchParams.get('token') ?? ''
   const router = useRouter()

@@ -4,12 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "npx prisma generate && next build --turbopack",
+    "build": "bunx prisma generate --schema ../shared/src/prisma/schema.prisma && next build --turbopack",
     "start": "next start",
     "lint": "eslint"
-  },
-  "prisma": {
-    "schema": "../shared/src/prisma/schema.prisma"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

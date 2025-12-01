@@ -1,9 +1,9 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import type React from 'react'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Check, ChevronsLeft, RefreshCw, ZapIcon } from 'lucide-react'
+import { Check, ChevronsLeft, Loader2, RefreshCw, ZapIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -27,6 +27,9 @@ export default function VerifyOtpPage() {
   const [otp, setOtp] = useState('')
   const [countdown, setCountdown] = useState(30)
   const [isResendDisabled, setIsResendDisabled] = useState(true)
+
+  const [isPending, startTransition] = useTransition()
+  const [isResendPending, startResendTransition] = useTransition()
 
   useEffect(() => {
     if (countdown > 0) {
@@ -69,27 +72,37 @@ export default function VerifyOtpPage() {
       return toast.error('No email was provided')
     }
 
-    const { data, error } = await verifyResetOTP(emailFromQuery, otp)
-
-    if (error) {
-      return toast.error(error.message)
-    }
-
-    toast.success('OTP verified successfully')
-    if (data?.resetToken) {
-      router.push(
-        `/reset-password?token=${encodeURIComponent(data.resetToken)}`
-      )
-    } else {
-      toast.error('Something went wrong. Please try again.')
-    }
+    startTransition(async () => {
+      const { data, error } = await verifyResetOTP(emailFromQuery, otp)
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+      toast.success('OTP verified successfully')
+      if (data?.resetToken) {
+        router.push(
+          `/reset-password?token=${encodeURIComponent(data.resetToken)}`
+        )
+      } else {
+        toast.error('Something went wrong. Please try again.')
+      }
+    })
   }
 
   async function handleResend() {
     if (!emailFromQuery) {
       return toast.error('No email was provided')
     }
-    await sendResetOTP(emailFromQuery)
+    startResendTransition(async () => {
+      const { error } = await sendResetOTP(emailFromQuery)
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+      toast.success('The OTP was resent successfully')
+      setCountdown(30)
+      setIsResendDisabled(true)
+    })
     toast.success('The OTP was resent successfully')
     setCountdown(30)
     setIsResendDisabled(true)
@@ -134,12 +147,18 @@ export default function VerifyOtpPage() {
             </div>
             <Button
               hideLoader
-              disabled={otp.length !== 6}
+              disabled={otp.length !== 6 || isPending}
               type='submit'
               className='w-full mt-2'
             >
-              Verify
-              <Check />
+              {isPending ? (
+                <Loader2 className='animate-spin' />
+              ) : (
+                <>
+                  Verify
+                  <Check />
+                </>
+              )}
             </Button>
 
             <div className='flex flex-col items-center'>
@@ -148,14 +167,21 @@ export default function VerifyOtpPage() {
                 hideLoader
                 variant={'ghost'}
                 onClick={handleResend}
-                disabled={isResendDisabled}
+                disabled={isResendDisabled || isResendPending || isPending}
                 size={'sm'}
                 className='ml-auto text-xs justify-center gap-2 text-muted-foreground'
               >
                 <RefreshCw className='size-4' />
-                {isResendDisabled
-                  ? `Resend code (${countdown}s)`
-                  : 'Resend code'}
+                {isResendPending ? (
+                  <>
+                    Resending
+                    <Loader2 className='animate-spin' />
+                  </>
+                ) : isResendDisabled ? (
+                  `Resend code (${countdown}s)`
+                ) : (
+                  'Resend code'
+                )}
               </Button>
 
               <div

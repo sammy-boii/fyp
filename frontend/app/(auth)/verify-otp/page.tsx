@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, Suspense } from 'react'
 import type React from 'react'
 
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -22,6 +22,14 @@ import { toast } from 'sonner'
 import { sendResetOTP, verifyResetOTP } from '@/actions/resend.actions'
 
 export default function VerifyOtpPage() {
+  return (
+    <Suspense>
+      <VerifyOtpForm />
+    </Suspense>
+  )
+}
+
+const VerifyOtpForm = () => {
   const searchParams = useSearchParams()
   const emailFromQuery = searchParams.get('email')
   const [otp, setOtp] = useState('')

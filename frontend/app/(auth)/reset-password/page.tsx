@@ -36,21 +36,7 @@ import { resetPassword } from '@/actions/user.actions'
 
 const ResetPasswordPage = () => {
   return (
-    <Suspense
-      fallback={
-        <Card className='max-w-md w-full mt-12 mx-auto'>
-          <CardHeader>
-            <div className='flex items-center gap-4'>
-              <ZapIcon className='size-6' />
-              <CardTitle className='text-2xl font-bold'>
-                Reset Password
-              </CardTitle>
-            </div>
-            <CardDescription>Loading reset form…</CardDescription>
-          </CardHeader>
-        </Card>
-      }
-    >
+    <Suspense>
       <ResetPasswordForm />
     </Suspense>
   )

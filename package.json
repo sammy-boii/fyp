@@ -2,7 +2,7 @@
   "name": "flux-monorepo",
   "private": true,
   "scripts": {
-    "dev:frontend": "bun -F frontend dev",
+    "dev:frontend": "bunx kill-port 3000 && bun -F frontend dev",
     "dev:backend": "bun -F backend dev",
     "build:frontend": "bun -F frontend build",
     "build:backend": "bun -F backend build",

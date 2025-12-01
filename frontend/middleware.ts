@@ -1,7 +1,13 @@
 import { cookies } from 'next/headers'
 import { NextResponse, NextRequest } from 'next/server'
 
-const authPages = ['/login', '/signup', '/forgot-password', '/verify-otp']
+const authPages = [
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/verify-otp',
+  '/reset-password'
+]
 
 export async function middleware(req: NextRequest) {
   const cookiesStore = await cookies()

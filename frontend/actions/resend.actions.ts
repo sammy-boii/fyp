@@ -3,6 +3,7 @@
 import { getResetOTPTemplate } from '@/components/templates/reset-otp-template'
 import { tryCatch } from '@/lib/utils'
 import { prisma } from '@shared/db/prisma'
+import jwt from 'jsonwebtoken'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -66,5 +67,13 @@ export async function verifyResetOTP(email: string, otp: string) {
       where: { email },
       data: { otp: null, otpExpiresAt: null }
     })
+
+    const resetToken = jwt.sign(
+      { email },
+      process.env.JWT_SECRET as string,
+      { expiresIn: '10m' }
+    )
+
+    return { resetToken }
   })
 }

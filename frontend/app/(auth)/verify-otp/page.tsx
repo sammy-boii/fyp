@@ -55,6 +55,7 @@ export default function VerifyOtpPage() {
       }
     }
 
+    // true for capture phase so we can intercept the paste event
     document.addEventListener('paste', handlePaste, true)
     return () => {
       document.removeEventListener('paste', handlePaste, true)
@@ -68,13 +69,20 @@ export default function VerifyOtpPage() {
       return toast.error('No email was provided')
     }
 
-    const { error } = await verifyResetOTP(emailFromQuery, otp)
+    const { data, error } = await verifyResetOTP(emailFromQuery, otp)
 
     if (error) {
       return toast.error(error.message)
     }
 
     toast.success('OTP verified successfully')
+    if (data?.resetToken) {
+      router.push(
+        `/reset-password?token=${encodeURIComponent(data.resetToken)}`
+      )
+    } else {
+      toast.error('Something went wrong. Please try again.')
+    }
   }
 
   async function handleResend() {

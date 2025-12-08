@@ -88,7 +88,9 @@ const NodeConfigurationDialog = ({
             <Card className='h-full rounded-none border-r border-b-0 border-l-0 border-t-0'>
               <CardHeader className='pb-3'>
                 <CardTitle className='flex items-center gap-2 text-sm font-medium'>
-                  <ArrowDown className='h-4 w-4 text-blue-500' />
+                  <div className='bg-muted rounded p-1'>
+                    <ArrowDown className='h-4 w-4 text-muted-foreground bg-muted rounded' />
+                  </div>
                   Input Configuration
                 </CardTitle>
                 <Separator />
@@ -106,7 +108,9 @@ const NodeConfigurationDialog = ({
             <Card className='h-full rounded-none border-r border-b-0 border-l-0 border-t-0'>
               <CardHeader className='pb-3'>
                 <CardTitle className='flex items-center gap-2 text-sm font-medium'>
-                  <Settings className='h-4 w-4 text-green-500' />
+                  <div className='bg-muted rounded p-1'>
+                    <Settings className='h-4 w-4 text-muted-foreground' />
+                  </div>
                   Node Settings
                 </CardTitle>
                 <Separator />
@@ -199,7 +203,9 @@ const NodeConfigurationDialog = ({
             <Card className='h-full rounded-none border-b-0 border-l-0 border-r-0 border-t-0'>
               <CardHeader className='pb-3'>
                 <CardTitle className='flex items-center gap-2 text-sm font-medium'>
-                  <ArrowUp className='h-4 w-4 text-purple-500' />
+                  <div className='bg-muted rounded p-1'>
+                    <ArrowUp className='h-4 w-4 text-muted-foreground' />
+                  </div>
                   Output Preview
                 </CardTitle>
                 <Separator />

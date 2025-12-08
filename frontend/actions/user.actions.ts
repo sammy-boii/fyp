@@ -12,7 +12,30 @@ import { z } from 'zod'
 export async function getProfile() {
   return tryCatch(async () => {
     const user = await getCurrentUser()
-    return user
+
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    const workflows = await prisma.workflow.findMany({
+      where: { authorId: user.id },
+      orderBy: { id: 'desc' },
+      take: 5
+    })
+
+    const credentials = await prisma.oAuthCredential.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' }
+    })
+    const workflowCount = await prisma.workflow.count({
+      where: { authorId: user.id }
+    })
+    return {
+      ...user,
+      workflows,
+      credentials,
+      workflowCount
+    }
   })
 }
 

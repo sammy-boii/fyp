@@ -34,7 +34,6 @@ import {
 } from '@/components/ui/dialog'
 import {
   Activity,
-  BarChart3,
   BadgeCheck,
   Link2,
   Pencil,
@@ -43,7 +42,9 @@ import {
   Workflow
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { ProfileAreaChart } from './_components/AreaChart'
+import { ProfileAreaChart } from './_components/ProfileAreaChart'
+import { ProfileRadarChart } from './_components/ProfileRadarChart'
+import { ProfileRadialChart } from './_components/ProfileRadialChart'
 
 const LoadingState = () => (
   <div className='mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 md:px-10'>
@@ -254,85 +255,8 @@ const ProfilePage = () => {
         <ProfileAreaChart />
 
         <div className='grid gap-4 md:grid-cols-2'>
-          <Card>
-            <CardHeader>
-              <CardTitle className='flex items-center gap-2'>
-                <Activity className='h-4 w-4 text-muted-foreground' />
-                Recent workflows
-              </CardTitle>
-              <CardDescription>Last five you created</CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-3'>
-              {user?.workflows?.length ? (
-                <div className='space-y-2'>
-                  {user.workflows.map((workflow) => (
-                    <div
-                      key={workflow.id}
-                      className='flex items-center justify-between rounded-lg border bg-background px-3 py-2'
-                    >
-                      <div className='flex items-center gap-2'>
-                        <Activity className='h-4 w-4 text-muted-foreground' />
-                        <div>
-                          <p className='font-medium'>Workflow #{workflow.id}</p>
-                          <p className='text-xs text-muted-foreground'>
-                            Authored by you
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant='outline'>ID {workflow.id}</Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className='text-sm text-muted-foreground'>
-                  No workflows yet.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Connected credentials</CardTitle>
-              <CardDescription>
-                OAuth tokens stored for this user
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {user?.credentials?.length ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Provider</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead className='text-right'>Added</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {user.credentials.map((credential) => (
-                      <TableRow key={credential.id}>
-                        <TableCell>
-                          <Badge variant='secondary' className='uppercase'>
-                            {credential.provider}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className='text-muted-foreground'>
-                          {credential.service || 'Default'}
-                        </TableCell>
-                        <TableCell className='text-right text-muted-foreground'>
-                          {formatDate(credential.createdAt)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <p className='text-sm text-muted-foreground'>
-                  No connected accounts yet.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <ProfileRadarChart />
+          <ProfileRadialChart />
         </div>
       </div>
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>

@@ -128,11 +128,11 @@ const chartConfig = {
     label: 'Visitors'
   },
   desktop: {
-    label: 'Desktop',
+    label: 'Failed',
     color: 'var(--chart-1)'
   },
   mobile: {
-    label: 'Mobile',
+    label: 'Triggered',
     color: 'var(--chart-2)'
   }
 } satisfies ChartConfig
@@ -163,7 +163,7 @@ export function ProfileAreaChart() {
             Activity chart
           </CardTitle>
           <CardDescription>
-            Showing total visitors for the last 3 months
+            Showing workflows triggered and failed for the last 3 months
           </CardDescription>
         </div>
         <Select value={timeRange} onValueChange={setTimeRange}>

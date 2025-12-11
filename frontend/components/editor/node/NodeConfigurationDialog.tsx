@@ -89,7 +89,7 @@ const NodeConfigurationDialog = ({
               <CardHeader className='pb-3'>
                 <CardTitle className='flex items-center gap-2 text-sm font-medium'>
                   <div className='bg-muted rounded p-1'>
-                    <ArrowDown className='h-4 w-4 text-muted-foreground bg-muted rounded' />
+                    <ArrowDown className='h-4 w-4 text-primary bg-muted rounded' />
                   </div>
                   Input Configuration
                 </CardTitle>
@@ -109,7 +109,7 @@ const NodeConfigurationDialog = ({
               <CardHeader className='pb-3'>
                 <CardTitle className='flex items-center gap-2 text-sm font-medium'>
                   <div className='bg-muted rounded p-1'>
-                    <Settings className='h-4 w-4 text-muted-foreground' />
+                    <Settings className='h-4 w-4 text-primary' />
                   </div>
                   Node Settings
                 </CardTitle>
@@ -204,7 +204,7 @@ const NodeConfigurationDialog = ({
               <CardHeader className='pb-3'>
                 <CardTitle className='flex items-center gap-2 text-sm font-medium'>
                   <div className='bg-muted rounded p-1'>
-                    <ArrowUp className='h-4 w-4 text-muted-foreground' />
+                    <ArrowUp className='h-4 w-4 text-primary' />
                   </div>
                   Output Preview
                 </CardTitle>

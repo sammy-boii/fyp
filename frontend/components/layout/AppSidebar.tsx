@@ -183,7 +183,10 @@ function NavUser({
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton className='hover:bg-accent' size='lg'>
+            <SidebarMenuButton
+              className='hover:bg-accent active:text-accent-foreground hover:text-accent-foreground active:bg-accent'
+              size='lg'
+            >
               <Avatar className='h-8 w-8 rounded-lg grayscale'>
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback className='rounded-lg text-foreground'>

@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from '@/components/ui/dialog'
-import { useGetProfile } from '@/hooks/use-user'
+import { useGetProfile, useUpdateProfile } from '@/hooks/use-user'
 import {
   Activity,
   BadgeCheck,
@@ -36,51 +36,74 @@ import {
   Save,
   Recycle
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useTransition } from 'react'
 import { ProfileAreaChart } from './_components/ProfileAreaChart'
 import { ProfileRadarChart } from './_components/ProfileRadarChart'
 import { ProfileRadialChart } from './_components/ProfileRadialChart'
 import { Dropzone } from '@/components/ui/dropzone'
-
-const LoadingState = () => (
-  <div className='mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 md:px-10'>
-    <div className='flex items-center gap-4'>
-      <Skeleton className='h-16 w-16 rounded-full' />
-      <div className='space-y-2'>
-        <Skeleton className='h-4 w-32' />
-        <Skeleton className='h-3 w-48' />
-      </div>
-    </div>
-    <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-      <Skeleton className='h-36 rounded-xl' />
-      <Skeleton className='h-36 rounded-xl' />
-      <Skeleton className='h-36 rounded-xl' />
-    </div>
-    <Skeleton className='h-80 rounded-xl' />
-    <div className='grid gap-4 md:grid-cols-2'>
-      <Skeleton className='h-64 rounded-xl' />
-      <Skeleton className='h-64 rounded-xl' />
-    </div>
-  </div>
-)
+import { uploadCloudinaryImage } from '@/actions/cloudinary.actions'
+import { toast } from 'sonner'
+import { ProfileSkeleton } from './_components/ProfileSkeleton'
 
 const ProfilePage = () => {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [avatarPreview, setAvatarPreview] = useState('')
-  const [formValues, setFormValues] = useState({
-    name: ''
-  })
-  const { data: profile, isLoading, isError } = useGetProfile()
+
+  const [isPending, startTransition] = useTransition()
+
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+
+  const [name, setName] = useState('')
+
+  const [avatar, setAvatar] = useState<string | null>(null)
+
+  const { data: profile, isLoading } = useGetProfile()
   const user = profile?.data
 
+  const { mutateAsync } = useUpdateProfile()
+
   useEffect(() => {
-    if (!user) return
-    setFormValues({
-      name: user.name ?? ''
+    if (user?.name) setName(user.name)
+    if (user?.avatar) setAvatar(user.avatar)
+  }, [user?.name, user?.avatar])
+
+  async function handleSubmit(evt: React.FormEvent<HTMLFormElement>) {
+    evt.preventDefault()
+
+    startTransition(async () => {
+      if (name.trim().length === 0) {
+        toast.error('Name cannot be empty')
+        return
+      }
+
+      let res
+
+      if (avatarFile) {
+        const { data, error } = await uploadCloudinaryImage(avatarFile)
+
+        if (error) {
+          toast.error(error.message)
+          return
+        }
+
+        res = await mutateAsync({ name, avatar: data.secure_url })
+      } else {
+        res = await mutateAsync({ name, avatar: user?.avatar ?? null })
+      }
+
+      if (res.error) {
+        toast.error(
+          'An error occured while updating profile: ' + res.error.message
+        )
+        return
+      }
+
+      toast.success('Profile updated successfully')
+      setAvatarFile(null)
+      setAvatarPreview(null)
+      setIsEditOpen(false)
     })
-    setAvatarPreview(user.avatar ?? '')
-  }, [user])
+  }
 
   useEffect(() => {
     if (avatarFile) {
@@ -88,7 +111,7 @@ const ProfilePage = () => {
       setAvatarPreview(url)
       return () => URL.revokeObjectURL(url)
     } else {
-      setAvatarPreview(user?.avatar || '')
+      setAvatarPreview(user?.avatar || null)
     }
   }, [avatarFile, user?.avatar])
 
@@ -101,15 +124,7 @@ const ProfilePage = () => {
   }, [user?.workflowCount])
 
   if (isLoading && !user) {
-    return <LoadingState />
-  }
-
-  if (isError || profile?.error) {
-    return (
-      <div className='flex h-full items-center justify-center px-6 py-10 text-center text-sm text-destructive md:px-10'>
-        Unable to load your profile right now. Please try again in a moment.
-      </div>
-    )
+    return <ProfileSkeleton />
   }
 
   return (
@@ -119,14 +134,14 @@ const ProfilePage = () => {
           <div className='flex items-center gap-4'>
             <Avatar className='h-16 w-16'>
               <AvatarImage
-                src={user?.avatar || ''}
+                src={user?.avatar || undefined}
                 alt={user?.name || 'User'}
               />
               <AvatarFallback>
                 {user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
-            <div className=''>
+            <div>
               <h1 className='text-2xl font-semibold leading-tight'>
                 {user?.name || 'Your name'}
               </h1>
@@ -166,18 +181,18 @@ const ProfilePage = () => {
                     <div className='flex flex-col items-center gap-4 p-4 rounded-lg bg-muted/30'>
                       <Avatar className='h-20 w-20 ring-2 ring-border'>
                         <AvatarImage
-                          src={avatarPreview}
-                          alt={formValues.name}
+                          src={avatarPreview || undefined}
+                          alt={name}
                         />
                         <AvatarFallback className='text-lg'>
-                          {formValues.name?.charAt(0)?.toUpperCase() || 'U'}
+                          {name?.charAt(0)?.toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div className='text-center'>
-                        <h2 className='text-xl font-semibold'>
-                          {formValues.name || 'Your name'}
+                        <h2 className='text-xl wrap-anywhere font-semibold'>
+                          {name || 'Your name'}
                         </h2>
-                        <p className='text-sm text-muted-foreground mt-1'>
+                        <p className='text-sm wrap-anywhere text-muted-foreground mt-1'>
                           {user?.email || 'you@example.com'}
                         </p>
                       </div>
@@ -210,7 +225,7 @@ const ProfilePage = () => {
                         className='w-full'
                         onClick={() => {
                           if (!user) return
-                          setFormValues({ name: user.name ?? '' })
+                          setName(user.name ?? '')
                           setAvatarFile(null)
                           setAvatarPreview(user.avatar ?? '')
                         }}
@@ -233,21 +248,17 @@ const ProfilePage = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <form
-                      className='space-y-5'
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        setIsEditOpen(false)
-                      }}
-                    >
+                    <form className='space-y-5' onSubmit={handleSubmit}>
                       <div className='space-y-2'>
                         <Label className='flex items-center gap-2 text-sm font-medium'>
                           <User className='h-4 w-4 text-muted-foreground' />
                           Profile Picture
                         </Label>
                         <Dropzone
+                          avatar={avatar}
                           onFileSelect={setAvatarFile}
-                          preview={avatarPreview}
+                          preview={avatarPreview || undefined}
+                          forcePreview={Boolean(avatarFile)}
                           className='h-32'
                         />
                       </div>
@@ -263,23 +274,27 @@ const ProfilePage = () => {
                         <Input
                           id='name'
                           placeholder='Enter your name'
-                          value={formValues.name}
-                          onChange={(e) =>
-                            setFormValues((prev) => ({
-                              ...prev,
-                              name: e.target.value
-                            }))
-                          }
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
                         />
                       </div>
 
                       <DialogFooter className='gap-2'>
                         <DialogClose asChild>
-                          <Button variant='outline' type='button'>
+                          <Button
+                            disabled={isPending}
+                            hideLoader
+                            variant='outline'
+                            type='button'
+                          >
                             Cancel
                           </Button>
                         </DialogClose>
-                        <Button type='submit'>
+                        <Button
+                          className='w-20'
+                          disabled={isPending}
+                          type='submit'
+                        >
                           <Save />
                           Save
                         </Button>

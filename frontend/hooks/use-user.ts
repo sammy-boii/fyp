@@ -1,9 +1,20 @@
-import { getProfile } from '@/actions/user.actions'
-import { useQuery } from '@tanstack/react-query'
+import { getProfile, updateProfile } from '@/actions/user.actions'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 export function useGetProfile() {
   return useQuery({
     queryKey: ['profile'],
     queryFn: getProfile
+  })
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: updateProfile,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['profile'] })
+    }
   })
 }

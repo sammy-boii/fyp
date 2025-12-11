@@ -11,15 +11,20 @@ interface DropzoneProps {
   preview?: string
   className?: string
   accept?: string
+  avatar: string | null
+  forcePreview?: boolean
 }
 
 export function Dropzone({
   onFileSelect,
   preview,
+  avatar,
+  forcePreview = false,
   className,
   accept = 'image/*'
 }: DropzoneProps) {
   const [isDragging, setIsDragging] = useState(false)
+  const shouldShowPreview = Boolean(preview && (forcePreview || !avatar))
 
   const handleFile = useCallback(
     (file: File) => {
@@ -86,21 +91,15 @@ export function Dropzone({
         className='absolute inset-0 h-full w-full cursor-pointer opacity-0'
       />
 
-      {preview ? (
-        <div className='relative flex h-full w-full items-center justify-center p-4'>
-          <Image
-            alt='Preview'
-            src={preview}
-            width={128}
-            height={128}
-            className='max-h-32 max-w-full rounded-md object-cover'
-          />
+      {shouldShowPreview ? (
+        <div className='relative size-20 '>
+          <Image alt='Preview' src={preview} className='object-cover' fill />
           <button
             type='button'
             onClick={handleRemove}
-            className='absolute right-2 top-2 rounded-full bg-destructive p-1.5 text-destructive-foreground shadow-sm transition-colors hover:bg-destructive/90'
+            className='absolute -right-7 -top-2 cursor-pointer rounded-full p-1.5 text-destructive-foreground shadow-sm transition-colors'
           >
-            <X className='h-4 w-4' />
+            <X className='size-4' />
           </button>
         </div>
       ) : (

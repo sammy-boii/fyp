@@ -4,10 +4,14 @@ import { getCurrentUser } from '@/data/dal'
 import { tryCatch } from '@/lib/utils'
 import { prisma } from '@shared/db/prisma'
 import bcrypt from 'bcrypt'
-import { resetPasswordSchema } from '@/schema/auth.schema'
 import { TResetPasswordForm } from '@/types/auth.types'
 import jwt, { JwtPayload } from 'jsonwebtoken'
-import { z } from 'zod'
+import { TChangePassword, TUpdateProfile } from '@/types/user.types'
+import {
+  changePasswordSchema,
+  resetPasswordSchema,
+  updateProfileSchema
+} from '@/schema/user.schema'
 
 export async function getProfile() {
   return tryCatch(async () => {
@@ -39,55 +43,29 @@ export async function getProfile() {
   })
 }
 
-const updateProfileSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  avatar: z
-    .string()
-    .url('Avatar must be a valid URL')
-    .optional()
-    .or(z.literal(''))
-    .transform((val) => (val ? val : null))
-})
-
-type TUpdateProfile = z.infer<typeof updateProfileSchema>
-
 export async function updateProfile(data: TUpdateProfile) {
   return tryCatch(async () => {
-    const currentUser = await getCurrentUser()
+    const user = await getCurrentUser()
 
-    if (!currentUser) {
+    if (!user) {
       throw new Error('Not authenticated')
     }
 
     const parsedData = updateProfileSchema.parse(data)
 
     const updatedUser = await prisma.user.update({
-      where: { id: currentUser.id },
+      where: { id: user.id },
       data: {
         name: parsedData.name,
-        avatar: parsedData.avatar ?? undefined
+        avatar: parsedData.avatar ?? null
       }
     })
+
+    
 
     return updatedUser
   })
 }
-
-const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z
-    .string()
-    .min(12, 'Password must be at least 12 characters')
-    .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Must contain at least one lowercase letter')
-    .regex(/\d/, 'Must contain at least one number')
-    .regex(
-      /[!@#$%^&*(),.?":{}|<>]/,
-      'Must contain at least one special character'
-    )
-})
-
-type TChangePassword = z.infer<typeof changePasswordSchema>
 
 export async function changePassword(data: TChangePassword) {
   return tryCatch(async () => {

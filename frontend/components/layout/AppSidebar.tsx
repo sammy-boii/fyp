@@ -1,11 +1,11 @@
 'use client'
 
 import {
-  Calendar,
-  Home,
-  Inbox,
-  Search,
+  Activity,
+  KeyRound,
+  LayoutDashboard,
   Settings,
+  Workflow,
   ZapIcon,
   PanelLeft
 } from 'lucide-react'
@@ -27,14 +27,7 @@ import {
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
-import {
-  BadgeCheck,
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  LogOut,
-  Sparkles
-} from 'lucide-react'
+import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
@@ -57,24 +50,24 @@ import { Kbd } from '../ui/kbd'
 // Menu items.
 const items = [
   {
-    title: 'Home',
-    url: '/',
-    icon: Home
+    title: 'Dashboard',
+    url: '/dashboard',
+    icon: LayoutDashboard
   },
   {
-    title: 'Inbox',
-    url: '/inbox',
-    icon: Inbox
+    title: 'Workflows',
+    url: '/workflows',
+    icon: Workflow
   },
   {
-    title: 'Calendar',
-    url: '/calendar',
-    icon: Calendar
+    title: 'Credentials',
+    url: '/credentials',
+    icon: KeyRound
   },
   {
-    title: 'Search',
-    url: '/search',
-    icon: Search
+    title: 'Activity',
+    url: '/activity',
+    icon: Activity
   },
   {
     title: 'Settings',
@@ -105,7 +98,7 @@ export function AppSidebar() {
               />
               {/* Sidebar title only visible when expanded */}
               <span className='font-bold group-data-[state=expanded]:block hidden'>
-                Acme Inc.
+                Flux
               </span>
             </Link>
           </SidebarMenuItem>
@@ -136,7 +129,7 @@ export function AppSidebar() {
           user={{
             name: data?.data?.name || 'Anonymous',
             email: data?.data?.email || 'm@example.com',
-            avatar: data?.data?.avatar || 'https://github.com/shadcn.png'
+            avatar: data?.data?.avatar || undefined
           }}
         />
       </SidebarFooter>
@@ -177,22 +170,25 @@ function NavUser({
   user: {
     name: string
     email: string
-    avatar: string
+    avatar?: string
   }
 }) {
   const { isMobile } = useSidebar()
 
   const router = useRouter()
+  const fallbackInitial = user.name?.charAt(0)?.toUpperCase() || 'U'
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton size='lg'>
+            <SidebarMenuButton className='hover:bg-accent' size='lg'>
               <Avatar className='h-8 w-8 rounded-lg grayscale'>
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className='rounded-lg'>CN</AvatarFallback>
+                <AvatarFallback className='rounded-lg text-foreground'>
+                  {fallbackInitial}
+                </AvatarFallback>
               </Avatar>
               <div className='grid flex-1 text-left text-sm leading-tight'>
                 <span className='truncate font-medium'>{user.name}</span>
@@ -211,7 +207,9 @@ function NavUser({
               <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
                 <Avatar className='h-8 w-8 rounded-lg'>
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className='rounded-lg'>CN</AvatarFallback>
+                  <AvatarFallback className='rounded-lg'>
+                    {fallbackInitial}
+                  </AvatarFallback>
                 </Avatar>
                 <div className='grid flex-1 text-left text-sm leading-tight'>
                   <span className='truncate font-medium'>{user.name}</span>
@@ -221,24 +219,27 @@ function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
+              <DropdownMenuItem asChild>
+                <Link href={'/settings'}>
+                  <Settings />
+                  Settings
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
+              <DropdownMenuItem asChild>
+                <Link href={'/dashboard'}>
+                  <BadgeCheck />
+                  Account
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
+
+              <DropdownMenuItem asChild>
+                <Link href='/notifications'>
+                  <Bell />
+                  Notifications
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

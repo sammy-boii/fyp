@@ -1,13 +1,6 @@
 'use client'
 
 import { TrendingUp } from 'lucide-react'
-import {
-  Label,
-  PolarGrid,
-  PolarRadiusAxis,
-  RadialBar,
-  RadialBarChart
-} from 'recharts'
 
 import {
   Card,
@@ -18,6 +11,20 @@ import {
   CardTitle
 } from '@/components/ui/card'
 import { ChartConfig, ChartContainer } from '@/components/ui/chart'
+import * as Recharts from 'recharts'
+
+// to avoid module not found err
+
+type RechartsComponents = {
+  RadialBarChart: React.ComponentType<any>
+  PolarGrid: React.ComponentType<any>
+  RadialBar: React.ComponentType<any>
+  PolarRadiusAxis: React.ComponentType<any>
+  Label: React.ComponentType<any>
+}
+
+const { RadialBarChart, PolarGrid, RadialBar, PolarRadiusAxis, Label } =
+  Recharts as unknown as RechartsComponents
 
 export const description = 'A radial chart with a custom shape'
 
@@ -63,7 +70,7 @@ export function ProfileRadialChart() {
             <RadialBar dataKey='visitors' background />
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
-                content={({ viewBox }) => {
+                content={({ viewBox }: { viewBox: any }) => {
                   if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
                     return (
                       <text

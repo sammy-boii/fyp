@@ -45,7 +45,7 @@ import { uploadCloudinaryImage } from '@/actions/cloudinary.actions'
 import { toast } from 'sonner'
 import { ProfileSkeleton } from './_components/ProfileSkeleton'
 
-const ProfilePage = () => {
+const DashboardPage = () => {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
 
@@ -391,4 +391,4 @@ const ProfilePage = () => {
   )
 }
 
-export default ProfilePage
+export default DashboardPage

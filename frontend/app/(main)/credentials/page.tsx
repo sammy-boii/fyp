@@ -65,9 +65,7 @@ export default function CredentialsPage() {
           </Button>
         </header>
 
-        <div className='rounded-xl border bg-card p-4 shadow-sm'>
-          <DataTable columns={columns} data={dummyCredentials} />
-        </div>
+        <DataTable columns={columns} data={dummyCredentials} />
       </div>
     </div>
   )

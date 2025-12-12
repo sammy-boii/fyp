@@ -6,15 +6,21 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ColumnDef } from '@tanstack/react-table'
 import {
   CheckCircle2,
   Clock3,
+  Copy,
   Eye,
+  Key,
+  Lock,
   Pencil,
   ShieldAlert,
   ShieldCheck,
@@ -23,6 +29,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import gmailIcon from '@/public/gmail.png'
 import {
   Tooltip,
@@ -109,17 +116,6 @@ function ProviderIcon({ provider }: { provider: string }) {
   )
 }
 
-function ProviderBadge({ provider }: { provider: string }) {
-  const base = provider.toLowerCase()
-  const meta = providerMeta[base]
-  return (
-    <div className='flex items-center gap-2 text-sm font-medium text-foreground'>
-      <ProviderIcon provider={provider} />
-      <span>{meta?.name || provider}</span>
-    </div>
-  )
-}
-
 export const columns: ColumnDef<CredentialRow>[] = [
   {
     accessorKey: 'provider',
@@ -148,22 +144,15 @@ export const columns: ColumnDef<CredentialRow>[] = [
   {
     accessorKey: 'accessTokenExpiresAt',
     header: 'Expires',
-    cell: ({ getValue }) => (
-      <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-        <TimerReset className='h-4 w-4' />
-        <span>{formatDate(getValue() as string)}</span>
-      </div>
-    )
-  },
-  {
-    id: 'notes',
-    header: 'Notes',
-    cell: () => (
-      <div className='flex items-center gap-1 text-xs text-muted-foreground'>
-        <ShieldCheck className='h-4 w-4' />
-        Encrypted at rest
-      </div>
-    )
+    cell: ({ getValue }) => {
+      const expiresAt = getValue() as string
+      return (
+        <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+          <TimerReset className='h-4 w-4' />
+          <span>{formatDate(expiresAt)}</span>
+        </div>
+      )
+    }
   },
   {
     id: 'actions',
@@ -173,36 +162,41 @@ export const columns: ColumnDef<CredentialRow>[] = [
 ]
 
 function ActionCell({ cred }: { cred: CredentialRow }) {
+  const [isViewOpen, setIsViewOpen] = useState(false)
+  const [isPasswordOpen, setIsPasswordOpen] = useState(false)
   const [password, setPassword] = useState('')
-  const [decrypted, setDecrypted] = useState(false)
-  const [showDecryptInput, setShowDecryptInput] = useState(false)
+  const [tokenToCopy, setTokenToCopy] = useState<string | null>(null)
 
-  const detail = {
-    accessToken: decrypted ? cred.accessToken : maskToken(cred.accessToken),
-    refreshToken: cred.refreshToken
-      ? decrypted
-        ? cred.refreshToken
-        : maskToken(cred.refreshToken)
-      : 'Not set',
-    expires: formatDate(cred.accessTokenExpiresAt),
-    refreshExpires: formatDate(cred.refreshTokenExpiresAt || null),
-    scopes: cred.scopes
+  const handleCopyToken = (token: string) => {
+    setTokenToCopy(token)
+    setPassword('')
+    setIsPasswordOpen(true)
   }
 
-  const handleDecrypt = () => {
-    if (password.trim() === 'test') {
-      setDecrypted(true)
+  const handlePasswordSubmit = () => {
+    if (password.trim() === 'test' && tokenToCopy) {
+      navigator.clipboard.writeText(tokenToCopy)
+      toast.success('Token copied to clipboard successfully')
+      setIsPasswordOpen(false)
+      setPassword('')
+      setTokenToCopy(null)
+    } else {
+      toast.error('Incorrect password')
     }
   }
 
   return (
     <TooltipProvider delayDuration={50}>
       <div className='flex items-center gap-2'>
-        <Dialog>
+        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
           <Tooltip>
             <TooltipTrigger asChild>
               <DialogTrigger asChild>
-                <Button variant='ghost' size='icon' className='h-8 w-8'>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='bg-muted h-8 w-8'
+                >
                   <Eye className='h-4 w-4' />
                   <span className='sr-only'>View</span>
                 </Button>
@@ -210,143 +204,195 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
             </TooltipTrigger>
             <TooltipContent>View</TooltipContent>
           </Tooltip>
-          <DialogContent className='sm:max-w-lg'>
+          <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
             <DialogHeader>
-              <div className='flex items-center gap-3'>
-                <div className='flex h-12 w-12 items-center justify-center rounded-lg bg-muted/50'>
-                  <ProviderIcon provider={cred.provider} />
-                </div>
-                <div className='flex-1'>
-                  <DialogTitle className='text-base font-semibold leading-tight'>
-                    <ProviderBadge provider={cred.provider} />
-                  </DialogTitle>
-                  <DialogDescription className='text-sm text-muted-foreground'>
-                    {cred.service || 'No linked service'}
-                  </DialogDescription>
-                </div>
+              <div className='flex items-center gap-4'>
+                <DialogTitle className='flex items-center gap-2'>
+                  <Key className='h-5 w-5' />
+                  Token Information
+                </DialogTitle>
                 <Badge className={statusTone[cred.status]} variant='outline'>
-                  {statusCopy[cred.status]}
+                  {(() => {
+                    const Icon =
+                      cred.status === 'active'
+                        ? CheckCircle2
+                        : cred.status === 'expires-soon'
+                        ? Clock3
+                        : ShieldAlert
+                    return (
+                      <>
+                        <Icon className='h-4 w-4' />
+                        {statusCopy[cred.status]}
+                      </>
+                    )
+                  })()}
                 </Badge>
               </div>
+              <DialogDescription>
+                View encrypted token details for this credential
+              </DialogDescription>
             </DialogHeader>
-            <div className='space-y-4 text-sm'>
-              <section className='rounded-lg border p-4 space-y-3'>
+            <div className='space-y-6 py-4'>
+              {/* Meta */}
+              <div className='rounded-md bg-muted/30 px-3 py-2 text-sm text-muted-foreground'>
                 <div className='flex items-center justify-between'>
-                  <span className='text-xs font-semibold uppercase text-muted-foreground'>
-                    Tokens
+                  <span className='font-medium text-foreground'>
+                    {cred.provider}
                   </span>
-                  {!showDecryptInput ? (
+                  <span>
+                    {cred.service ? `Service: ${cred.service}` : 'No service'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Access Token */}
+              <div className='space-y-2'>
+                <Label className='flex items-center gap-2 text-sm font-medium'>
+                  <Lock className='h-4 w-4 text-muted-foreground' />
+                  Access Token
+                </Label>
+                <div className='flex items-center gap-2'>
+                  <div className='flex-1 rounded-md border bg-muted/30 px-3 py-2 font-mono text-xs'>
+                    {maskToken(cred.accessToken)}
+                  </div>
+                  <Button
+                    variant='outline'
+                    size='icon'
+                    className='h-9 w-9 shrink-0'
+                    onClick={() => handleCopyToken(cred.accessToken)}
+                  >
+                    <Copy className='h-4 w-4' />
+                    <span className='sr-only'>Copy access token</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Refresh Token */}
+              <div className='space-y-2'>
+                <Label className='flex items-center gap-2 text-sm font-medium'>
+                  <Lock className='h-4 w-4 text-muted-foreground' />
+                  Refresh Token
+                </Label>
+                <div className='flex items-center gap-2'>
+                  <div className='flex-1 rounded-md border bg-muted/30 px-3 py-2 font-mono text-xs'>
+                    {cred.refreshToken
+                      ? maskToken(cred.refreshToken)
+                      : 'Not set'}
+                  </div>
+                  {cred.refreshToken && (
                     <Button
                       variant='outline'
-                      size='sm'
-                      onClick={() => setShowDecryptInput(true)}
+                      size='icon'
+                      className='h-9 w-9 shrink-0'
+                      onClick={() => handleCopyToken(cred.refreshToken!)}
                     >
-                      Decrypt
+                      <Copy className='h-4 w-4' />
+                      <span className='sr-only'>Copy refresh token</span>
                     </Button>
-                  ) : null}
+                  )}
                 </div>
-                <div className='space-y-2'>
-                  <div className='flex flex-col gap-1'>
-                    <span className='text-xs text-muted-foreground'>
-                      Access
-                    </span>
-                    <code className='rounded-md bg-background px-3 py-2 text-xs shadow-inner'>
-                      {detail.accessToken}
-                    </code>
-                  </div>
-                  <div className='flex flex-col gap-1'>
-                    <span className='text-xs text-muted-foreground'>
-                      Refresh
-                    </span>
-                    <code className='rounded-md bg-background px-3 py-2 text-xs shadow-inner'>
-                      {detail.refreshToken}
-                    </code>
-                  </div>
-                </div>
-                {showDecryptInput ? (
-                  <div className='mt-2 flex flex-col gap-2 rounded-md border bg-muted/30 p-3'>
-                    <input
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder='Enter password'
-                      className='w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50'
-                      type='password'
-                    />
-                    <div className='flex items-center gap-2'>
-                      <Button
-                        variant='default'
-                        size='sm'
-                        onClick={handleDecrypt}
-                      >
-                        Unlock
-                      </Button>
-                      <Button
-                        variant='ghost'
-                        size='sm'
-                        onClick={() => {
-                          setShowDecryptInput(false)
-                          setPassword('')
-                          setDecrypted(false)
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                    <span className='text-[11px] text-muted-foreground'>
-                      Tokens stay masked until you unlock.
-                    </span>
-                  </div>
-                ) : null}
-                {decrypted ? (
-                  <span className='text-xs text-emerald-600 dark:text-emerald-300'>
-                    Decrypted (password matched)
-                  </span>
-                ) : null}
-              </section>
+              </div>
 
-              <section className='rounded-lg border p-4 grid gap-3 text-muted-foreground'>
-                <div className='flex items-center justify-between'>
-                  <span className='flex items-center gap-2'>
-                    <TimerReset className='h-4 w-4' /> Access expires
-                  </span>
-                  <span className='font-medium text-foreground'>
-                    {detail.expires}
-                  </span>
+              {/* Access Token Expiry */}
+              <div className='flex items-center justify-between'>
+                <Label className='flex items-center gap-2 text-sm font-medium'>
+                  <TimerReset className='h-4 w-4 text-muted-foreground' />
+                  Access Token Expiry
+                </Label>
+                <div className='rounded-md bg-muted/20 px-3 py-2 text-sm text-muted-foreground'>
+                  {formatDate(cred.accessTokenExpiresAt)}
                 </div>
-                <div className='flex items-center justify-between'>
-                  <span>Refresh expires</span>
-                  <span className='font-medium text-foreground'>
-                    {detail.refreshExpires}
-                  </span>
-                </div>
-              </section>
+              </div>
 
-              <section className='rounded-lg border p-4 space-y-2'>
-                <span className='text-xs font-semibold uppercase text-muted-foreground'>
+              {/* Refresh Token Expiry */}
+              <div className='flex items-center justify-between'>
+                <Label className='flex items-center gap-2 text-sm font-medium'>
+                  <TimerReset className='h-4 w-4 text-muted-foreground' />
+                  Refresh Token Expiry
+                </Label>
+                <div className='rounded-md bg-muted/20 px-3 py-2 text-sm text-muted-foreground'>
+                  {cred.refreshTokenExpiresAt
+                    ? formatDate(cred.refreshTokenExpiresAt)
+                    : 'Not set'}
+                </div>
+              </div>
+
+              {/* Scopes */}
+              <div className='space-y-2'>
+                <Label className='flex items-center gap-2 text-sm font-medium'>
+                  <ShieldCheck className='h-4 w-4 text-muted-foreground' />
                   Scopes
-                </span>
+                </Label>
                 <div className='flex flex-wrap gap-2'>
-                  {cred.scopes.length ? (
-                    cred.scopes.map((scope) => (
-                      <Badge
-                        key={scope}
-                        variant='secondary'
-                        className='text-[11px]'
-                      >
+                  {cred.scopes.length > 0 ? (
+                    cred.scopes.map((scope, idx) => (
+                      <Badge key={idx} variant='secondary' className='text-xs'>
                         {scope}
                       </Badge>
                     ))
                   ) : (
-                    <span className='text-xs text-muted-foreground'>None</span>
+                    <span className='text-sm text-muted-foreground'>
+                      No scopes available
+                    </span>
                   )}
                 </div>
-              </section>
+              </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Password Dialog */}
+        <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className='flex items-center gap-2'>
+                <Lock className='h-5 w-5' />
+                Enter Password
+              </DialogTitle>
+              <DialogDescription>
+                It is not advisable to share the token with anyone. Please enter
+                your password to copy the token.
+              </DialogDescription>
+            </DialogHeader>
+            <div className='space-y-4 py-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='password'>Password</Label>
+                <Input
+                  id='password'
+                  type='password'
+                  placeholder='Enter password'
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handlePasswordSubmit()
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant='outline'
+                onClick={() => {
+                  setIsPasswordOpen(false)
+                  setPassword('')
+                  setTokenToCopy(null)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handlePasswordSubmit}>Confirm</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant='ghost' size='icon' className='h-8 w-8'>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='bg-blue-500/15! h-8 w-8'
+            >
               <Pencil className='h-4 w-4' />
               <span className='sr-only'>Edit</span>
             </Button>
@@ -358,7 +404,7 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
             <Button
               variant='ghost'
               size='icon'
-              className='h-8 w-8 text-destructive hover:text-destructive'
+              className='h-8 w-8 text-destructive hover:text-destructive bg-destructive/10'
             >
               <Trash2 className='h-4 w-4' />
               <span className='sr-only'>Delete</span>

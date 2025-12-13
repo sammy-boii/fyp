@@ -1,12 +1,20 @@
 'use client'
 
-import { Handle, Position, NodeProps, useReactFlow } from '@xyflow/react'
+import {
+  Handle,
+  Position,
+  NodeProps,
+  useReactFlow,
+  useEdges,
+  useNodes,
+  addEdge
+} from '@xyflow/react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-import { Pause, Play, Settings, Trash2, Plus } from 'lucide-react'
+import { Pause, Play, Settings, Trash2, Plus, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
 import { NODE_DEFINITIONS } from '@/constants/registry'
 
@@ -18,13 +26,132 @@ import {
   ContextMenuItem,
   ContextMenuTrigger
 } from '@/components/ui/context-menu'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from '@/components/ui/sheet'
+
+import googleDriveIcon from '@/public/google-drive.png'
+import gmailIcon from '@/public/gmail.png'
+import { NODE_TYPES } from '@/constants'
+
+const nodesOptions = [
+  { id: NODE_TYPES.GMAIL, name: 'Gmail', icon: gmailIcon },
+  { id: NODE_TYPES.GOOGLE_DRIVE, name: 'Google Drive', icon: googleDriveIcon }
+]
 
 export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const node = NODE_DEFINITIONS[data.type]
-  const { getEdges } = useReactFlow()
+  const { setNodes, setEdges } = useReactFlow()
+  const edges = useEdges()
+  const nodes = useNodes()
+
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  // Update edge types dynamically based on node positions
+  useEffect(() => {
+    const currentNode = nodes.find((n) => n.id === id)
+    if (!currentNode) return
+
+    // Get current edges - we need to read from the store to avoid stale closures
+    const allEdges = edges
+    const connectedEdges = allEdges.filter(
+      (edge) => edge.source === id || edge.target === id
+    )
+
+    if (connectedEdges.length === 0) return
+
+    // Update edges based on current positions
+    setEdges((eds) =>
+      eds.map((edge) => {
+        // Only update edges connected to this node
+        if (edge.source !== id && edge.target !== id) return edge
+
+        const sourceNode = nodes.find((n) => n.id === edge.source)
+        const targetNode = nodes.find((n) => n.id === edge.target)
+
+        if (!sourceNode || !targetNode) return edge
+
+        const sourceX = sourceNode.position.x
+        const targetX = targetNode.position.x
+        const edgeType =
+          sourceX > targetX ? ('curvy' as const) : ('default' as const)
+
+        // Only update if the type has changed
+        if (edge.type === edgeType) return edge
+
+        return {
+          ...edge,
+          type: edgeType
+        }
+      })
+    )
+  }, [nodes, id, setEdges, edges])
+
+  const addNode = (
+    nodeType: typeof NODE_TYPES.GOOGLE_DRIVE | typeof NODE_TYPES.GMAIL
+  ) => {
+    const currentNode = nodes.find((n) => n.id === id)
+    if (!currentNode) return
+
+    // Position new node at the same Y level and a little to the right
+    const offsetX = 250 // Distance to the right
+    const newNodeId = `n${nodes.length + 1}`
+    const newNode = {
+      id: newNodeId,
+      type: 'custom_node',
+      position: {
+        x: currentNode.position.x + offsetX,
+        y: currentNode.position.y
+      },
+      data: {
+        type: nodeType
+      }
+    }
+
+    // Add the new node
+    setNodes((nds) => [...nds, newNode])
+
+    // Determine edge type based on node positions
+    // If source is to the right (in front) of target, use curvy edge
+    const sourceX = currentNode.position.x
+    const targetX = newNode.position.x
+    const edgeType =
+      sourceX > targetX ? ('curvy' as const) : ('default' as const)
+
+    // Create an edge from the current node to the new node
+    setEdges((eds) =>
+      addEdge(
+        {
+          id: `e${id}-${newNodeId}`,
+          source: id,
+          target: newNodeId,
+          type: edgeType,
+          style: {
+            strokeWidth: 2,
+            stroke: '#9ca3af'
+          },
+          markerEnd: {
+            type: 'arrowclosed' as const,
+            color: '#9ca3af',
+            width: 12,
+            height: 12
+          }
+        },
+        eds
+      )
+    )
+
+    setSheetOpen(false)
+  }
 
   // Check if the source handle is connected
-  const isSourceConnected = getEdges().some((edge) => edge.source === id)
+  // Using useEdges hook ensures the component re-renders when edges change
+  const isSourceConnected = edges.some((edge) => edge.source === id)
 
   return (
     <ContextMenu>
@@ -51,7 +178,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
             <div className='flex items-center gap-3'>
               <div
                 className={`p-3 rounded-xl 
-      bg-gradient-to-br from-white/10 to-white/5 
+      bg-linear-to-br from-white/10 to-white/5 
       shadow-lg shadow-black/10 ring-1 ring-black/5
       aspect-square relative overflow-hidden
     `}
@@ -92,7 +219,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
 
             {/* Right handle - Conditional styling based on connection state */}
             <Handle
-              className='!bg-muted-foreground !border-muted-foreground'
+              className='bg-muted-foreground! border-muted-foreground!'
               style={{
                 width: 8,
                 height: 8,
@@ -104,9 +231,56 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
               {!isSourceConnected && (
                 <div className='flex items-center -translate-y-[12px]'>
                   <div className='min-w-12 ml-1 border-t-2 border-muted-foreground' />
-                  <div className='border-2 p-1 rounded border-muted-foreground'>
-                    <Plus className='text-muted-foreground' size={16} />
-                  </div>
+
+                  <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                    <SheetTrigger asChild>
+                      <div className='border-2 p-1 rounded border-muted-foreground'>
+                        <Plus className='text-muted-foreground' size={16} />
+                      </div>
+                    </SheetTrigger>
+
+                    <SheetContent side='right' className='sm:max-w-md'>
+                      <SheetHeader>
+                        <SheetTitle className='text-lg font-semibold'>
+                          Select a Node
+                        </SheetTitle>
+                        <SheetDescription>
+                          Choose a node and configure it to perform various
+                          tasks
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className='grid gap-3 p-4 pt-2'>
+                        {nodesOptions.map((option) => (
+                          <button
+                            key={option.id}
+                            onClick={() => addNode(option.id)}
+                            className='flex cursor-pointer w-full items-center justify-between rounded-lg border bg-card p-3 text-left transition hover:bg-muted'
+                          >
+                            <div className='flex items-center gap-3'>
+                              <span className='relative h-12 w-12 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900'>
+                                <Image
+                                  src={option.icon}
+                                  alt={option.name}
+                                  fill
+                                  sizes='48px'
+                                  className='object-contain p-2'
+                                />
+                              </span>
+                              <div className='flex flex-col'>
+                                <span className='text-sm font-semibold'>
+                                  {option.name}
+                                </span>
+                                <span className='text-xs text-muted-foreground'>
+                                  Connect and manage secure access
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronRight className='h-4 w-4 text-muted-foreground group-hover:text-accent-foreground' />
+                          </button>
+                        ))}
+                      </div>
+                    </SheetContent>
+                  </Sheet>
                 </div>
               )}
             </Handle>

@@ -37,3 +37,10 @@ export type BaseNodeProps = Node<{
 export const nodeTypes = {
   custom_node: BaseNode
 }
+
+// custom edge types for react flow
+import { CurvyEdge } from '@/components/editor/edge/CurvyEdge'
+
+export const edgeTypes = {
+  curvy: CurvyEdge
+}

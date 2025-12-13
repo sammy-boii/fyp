@@ -93,11 +93,16 @@ export function Dropzone({
 
       {shouldShowPreview ? (
         <div className='relative size-20 '>
-          <Image alt='Preview' src={preview} className='object-cover' fill />
+          <Image
+            alt='Preview'
+            src={preview || ''}
+            className='object-cover'
+            fill
+          />
           <button
             type='button'
             onClick={handleRemove}
-            className='absolute -right-7 -top-2 cursor-pointer rounded-full p-1.5 text-destructive-foreground shadow-sm transition-colors'
+            className='absolute -right-24 -top-3 cursor-pointer rounded-full p-1.5 bg-muted text-destructive-foreground shadow-sm transition-colors'
           >
             <X className='size-4' />
           </button>

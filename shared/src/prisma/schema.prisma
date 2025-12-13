@@ -34,6 +34,7 @@ model OAuthCredential {
   
   provider String
   service String?
+  notes String?
   
   accessToken String
   refreshToken String?

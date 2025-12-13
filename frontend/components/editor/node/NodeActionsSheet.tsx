@@ -44,7 +44,7 @@ export const NodeActionsSheet = ({ node }: { node: SingleNodeDefinition }) => {
 
         <SheetContent className='p-2'>
           <SheetHeader>
-            <div className='mt-4'>
+            <div>
               <h3 className='text-lg font-medium mb-1'>Select Action</h3>
               <p className='text-sm text-muted-foreground'>
                 Choose what you want to do with {node.label}

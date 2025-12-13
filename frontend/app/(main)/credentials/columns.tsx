@@ -19,6 +19,7 @@ import {
   Clock3,
   Copy,
   Eye,
+  FileText,
   Key,
   Lock,
   Pencil,
@@ -42,6 +43,7 @@ export type CredentialRow = {
   id: string
   provider: string
   service?: string | null
+  notes?: string | null
   accessToken: string
   refreshToken?: string | null
   accessTokenExpiresAt: string
@@ -155,6 +157,26 @@ export const columns: ColumnDef<CredentialRow>[] = [
     }
   },
   {
+    accessorKey: 'notes',
+    header: 'Notes',
+    cell: ({ getValue }) => {
+      const notes = getValue() as string | null | undefined
+      if (!notes) {
+        return (
+          <span className='text-sm text-muted-foreground'>No notes</span>
+        )
+      }
+      return (
+        <div className='flex items-center gap-2 text-sm'>
+          <FileText className='h-4 w-4 text-muted-foreground' />
+          <span className='max-w-[200px] truncate' title={notes}>
+            {notes}
+          </span>
+        </div>
+      )
+    }
+  },
+  {
     id: 'actions',
     header: 'Actions',
     cell: ({ row }) => <ActionCell cred={row.original} />
@@ -233,16 +255,28 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
               </DialogDescription>
             </DialogHeader>
             <div className='space-y-6 py-4'>
-              {/* Meta */}
-              <div className='rounded-md bg-muted/30 px-3 py-2 text-sm text-muted-foreground'>
+              {/* Provider and Service */}
+              <div className='space-y-3'>
                 <div className='flex items-center justify-between'>
-                  <span className='font-medium text-foreground'>
+                  <Label className='flex items-center gap-2 text-sm font-medium'>
+                    <Key className='h-4 w-4 text-muted-foreground' />
+                    Provider
+                  </Label>
+                  <div className='rounded-md bg-muted/20 px-3 py-2 text-sm font-medium'>
                     {cred.provider}
-                  </span>
-                  <span>
-                    {cred.service ? `Service: ${cred.service}` : 'No service'}
-                  </span>
+                  </div>
                 </div>
+                {cred.service && (
+                  <div className='flex items-center justify-between'>
+                    <Label className='flex items-center gap-2 text-sm font-medium'>
+                      <ShieldCheck className='h-4 w-4 text-muted-foreground' />
+                      Service
+                    </Label>
+                    <div className='rounded-md bg-muted/20 px-3 py-2 text-sm'>
+                      {cred.service}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Access Token */}
@@ -334,6 +368,21 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                     <span className='text-sm text-muted-foreground'>
                       No scopes available
                     </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className='space-y-2'>
+                <Label className='flex items-center gap-2 text-sm font-medium'>
+                  <FileText className='h-4 w-4 text-muted-foreground' />
+                  Notes
+                </Label>
+                <div className='rounded-md border bg-muted/30 px-3 py-2 text-sm'>
+                  {cred.notes ? (
+                    <p className='whitespace-pre-wrap'>{cred.notes}</p>
+                  ) : (
+                    <span className='text-muted-foreground'>No notes</span>
                   )}
                 </div>
               </div>

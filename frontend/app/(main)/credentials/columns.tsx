@@ -38,6 +38,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip'
+import { useDeleteCredential } from '@/hooks/use-credentials'
 
 export type CredentialRow = {
   id: string
@@ -186,8 +187,10 @@ export const columns: ColumnDef<CredentialRow>[] = [
 function ActionCell({ cred }: { cred: CredentialRow }) {
   const [isViewOpen, setIsViewOpen] = useState(false)
   const [isPasswordOpen, setIsPasswordOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [password, setPassword] = useState('')
   const [tokenToCopy, setTokenToCopy] = useState<string | null>(null)
+  const deleteCredential = useDeleteCredential()
 
   const handleCopyToken = (token: string) => {
     setTokenToCopy(token)
@@ -205,6 +208,18 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
     } else {
       toast.error('Incorrect password')
     }
+  }
+
+  const handleDelete = () => {
+    deleteCredential.mutate(cred.id, {
+      onSuccess: () => {
+        toast.success('Credential deleted successfully')
+        setIsDeleteOpen(false)
+      },
+      onError: (error) => {
+        toast.error(error.message || 'Failed to delete credential')
+      }
+    })
   }
 
   return (
@@ -448,19 +463,51 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
           </TooltipTrigger>
           <TooltipContent>Edit</TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant='ghost'
-              size='icon'
-              className='h-8 w-8 text-destructive hover:text-destructive bg-destructive/10'
-            >
-              <Trash2 className='h-4 w-4' />
-              <span className='sr-only'>Delete</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Delete</TooltipContent>
-        </Tooltip>
+        <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DialogTrigger asChild>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='h-8 w-8 text-destructive hover:text-destructive bg-destructive/10'
+                >
+                  <Trash2 className='h-4 w-4' />
+                  <span className='sr-only'>Delete</span>
+                </Button>
+              </DialogTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Delete</TooltipContent>
+          </Tooltip>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className='flex items-center gap-2'>
+                <Trash2 className='h-5 w-5 text-destructive' />
+                Delete Credential
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this credential? This action
+                cannot be undone and will permanently remove the access token.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant='outline'
+                onClick={() => setIsDeleteOpen(false)}
+                disabled={deleteCredential.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant='destructive'
+                onClick={handleDelete}
+                disabled={deleteCredential.isPending}
+              >
+                {deleteCredential.isPending ? 'Deleting...' : 'Delete'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   )

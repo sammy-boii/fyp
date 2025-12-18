@@ -19,6 +19,12 @@ export async function getCurrentUser() {
       const user = await prisma.user.findUniqueOrThrow({
         where: {
           id: payload.id
+        },
+
+        // relations are not included by default
+        include: {
+          workflows: true,
+          credentials: true
         }
       })
 

@@ -1,4 +1,4 @@
-import { User } from '@shared/prisma/generated/prisma'
+import { User } from '@shared/prisma/generated/prisma/client'
 import 'hono'
 
 declare module 'hono' {

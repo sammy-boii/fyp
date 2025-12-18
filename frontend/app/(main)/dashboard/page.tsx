@@ -115,13 +115,14 @@ const DashboardPage = () => {
     }
   }, [avatarFile, user?.avatar])
 
+  const workflowCount = user?.workflows.length ?? 0
+
   const experienceLabel = useMemo(() => {
-    const count = user?.workflowCount ?? 0
-    if (count >= 20) return 'veteran'
-    if (count >= 10) return 'skilled'
-    if (count >= 3) return 'expert'
+    if (workflowCount >= 20) return 'veteran'
+    if (workflowCount >= 10) return 'skilled'
+    if (workflowCount >= 3) return 'expert'
     return 'novice'
-  }, [user?.workflowCount])
+  }, [workflowCount])
 
   if (isLoading && !user) {
     return <ProfileSkeleton />
@@ -214,7 +215,7 @@ const DashboardPage = () => {
                       >
                         <Workflow className='h-4 w-4' />
                         <span className='font-medium'>
-                          {user?.workflowCount ?? 0} Workflows
+                          {workflowCount} Workflows
                         </span>
                       </Badge>
                     </div>
@@ -317,9 +318,7 @@ const DashboardPage = () => {
               <CardDescription>Most recent workflows</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className='text-3xl font-semibold'>
-                {user?.workflowCount ?? 0}
-              </div>
+              <div className='text-3xl font-semibold'>{workflowCount}</div>
               <p className='text-sm pt-2 text-muted-foreground'>
                 Total created by you
               </p>
@@ -368,10 +367,9 @@ const DashboardPage = () => {
                 </span>
                 <Badge variant={'default'} className='capitalize'>
                   {(() => {
-                    const count = user?.workflowCount ?? 0
-                    if (count >= 20) return 'veteran'
-                    if (count >= 10) return 'Skilled'
-                    if (count >= 3) return 'Expert'
+                    if (workflowCount >= 20) return 'veteran'
+                    if (workflowCount >= 10) return 'Skilled'
+                    if (workflowCount >= 3) return 'Expert'
                     return 'novice'
                   })()}
                 </Badge>

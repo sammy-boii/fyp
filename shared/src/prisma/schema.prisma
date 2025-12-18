@@ -11,41 +11,46 @@ model Workflow {
   id       Int    @id @default(autoincrement())
   authorId String // cuid
   author   User   @relation(fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model User {
-  id              String     @id @default(cuid())
-  name            String
-  email           String     @unique
-  workflows       Workflow[]
-  password        String
-  avatar          String?
-  
-  otp  String?
+  id       String  @id @default(cuid())
+  name     String
+  email    String  @unique
+  password String
+  avatar   String?
+
+  otp          String?
   otpExpiresAt DateTime?
 
+  workflows   Workflow[]
   credentials OAuthCredential[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model OAuthCredential {
-  id String @id @default(cuid())
+  id     String @id @default(cuid())
   userId String
-  user User @relation(fields: [userId], references: [id])
-  
+  user   User   @relation(fields: [userId], references: [id])
+
   provider String
-  service String?
-  notes String?
-  
-  accessToken String
-  refreshToken String?
-  accessTokenExpiresAt DateTime
+  service  String?
+  notes    String?
+
+  accessToken           String
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
-  expiresAt DateTime?
-  scopes String[]
+  scopes                String[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // A user can only have one credential for a unique service from a unique provider
-  @@unique([provider, service, userId]) 
+  @@unique([provider, service, userId])
 }

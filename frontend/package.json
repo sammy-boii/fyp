@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "npx kill-port 3000 && next dev --turbopack",
     "build": "bunx prisma generate --schema ../shared/src/prisma/schema.prisma && next build --turbopack",
     "start": "next start",
     "lint": "eslint"

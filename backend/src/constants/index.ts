@@ -5,9 +5,14 @@ export const BACKEND_BASE_URL =
     ? `http://localhost:${PORT}`
     : `http://localhost:${PORT}`
 
+export const FRONTEND_BASE_URL =
+  Bun.env.NODE_ENV === 'production'
+    ? `http://localhost:3000`
+    : `http://localhost:3000`
+
 export const GMAIL_API_BASE_URL = 'https://gmail.googleapis.com/gmail/v1'
 
-const API_ROUTES = {
+export const API_ROUTES = {
   GMAIL: {
     GET_MESSAGES: GMAIL_API_BASE_URL + `/users/me/messages`,
 
@@ -19,5 +24,3 @@ const API_ROUTES = {
       `/users/me/messages/${messageId}/attachments/${attachmentId}`
   }
 }
-
-export { API_ROUTES }

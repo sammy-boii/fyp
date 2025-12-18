@@ -15,57 +15,79 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle
+} from '@/components/ui/empty'
 import { columns, CredentialRow } from './columns'
 import { DataTable } from './data-table'
+import Link from 'next/link'
+import { useGetCredentials } from '@/hooks/use-credentials'
+import { Skeleton } from '@/components/ui/skeleton'
 
-const dummyCredentials: CredentialRow[] = [
+const credentialOptions = [
   {
-    id: 'cred_1',
-    provider: 'Google',
-    service: 'Sheets',
-    accessToken: 'ya29.a0A6....XyZ9',
-    refreshToken: '1//0gY...abcd',
-    accessTokenExpiresAt: new Date(
-      Date.now() + 1000 * 60 * 60 * 12
-    ).toISOString(),
-    refreshTokenExpiresAt: null,
-    scopes: ['drive.readonly', 'sheets.readonly'],
-    status: 'active'
+    id: 'gmail',
+    name: 'Gmail',
+    icon: gmailIcon,
+    url: 'http://localhost:5000/api/gmail/oauth'
   },
   {
-    id: 'cred_2',
-    provider: 'Notion',
-    service: 'Workspace',
-    accessToken: 'secret_FxP....u81L',
-    refreshToken: null,
-    accessTokenExpiresAt: new Date(
-      Date.now() + 1000 * 60 * 60 * 2
-    ).toISOString(),
-    refreshTokenExpiresAt: null,
-    scopes: ['pages:read', 'databases:query'],
-    status: 'expires-soon'
-  },
-  {
-    id: 'cred_3',
-    provider: 'Slack',
-    service: 'Bot',
-    accessToken: 'xoxb-9....GfP1',
-    refreshToken: null,
-    accessTokenExpiresAt: new Date(
-      Date.now() - 1000 * 60 * 60 * 24
-    ).toISOString(),
-    refreshTokenExpiresAt: null,
-    scopes: ['chat:write', 'channels:history'],
-    status: 'revoked'
+    id: 'google-drive',
+    name: 'Google Drive',
+    icon: googleDriveIcon,
+    url: 'http://localhost:5000/api/gmail/oauth'
   }
 ]
 
-const credentialOptions = [
-  { id: 'gmail', name: 'Gmail', icon: gmailIcon },
-  { id: 'google-drive', name: 'Google Drive', icon: googleDriveIcon }
-]
-
 export default function CredentialsPage() {
+  const { data, isLoading, isError } = useGetCredentials()
+
+  const apiCredentials = data?.data ?? []
+
+  const rows: CredentialRow[] =
+    apiCredentials?.map((cred: any) => {
+      const accessTokenExpiresAt = cred.accessTokenExpiresAt
+        ? String(cred.accessTokenExpiresAt)
+        : ''
+
+      const refreshTokenExpiresAt = cred.refreshTokenExpiresAt
+        ? String(cred.refreshTokenExpiresAt)
+        : null
+
+      // Derive a simple status from access token expiry
+      let status: CredentialRow['status'] = 'active'
+      if (!accessTokenExpiresAt) {
+        status = 'revoked'
+      } else {
+        const now = new Date()
+        const exp = new Date(accessTokenExpiresAt)
+
+        if (Number.isNaN(exp.getTime()) || exp < now) {
+          status = 'revoked'
+        } else {
+          const threeDaysFromNow = now.getTime() + 3 * 24 * 60 * 60 * 1000
+          status = exp.getTime() < threeDaysFromNow ? 'expires-soon' : 'active'
+        }
+      }
+
+      return {
+        id: cred.id,
+        provider: cred.provider,
+        service: cred.service ?? null,
+        notes: cred.notes ?? null,
+        accessToken: cred.accessToken,
+        refreshToken: cred.refreshToken ?? null,
+        accessTokenExpiresAt,
+        refreshTokenExpiresAt,
+        scopes: cred.scopes ?? [],
+        status
+      } satisfies CredentialRow
+    }) ?? []
+
   return (
     <div className='w-full bg-background'>
       <div className='mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 md:px-10'>
@@ -102,8 +124,9 @@ export default function CredentialsPage() {
               </SheetHeader>
               <div className='grid gap-3 p-4 pt-2'>
                 {credentialOptions.map((option) => (
-                  <button
+                  <Link
                     key={option.id}
+                    href={option.url}
                     className='flex cursor-pointer w-full items-center justify-between rounded-lg border bg-card p-3 text-left transition hover:bg-muted'
                   >
                     <div className='flex items-center gap-3'>
@@ -126,14 +149,74 @@ export default function CredentialsPage() {
                       </div>
                     </div>
                     <ChevronRight className='h-4 w-4 text-muted-foreground group-hover:text-accent-foreground' />
-                  </button>
+                  </Link>
                 ))}
               </div>
             </SheetContent>
           </Sheet>
         </header>
 
-        <DataTable columns={columns} data={dummyCredentials} />
+        {isLoading ? (
+          <div className='space-y-3'>
+            <div className='rounded-lg border'>
+              <div className='border-b px-6 py-4'>
+                <Skeleton className='h-4 w-full' />
+              </div>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className='flex items-center gap-4 border-b px-6 py-4 last:border-b-0'
+                >
+                  <Skeleton className='h-10 w-10 rounded-md' />
+                  <div className='flex-1 space-y-2'>
+                    <Skeleton className='h-4 w-1/4' />
+                    <Skeleton className='h-3 w-1/3' />
+                  </div>
+                  <Skeleton className='h-6 w-20 rounded-full' />
+                  <Skeleton className='h-4 w-32' />
+                  <Skeleton className='h-4 w-24' />
+                  <div className='flex gap-2'>
+                    <Skeleton className='h-8 w-8 rounded-md' />
+                    <Skeleton className='h-8 w-8 rounded-md' />
+                    <Skeleton className='h-8 w-8 rounded-md' />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : isError || data?.error ? (
+          <div className='flex min-h-[60vh] items-center justify-center'>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant='icon'>
+                  <KeyRound className='h-6 w-6' />
+                </EmptyMedia>
+                <EmptyTitle>Unable to load credentials</EmptyTitle>
+                <EmptyDescription>
+                  There was a problem fetching your credentials. Please try
+                  refreshing the page.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </div>
+        ) : rows.length === 0 ? (
+          <div className='flex min-h-[60vh] items-center justify-center'>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant='icon'>
+                  <KeyRound className='h-6 w-6' />
+                </EmptyMedia>
+                <EmptyTitle>No credentials connected yet</EmptyTitle>
+                <EmptyDescription>
+                  Connect a provider to securely store and manage your access
+                  tokens.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </div>
+        ) : (
+          <DataTable columns={columns} data={rows} />
+        )}
       </div>
     </div>
   )

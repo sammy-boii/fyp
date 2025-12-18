@@ -34,7 +34,6 @@ export async function uploadCloudinaryImage(file: File) {
     formData.append('api_key', sig.apiKey)
     formData.append('upload_preset', sig.uploadPreset)
 
-    // Step 3: upload to Cloudinary
     const res = await fetch(
       `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`,
       { method: 'POST', body: formData }

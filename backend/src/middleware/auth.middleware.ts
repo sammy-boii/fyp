@@ -4,7 +4,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken'
 import { getCookie } from 'hono/cookie'
 
 export const authMiddleware = async (c: Context, next: Next) => {
-  // we up now😏
+  // we up now 😏
   const token = getCookie(c, 'token')
 
   if (!token) {

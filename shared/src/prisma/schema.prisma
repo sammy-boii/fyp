@@ -12,8 +12,56 @@ model Workflow {
   authorId String // cuid
   author   User   @relation(fields: [authorId], references: [id])
 
+  name        String?
+  description String?
+  status      String  @default("inactive") // active, inactive, paused
+  nodes       Json // React Flow nodes
+  edges       Json // React Flow edges
+
+  executions WorkflowExecution[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model WorkflowExecution {
+  id         String   @id @default(cuid())
+  workflowId Int
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  status String  @default("running") // running, completed, failed, cancelled
+  error  String?
+
+  nodeExecutions NodeExecution[]
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model NodeExecution {
+  id          String            @id @default(cuid())
+  executionId String
+  execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  nodeId     String // React Flow node ID
+  nodeType   String // GMAIL, GOOGLE_DRIVE, etc.
+  actionId   String // send_email, read_email, etc.
+  config     Json // Node configuration/parameters
+  inputData  Json? // Data from previous nodes
+  outputData Json? // Output data from this node
+  error      String?
+
+  status String @default("pending") // pending, running, completed, failed
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([executionId])
+  @@index([nodeId])
 }
 
 model User {

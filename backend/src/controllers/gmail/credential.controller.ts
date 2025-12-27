@@ -11,6 +11,9 @@ export const addOrUpdateCredential = tryCatch(async (c) => {
   const refreshToken = c.get('refresh-token')
   const scopes = c.get('granted-scopes')
 
+  console.log('GOOGLE', refreshToken)
+  console.log('GOOGLE', accessToken)
+
   if (!googleUser?.email) {
     throw new AppError('Google user not found', 400)
   }

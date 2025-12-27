@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { ColumnDef } from '@tanstack/react-table'
 import {
   CheckCircle2,
@@ -38,7 +39,10 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip'
-import { useDeleteCredential } from '@/hooks/use-credentials'
+import {
+  useDeleteCredential,
+  useUpdateCredential
+} from '@/hooks/use-credentials'
 
 export type CredentialRow = {
   id: string
@@ -163,9 +167,7 @@ export const columns: ColumnDef<CredentialRow>[] = [
     cell: ({ getValue }) => {
       const notes = getValue() as string | null | undefined
       if (!notes) {
-        return (
-          <span className='text-sm text-muted-foreground'>No notes</span>
-        )
+        return <span className='text-sm text-muted-foreground'>No notes</span>
       }
       return (
         <div className='flex items-center gap-2 text-sm'>
@@ -188,9 +190,12 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
   const [isViewOpen, setIsViewOpen] = useState(false)
   const [isPasswordOpen, setIsPasswordOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
   const [password, setPassword] = useState('')
+  const [notes, setNotes] = useState(cred.notes || '')
   const [tokenToCopy, setTokenToCopy] = useState<string | null>(null)
   const deleteCredential = useDeleteCredential()
+  const updateCredential = useUpdateCredential()
 
   const handleCopyToken = (token: string) => {
     setTokenToCopy(token)
@@ -222,6 +227,28 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
     })
   }
 
+  const handleEditSubmit = () => {
+    updateCredential.mutate(
+      { id: cred.id, notes: notes.trim() || null },
+      {
+        onSuccess: () => {
+          toast.success('Credential updated successfully')
+          setIsEditOpen(false)
+        },
+        onError: (error) => {
+          toast.error(error.message || 'Failed to update credential')
+        }
+      }
+    )
+  }
+
+  const handleEditOpenChange = (open: boolean) => {
+    setIsEditOpen(open)
+    if (open) {
+      setNotes(cred.notes || '')
+    }
+  }
+
   return (
     <TooltipProvider delayDuration={50}>
       <div className='flex items-center gap-2'>
@@ -245,7 +272,9 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
             <DialogHeader>
               <div className='flex items-center gap-4'>
                 <DialogTitle className='flex items-center gap-2'>
-                  <Key className='h-5 w-5' />
+                  <div className='p-2 rounded-md bg-muted/80'>
+                    <Key className='size-5' />
+                  </div>
                   Token Information
                 </DialogTitle>
                 <Badge className={statusTone[cred.status]} variant='outline'>
@@ -450,19 +479,70 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant='ghost'
-              size='icon'
-              className='bg-blue-500/15! h-8 w-8'
-            >
-              <Pencil className='h-4 w-4' />
-              <span className='sr-only'>Edit</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Edit</TooltipContent>
-        </Tooltip>
+        <Dialog open={isEditOpen} onOpenChange={handleEditOpenChange}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DialogTrigger asChild>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='bg-blue-500/15! h-8 w-8'
+                >
+                  <Pencil className='h-4 w-4' />
+                  <span className='sr-only'>Edit</span>
+                </Button>
+              </DialogTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Edit</TooltipContent>
+          </Tooltip>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className='flex items-center gap-2'>
+                <div className='p-2 rounded-md bg-muted/80'>
+                  <Pencil className='size-5' />
+                </div>
+                Edit Credential
+              </DialogTitle>
+              <DialogDescription>
+                Update the notes for this credential to help you remember its
+                purpose or usage.
+              </DialogDescription>
+            </DialogHeader>
+            <div className='space-y-4'>
+              <div className='space-y-4'>
+                <Label htmlFor='notes'>Notes</Label>
+                <Textarea
+                  id='notes'
+                  placeholder='Enter notes for this credential...'
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={5}
+                  className='resize-none'
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                hideLoader
+                variant='outline'
+                onClick={() => {
+                  setIsEditOpen(false)
+                  setNotes(cred.notes || '')
+                }}
+                disabled={updateCredential.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                className='w-28'
+                onClick={handleEditSubmit}
+                disabled={updateCredential.isPending}
+              >
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -482,7 +562,9 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
           <DialogContent>
             <DialogHeader>
               <DialogTitle className='flex items-center gap-2'>
-                <Trash2 className='h-5 w-5 text-destructive' />
+                <div className='p-2 rounded-md bg-destructive/20'>
+                  <Trash2 className='size-5 text-destructive' />
+                </div>
                 Delete Credential
               </DialogTitle>
               <DialogDescription>
@@ -493,17 +575,19 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
             <DialogFooter>
               <Button
                 variant='outline'
+                hideLoader
                 onClick={() => setIsDeleteOpen(false)}
                 disabled={deleteCredential.isPending}
               >
                 Cancel
               </Button>
               <Button
+                className='w-18'
                 variant='destructive'
                 onClick={handleDelete}
                 disabled={deleteCredential.isPending}
               >
-                {deleteCredential.isPending ? 'Deleting...' : 'Delete'}
+                Delete
               </Button>
             </DialogFooter>
           </DialogContent>

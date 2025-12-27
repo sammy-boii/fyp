@@ -48,6 +48,8 @@ export default function CredentialsPage() {
 
   const apiCredentials = data?.data ?? []
 
+  console.log(apiCredentials)
+
   const rows: CredentialRow[] =
     apiCredentials?.map((cred: any) => {
       const accessTokenExpiresAt = cred.accessTokenExpiresAt
@@ -58,19 +60,43 @@ export default function CredentialsPage() {
         ? String(cred.refreshTokenExpiresAt)
         : null
 
-      // Derive a simple status from access token expiry
+      // Derive status: prioritize refresh token, fall back to access token
       let status: CredentialRow['status'] = 'active'
-      if (!accessTokenExpiresAt) {
-        status = 'revoked'
-      } else {
-        const now = new Date()
-        const exp = new Date(accessTokenExpiresAt)
 
-        if (Number.isNaN(exp.getTime()) || exp < now) {
+      // First check if refresh token exists
+      if (cred.refreshToken) {
+        // If refresh token exists but expiry is null, it never expires
+        if (refreshTokenExpiresAt === null) {
+          status = 'active'
+        } else if (!refreshTokenExpiresAt) {
           status = 'revoked'
         } else {
-          const threeDaysFromNow = now.getTime() + 3 * 24 * 60 * 60 * 1000
-          status = exp.getTime() < threeDaysFromNow ? 'expires-soon' : 'active'
+          const now = new Date()
+          const exp = new Date(refreshTokenExpiresAt)
+
+          if (Number.isNaN(exp.getTime()) || exp < now) {
+            status = 'revoked'
+          } else {
+            const threeDaysFromNow = now.getTime() + 3 * 24 * 60 * 60 * 1000
+            status =
+              exp.getTime() < threeDaysFromNow ? 'expires-soon' : 'active'
+          }
+        }
+      } else {
+        // No refresh token, fall back to access token expiry
+        if (!accessTokenExpiresAt) {
+          status = 'revoked'
+        } else {
+          const now = new Date()
+          const exp = new Date(accessTokenExpiresAt)
+
+          if (Number.isNaN(exp.getTime()) || exp < now) {
+            status = 'revoked'
+          } else {
+            const threeDaysFromNow = now.getTime() + 3 * 24 * 60 * 60 * 1000
+            status =
+              exp.getTime() < threeDaysFromNow ? 'expires-soon' : 'active'
+          }
         }
       }
 
@@ -203,10 +229,12 @@ export default function CredentialsPage() {
           <div className='flex min-h-[60vh] items-center justify-center'>
             <Empty>
               <EmptyHeader>
-                <EmptyMedia variant='icon'>
-                  <KeyRound className='h-6 w-6' />
+                <EmptyMedia variant={'icon'}>
+                  <KeyRound className='' />
                 </EmptyMedia>
-                <EmptyTitle>No credentials connected yet</EmptyTitle>
+                <EmptyTitle className='opacity-90'>
+                  No Credentials Connected Yet
+                </EmptyTitle>
                 <EmptyDescription>
                   Connect a provider to securely store and manage your access
                   tokens.

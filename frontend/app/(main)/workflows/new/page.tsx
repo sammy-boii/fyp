@@ -12,7 +12,8 @@ import {
 } from '@xyflow/react'
 
 import Image from 'next/image'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Save } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 import type {
   Node,
@@ -32,9 +33,22 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import { Plus } from 'lucide-react'
 import googleDriveIcon from '@/public/google-drive.png'
 import gmailIcon from '@/public/gmail.png'
+import { useCreateWorkflow } from '@/hooks/use-workflows'
+import { toast } from 'sonner'
 
 const nodesOptions = [
   { id: NODE_TYPES.GMAIL, name: 'Gmail', icon: gmailIcon },
@@ -42,11 +56,15 @@ const nodesOptions = [
 ]
 
 export default function WorkflowPage() {
+  const router = useRouter()
   const initialNodes: Node[] = []
 
   const [nodes, setNodes] = useState(initialNodes)
   const [edges, setEdges] = useState<Edge[]>([])
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  const [workflowName, setWorkflowName] = useState('')
+  const createWorkflow = useCreateWorkflow()
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -95,8 +113,54 @@ export default function WorkflowPage() {
     setSheetOpen(false)
   }
 
+  const handleSave = () => {
+    if (!workflowName.trim()) {
+      toast.error('Please enter a workflow name')
+      return
+    }
+
+    if (nodes.length === 0) {
+      toast.error('Please add at least one node to the workflow')
+      return
+    }
+
+    createWorkflow.mutate(
+      {
+        name: workflowName.trim(),
+        nodes,
+        edges,
+        status: 'inactive'
+      },
+      {
+        onSuccess: (result) => {
+          if (result?.data) {
+            toast.success('Workflow saved successfully')
+            router.push('/workflows')
+          } else if (result?.error) {
+            toast.error(result.error.message || 'Failed to save workflow')
+          }
+        },
+        onError: (error) => {
+          toast.error(error.message || 'Failed to save workflow')
+        }
+      }
+    )
+  }
+
   return (
     <div className='w-full h-screen relative'>
+      {/* Save Button */}
+      <div className='absolute top-4 right-4 z-10'>
+        <Button
+          onClick={() => setSaveDialogOpen(true)}
+          className='gap-2'
+          disabled={createWorkflow.isPending}
+        >
+          <Save className='h-4 w-4' />
+          Save Workflow
+        </Button>
+      </div>
+
       <ReactFlow
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -174,6 +238,52 @@ export default function WorkflowPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Save Dialog */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Workflow</DialogTitle>
+            <DialogDescription>
+              Give your workflow a name to save it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4 py-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='workflow-name'>Workflow Name</Label>
+              <Input
+                id='workflow-name'
+                placeholder='My Awesome Workflow'
+                value={workflowName}
+                onChange={(e) => setWorkflowName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSave()
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => {
+                setSaveDialogOpen(false)
+                setWorkflowName('')
+              }}
+              disabled={createWorkflow.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={createWorkflow.isPending || !workflowName.trim()}
+            >
+              {createWorkflow.isPending ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

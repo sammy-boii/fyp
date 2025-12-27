@@ -6,58 +6,30 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { columns, WorkflowRow } from './columns'
 import { DataTable } from './data-table'
-
-const dummyWorkflows: WorkflowRow[] = [
-  {
-    id: 1,
-    name: 'Email to Drive Backup',
-    lastExecutedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-    nodeCount: 5,
-    status: 'active',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() // 2 hours ago
-  },
-  {
-    id: 2,
-    name: 'Slack Notifications',
-    lastExecutedAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3 hours ago
-    nodeCount: 3,
-    status: 'active',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(), // 14 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString() // 5 hours ago
-  },
-  {
-    id: 3,
-    name: 'Data Sync Workflow',
-    lastExecutedAt: null, // Never executed
-    nodeCount: 8,
-    status: 'paused',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1 day ago
-  },
-  {
-    id: 4,
-    name: 'Weekly Report Generator',
-    lastExecutedAt: new Date(
-      Date.now() - 1000 * 60 * 60 * 24 * 2
-    ).toISOString(), // 2 days ago
-    nodeCount: 6,
-    status: 'inactive',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(), // 30 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() // 2 days ago
-  },
-  {
-    id: 5,
-    name: 'Automated File Processor',
-    lastExecutedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 mins ago
-    nodeCount: 4,
-    status: 'active',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(), // 10 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 10).toISOString() // 10 mins ago
-  }
-]
+import { useGetWorkflows } from '@/hooks/use-workflows'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle
+} from '@/components/ui/empty'
 
 export default function WorkflowsPage() {
+  const { data, isLoading, isError } = useGetWorkflows()
+
+  const workflows: WorkflowRow[] =
+    data?.data?.map((w: any) => ({
+      id: w.id,
+      name: w.name,
+      lastExecutedAt: w.lastExecutedAt,
+      nodeCount: w.nodeCount,
+      status: w.status,
+      createdAt: w.createdAt,
+      updatedAt: w.updatedAt
+    })) ?? []
+
   return (
     <div className='w-full bg-background'>
       <div className='mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 md:px-10'>
@@ -83,7 +55,66 @@ export default function WorkflowsPage() {
           </Button>
         </header>
 
-        <DataTable columns={columns} data={dummyWorkflows} />
+        {isLoading ? (
+          <div className='space-y-3'>
+            <div className='rounded-lg border'>
+              <div className='border-b px-6 py-4'>
+                <Skeleton className='h-4 w-full' />
+              </div>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className='flex items-center gap-4 border-b px-6 py-4 last:border-b-0'
+                >
+                  <Skeleton className='h-10 w-10 rounded-md' />
+                  <div className='flex-1 space-y-2'>
+                    <Skeleton className='h-4 w-1/4' />
+                    <Skeleton className='h-3 w-1/3' />
+                  </div>
+                  <Skeleton className='h-6 w-20 rounded-full' />
+                  <Skeleton className='h-4 w-32' />
+                  <Skeleton className='h-4 w-24' />
+                  <div className='flex gap-2'>
+                    <Skeleton className='h-8 w-8 rounded-md' />
+                    <Skeleton className='h-8 w-8 rounded-md' />
+                    <Skeleton className='h-8 w-8 rounded-md' />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : isError || data?.error ? (
+          <div className='flex min-h-[60vh] items-center justify-center'>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant='icon'>
+                  <Workflow className='h-6 w-6' />
+                </EmptyMedia>
+                <EmptyTitle>Unable to load workflows</EmptyTitle>
+                <EmptyDescription>
+                  There was a problem fetching your workflows. Please try
+                  refreshing the page.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </div>
+        ) : workflows.length === 0 ? (
+          <div className='flex min-h-[60vh] items-center justify-center'>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant='icon'>
+                  <Workflow className='h-6 w-6' />
+                </EmptyMedia>
+                <EmptyTitle>No workflows yet</EmptyTitle>
+                <EmptyDescription>
+                  Create your first workflow to automate your tasks.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </div>
+        ) : (
+          <DataTable columns={columns} data={workflows} />
+        )}
       </div>
     </div>
   )

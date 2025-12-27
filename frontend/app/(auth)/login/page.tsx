@@ -53,7 +53,7 @@ export default function LoginPage() {
       }
 
       toast.success('Logged in successfully')
-      router.replace('/')
+      router.replace('/dashboard')
     })
   }
 

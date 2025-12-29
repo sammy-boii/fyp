@@ -11,14 +11,9 @@ export const addOrUpdateCredential = tryCatch(async (c) => {
   const refreshToken = c.get('refresh-token')
   const scopes = c.get('granted-scopes')
 
-  console.log('GOOGLE', refreshToken)
-  console.log('GOOGLE', accessToken)
-
   if (!googleUser?.email) {
     throw new AppError('Google user not found', 400)
   }
-
-  console.log('USEER', user)
 
   if (!accessToken?.token || !refreshToken?.token) {
     throw new AppError('Access or refresh token not provided', 400)
@@ -48,7 +43,8 @@ export const addOrUpdateCredential = tryCatch(async (c) => {
       refreshToken: encryptedRefreshToken,
       accessTokenExpiresAt,
       refreshTokenExpiresAt,
-      scopes
+      scopes,
+      notes: null
     },
     create: {
       userId: user.id,

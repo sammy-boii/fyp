@@ -48,8 +48,6 @@ export default function CredentialsPage() {
 
   const apiCredentials = data?.data ?? []
 
-  console.log(apiCredentials)
-
   const rows: CredentialRow[] =
     apiCredentials?.map((cred: any) => {
       const accessTokenExpiresAt = cred.accessTokenExpiresAt

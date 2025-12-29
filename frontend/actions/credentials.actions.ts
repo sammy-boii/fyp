@@ -13,7 +13,13 @@ export async function getCredentials() {
       throw new Error('Not authenticated')
     }
 
-    return user.credentials
+    const credentials = await prisma.oAuthCredential.findMany({
+      where: {
+        userId: user.id
+      }
+    })
+
+    return credentials
   })
 }
 

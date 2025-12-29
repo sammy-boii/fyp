@@ -35,7 +35,7 @@ export const NodeActionsSheet = ({ node }: { node: SingleNodeDefinition }) => {
           <Button
             size='sm'
             variant='outline'
-            className='h-6 w-6 p-0 bg-background/90 backdrop-blur-sm border-border/60 hover:bg-accent'
+            className='h-6 w-6 p-0 bg-background/90 backdrop-blur-sm border-border/60 hover:bg-primary/10 hover:border-primary/50 hover:text-primary'
             onClick={() => setOpenActionsSheet((prev) => !prev)}
           >
             <Settings className='h-3.5 w-3.5' />

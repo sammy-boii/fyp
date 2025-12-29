@@ -6,7 +6,7 @@
 
 - shadcnUI is used for base styles.
 
-- Refer to the latest and best practices
+- Refer to the latest and best practices libraries
 
 - Use NextJS 15 conventions
 
@@ -17,5 +17,7 @@
 - Follow the existing theme and styles
   
 - Use existing themes and variables to make sure theme stays consistent
+
+- Keep things modular. Make sure to use the existing folders to seperate logics and schemas and types and functions and constants.
 
 

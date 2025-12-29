@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 
 import { Pause, Play, Settings, Trash2, Plus, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
 import { NODE_DEFINITIONS } from '@/constants/registry'
 
@@ -34,6 +34,15 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
 
 import googleDriveIcon from '@/public/google-drive.png'
 import gmailIcon from '@/public/gmail.png'
@@ -51,46 +60,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const nodes = useNodes()
 
   const [sheetOpen, setSheetOpen] = useState(false)
-
-  // Update edge types dynamically based on node positions
-  useEffect(() => {
-    const currentNode = nodes.find((n) => n.id === id)
-    if (!currentNode) return
-
-    // Get current edges - we need to read from the store to avoid stale closures
-    const allEdges = edges
-    const connectedEdges = allEdges.filter(
-      (edge) => edge.source === id || edge.target === id
-    )
-
-    if (connectedEdges.length === 0) return
-
-    // Update edges based on current positions
-    setEdges((eds) =>
-      eds.map((edge) => {
-        // Only update edges connected to this node
-        if (edge.source !== id && edge.target !== id) return edge
-
-        const sourceNode = nodes.find((n) => n.id === edge.source)
-        const targetNode = nodes.find((n) => n.id === edge.target)
-
-        if (!sourceNode || !targetNode) return edge
-
-        const sourceX = sourceNode.position.x
-        const targetX = targetNode.position.x
-        const edgeType =
-          sourceX > targetX ? ('curvy' as const) : ('default' as const)
-
-        // Only update if the type has changed
-        if (edge.type === edgeType) return edge
-
-        return {
-          ...edge,
-          type: edgeType
-        }
-      })
-    )
-  }, [nodes, id, setEdges, edges])
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const addNode = (
     nodeType: typeof NODE_TYPES.GOOGLE_DRIVE | typeof NODE_TYPES.GMAIL
@@ -98,9 +68,13 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     const currentNode = nodes.find((n) => n.id === id)
     if (!currentNode) return
 
+    // Generate unique node ID using timestamp
+    const newNodeId = `n${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`
+
     // Position new node at the same Y level and a little to the right
     const offsetX = 250 // Distance to the right
-    const newNodeId = `n${nodes.length + 1}`
     const newNode = {
       id: newNodeId,
       type: 'custom_node',
@@ -116,13 +90,6 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     // Add the new node
     setNodes((nds) => [...nds, newNode])
 
-    // Determine edge type based on node positions
-    // If source is to the right (in front) of target, use curvy edge
-    const sourceX = currentNode.position.x
-    const targetX = newNode.position.x
-    const edgeType =
-      sourceX > targetX ? ('curvy' as const) : ('default' as const)
-
     // Create an edge from the current node to the new node
     setEdges((eds) =>
       addEdge(
@@ -130,7 +97,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
           id: `e${id}-${newNodeId}`,
           source: id,
           target: newNodeId,
-          type: edgeType,
+          type: 'default',
           style: {
             strokeWidth: 2,
             stroke: '#9ca3af'
@@ -153,19 +120,57 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   // Using useEdges hook ensures the component re-renders when edges change
   const isSourceConnected = edges.some((edge) => edge.source === id)
 
+  const handleDelete = () => {
+    // Remove the node and all connected edges directly
+    setNodes((nds) => nds.filter((n) => n.id !== id))
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id))
+
+    setDeleteDialogOpen(false)
+  }
+
   return (
     <ContextMenu>
       <ContextMenuTrigger>
         <div className='relative group'>
           <div className='absolute -top-5 right-0 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center'>
             <NodeActionsSheet node={node} />
-            <Button
-              size='sm'
-              variant='outline'
-              className='h-6 w-6 p-0 bg-background/90 backdrop-blur-sm border-border/60 '
-            >
-              <Trash2 className='h-3.5 w-3.5' />
-            </Button>
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  className='h-6 w-6 p-0 bg-background/90 backdrop-blur-sm border-border/60 hover:bg-destructive/10 hover:border-destructive/50 hover:text-destructive'
+                >
+                  <Trash2 className='h-3.5 w-3.5' />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className='flex items-center gap-2'>
+                    <div className='p-2 rounded-md bg-destructive/20'>
+                      <Trash2 className='size-5 text-destructive' />
+                    </div>
+                    Delete Node
+                  </DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete this node? This action
+                    cannot be undone and will remove all connections to this
+                    node.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    variant='outline'
+                    onClick={() => setDeleteDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button variant='destructive' onClick={handleDelete}>
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <Card
@@ -208,10 +213,10 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
               type='target'
               position={Position.Left}
               style={{
-                width: '6px',
-                borderRadius: '2px 0px 0px 2px',
-                height: '22px',
-                left: '-3px',
+                width: '10px',
+                borderRadius: '4px 0px 0px 4px',
+                height: '28px',
+                left: '-5px',
                 border: 'none',
                 background: 'gray'
               }}
@@ -221,8 +226,8 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
             <Handle
               className='bg-muted-foreground! border-muted-foreground!'
               style={{
-                width: 8,
-                height: 8,
+                width: 14,
+                height: 14,
                 cursor: isSourceConnected ? 'crosshair' : 'pointer'
               }}
               type='source'

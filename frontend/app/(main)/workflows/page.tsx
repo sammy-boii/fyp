@@ -32,7 +32,7 @@ export default function WorkflowsPage() {
 
   return (
     <div className='w-full bg-background'>
-      <div className='mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 md:px-10'>
+      <div className='mx-auto flex flex-col gap-6 p-8'>
         <header className='flex flex-wrap items-center justify-between gap-3'>
           <div className='flex items-center gap-3'>
             <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10'>

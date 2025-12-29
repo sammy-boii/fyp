@@ -23,7 +23,7 @@ export function useGetWorkflows() {
   })
 }
 
-export function useGetWorkflow(id: number | null) {
+export function useGetWorkflow(id: string | null) {
   return useQuery({
     queryKey: ['workflow', id],
     queryFn: () => (id ? getWorkflow(id) : null),
@@ -54,7 +54,7 @@ export function useUpdateWorkflow() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<WorkflowData> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<WorkflowData> }) =>
       updateWorkflow(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
@@ -71,7 +71,7 @@ export function useDeleteWorkflow() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: number) => deleteWorkflow(id),
+    mutationFn: (id: string) => deleteWorkflow(id),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['workflows']

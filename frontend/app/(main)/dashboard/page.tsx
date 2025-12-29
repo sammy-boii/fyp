@@ -12,7 +12,6 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
   DialogClose,
@@ -115,7 +114,7 @@ const DashboardPage = () => {
     }
   }, [avatarFile, user?.avatar])
 
-  const workflowCount = user?.workflows.length ?? 0
+  const workflowCount = user?.workflowsCount ?? 0
 
   const experienceLabel = useMemo(() => {
     if (workflowCount >= 20) return 'veteran'
@@ -334,7 +333,7 @@ const DashboardPage = () => {
             </CardHeader>
             <CardContent>
               <div className='text-3xl font-semibold'>
-                {user?.credentials?.length ?? 0}
+                {user?.credentialsCount ?? 0}
               </div>
               <p className='text-sm pt-2 text-muted-foreground'>
                 Providers linked to this account

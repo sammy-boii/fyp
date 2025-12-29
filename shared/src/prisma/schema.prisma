@@ -7,37 +7,74 @@ datasource db {
   provider = "postgresql"
 }
 
+enum WorkflowStatus {
+  ACTIVE
+  INACTIVE
+  PAUSED
+}
+
+enum NodeExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum WorkflowExecutionStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum TriggerType {
+  MANUAL
+  SCHEDULED
+  WEBHOOK
+}
+
 model Workflow {
-  id       Int    @id @default(autoincrement())
-  authorId String // cuid
+  id       String @id @default(cuid())
+  authorId String
   author   User   @relation(fields: [authorId], references: [id])
 
-  name        String?
+  name        String
   description String?
-  status      String  @default("inactive") // active, inactive, paused
-  nodes       Json // React Flow nodes
-  edges       Json // React Flow edges
+  status      WorkflowStatus @default(INACTIVE)
+  nodes       Json
+  edges       Json
 
   executions WorkflowExecution[]
 
+  schedule String? // cron expression
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([authorId, status])
 }
 
 model WorkflowExecution {
   id         String   @id @default(cuid())
-  workflowId Int
+  workflowId String
   workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
-  status String  @default("running") // running, completed, failed, cancelled
+  status WorkflowExecutionStatus @default(RUNNING)
   error  String?
 
   nodeExecutions NodeExecution[]
 
-  startedAt   DateTime  @default(now())
+  triggerType TriggerType @default(MANUAL)
+  duration    Int? // Execution time in ms
+
   completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // FK are not indexed by default
+  @@index([workflowId, createdAt]) // workflowId can be filtered individually or with createdAt but createdAt can't be filtered individually
+  @@index([status])
 }
 
 model NodeExecution {
@@ -45,15 +82,15 @@ model NodeExecution {
   executionId String
   execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
 
-  nodeId     String // React Flow node ID
-  nodeType   String // GMAIL, GOOGLE_DRIVE, etc.
-  actionId   String // send_email, read_email, etc.
-  config     Json // Node configuration/parameters
-  inputData  Json? // Data from previous nodes
-  outputData Json? // Output data from this node
+  nodeId     String
+  nodeType   String
+  actionId   String
+  config     Json
+  inputData  Json?
+  outputData Json?
   error      String?
 
-  status String @default("pending") // pending, running, completed, failed
+  status NodeExecutionStatus @default(PENDING)
 
   startedAt   DateTime?
   completedAt DateTime?
@@ -90,8 +127,8 @@ model OAuthCredential {
   service  String?
   notes    String?
 
-  accessToken           String
-  refreshToken          String?
+  accessToken           String    @db.Text // strings are mapped to text by default
+  refreshToken          String?   @db.Text
   accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
   scopes                String[]
@@ -101,4 +138,5 @@ model OAuthCredential {
 
   // A user can only have one credential for a unique service from a unique provider
   @@unique([provider, service, userId])
+  @@index([userId])
 }

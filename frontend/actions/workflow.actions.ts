@@ -3,70 +3,26 @@
 import { prisma } from '@shared/db/prisma'
 import { tryCatch } from '@/lib/utils'
 import { getCurrentUser } from '@/data/dal'
-import { z } from 'zod'
-
-const workflowSchema = z.object({
-  name: z.string().optional(),
-  description: z.string().optional(),
-  status: z.enum(['active', 'inactive', 'paused']).optional(),
-  nodes: z.array(z.any()),
-  edges: z.array(z.any())
-})
-
-const createWorkflowSchema = workflowSchema.extend({
-  name: z.string().min(1, 'Workflow name is required')
-})
+import { workflowSchema } from '@/schema/workflow.schema'
 
 export async function getWorkflows() {
   return tryCatch(async () => {
     const user = await getCurrentUser()
 
-    console.log('USER', user)
     if (!user) {
       throw new Error('Not authenticated')
     }
 
     const workflows = await prisma.workflow.findMany({
       where: { authorId: user.id },
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        _count: {
-          select: { executions: true }
-        }
-      }
+      orderBy: { updatedAt: 'desc' }
     })
 
-    // Get the last execution for each workflow
-    const workflowsWithLastExecution = await Promise.all(
-      workflows.map(async (workflow) => {
-        const lastExecution = await prisma.workflowExecution.findFirst({
-          where: { workflowId: workflow.id },
-          orderBy: { createdAt: 'desc' },
-          select: { createdAt: true }
-        })
-
-        // Count nodes from the workflow definition
-        const nodes = (workflow.nodes as any[]) || []
-        const nodeCount = nodes.length
-
-        return {
-          id: workflow.id,
-          name: workflow.name || 'Untitled Workflow',
-          lastExecutedAt: lastExecution?.createdAt.toISOString() || null,
-          nodeCount,
-          status:
-            (workflow.status as 'active' | 'inactive' | 'paused') || 'inactive',
-          createdAt: workflow.createdAt.toISOString(),
-          updatedAt: workflow.updatedAt.toISOString()
-        }
-      })
-    )
-
-    return workflowsWithLastExecution
+    return workflows
   })
 }
 
-export async function getWorkflow(id: number) {
+export async function getWorkflow(id: string) {
   return tryCatch(async () => {
     const user = await getCurrentUser()
 
@@ -74,9 +30,9 @@ export async function getWorkflow(id: number) {
       throw new Error('Not authenticated')
     }
 
-    const workflow = await prisma.workflow.findFirst({
+    const workflow = await prisma.workflow.findUnique({
       where: {
-        id,
+        id: id,
         authorId: user.id
       }
     })
@@ -85,16 +41,7 @@ export async function getWorkflow(id: number) {
       throw new Error('Workflow not found or access denied')
     }
 
-    return {
-      id: workflow.id,
-      name: workflow.name,
-      description: workflow.description,
-      status: workflow.status,
-      nodes: workflow.nodes,
-      edges: workflow.edges,
-      createdAt: workflow.createdAt.toISOString(),
-      updatedAt: workflow.updatedAt.toISOString()
-    }
+    return workflow
   })
 }
 
@@ -112,7 +59,7 @@ export async function createWorkflow(data: {
       throw new Error('Not authenticated')
     }
 
-    const parsedData = createWorkflowSchema.parse(data)
+    const parsedData = workflowSchema.parse(data)
 
     const workflow = await prisma.workflow.create({
       data: {
@@ -139,7 +86,7 @@ export async function createWorkflow(data: {
 }
 
 export async function updateWorkflow(
-  id: number,
+  id: string,
   data: {
     name?: string
     description?: string
@@ -156,7 +103,7 @@ export async function updateWorkflow(
     }
 
     // Verify the workflow belongs to the current user
-    const existing = await prisma.workflow.findFirst({
+    const existing = await prisma.workflow.findUnique({
       where: {
         id,
         authorId: user.id
@@ -193,7 +140,7 @@ export async function updateWorkflow(
   })
 }
 
-export async function deleteWorkflow(id: number) {
+export async function deleteWorkflow(id: string) {
   return tryCatch(async () => {
     const user = await getCurrentUser()
 
@@ -202,7 +149,7 @@ export async function deleteWorkflow(id: number) {
     }
 
     // Verify the workflow belongs to the current user
-    const workflow = await prisma.workflow.findFirst({
+    const workflow = await prisma.workflow.findUnique({
       where: {
         id,
         authorId: user.id

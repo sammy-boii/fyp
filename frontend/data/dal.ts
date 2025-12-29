@@ -11,7 +11,6 @@ export async function getCurrentUser() {
     const cookieStore = await cookies()
     const token = cookieStore.get('token')?.value
 
-    console.log('TOKEN', token)
     if (!token) {
       return null
     }
@@ -21,17 +20,9 @@ export async function getCurrentUser() {
       process.env.JWT_SECRET as string
     ) as JwtPayload
 
-    console.log('PAYLOAD', payload)
-
     const user = await prisma.user.findUnique({
       where: {
         id: payload.id
-      },
-
-      // relations are not included by default
-      include: {
-        workflows: true,
-        credentials: true
       }
     })
 

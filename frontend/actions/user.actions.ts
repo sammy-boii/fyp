@@ -21,10 +21,15 @@ export async function getProfile() {
       throw new Error('User not found')
     }
 
+    const [workflows, credentials] = await Promise.all([
+      prisma.workflow.count({ where: { authorId: user.id } }),
+      prisma.oAuthCredential.count({ where: { userId: user.id } })
+    ])
+
     return {
       ...user,
-      workflows: user.workflows,
-      credentials: user.credentials
+      workflowsCount: workflows,
+      credentialsCount: credentials
     }
   })
 }

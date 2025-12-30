@@ -3,7 +3,11 @@
 import { prisma } from '@shared/db/prisma'
 import { tryCatch } from '@/lib/utils'
 import { getCurrentUser } from '@/data/dal'
-import { workflowSchema } from '@/schema/workflow.schema'
+import { createWorkflowSchema } from '@/schema/workflow.schema'
+import {
+  Workflow,
+  WorkflowStatus
+} from '@shared/prisma/generated/prisma/client'
 
 export async function getWorkflows() {
   return tryCatch(async () => {
@@ -45,13 +49,7 @@ export async function getWorkflow(id: string) {
   })
 }
 
-export async function createWorkflow(data: {
-  name: string
-  description?: string
-  status?: 'active' | 'inactive' | 'paused'
-  nodes: any[]
-  edges: any[]
-}) {
+export async function createWorkflow(data: Partial<Workflow>) {
   return tryCatch(async () => {
     const user = await getCurrentUser()
 
@@ -59,16 +57,16 @@ export async function createWorkflow(data: {
       throw new Error('Not authenticated')
     }
 
-    const parsedData = workflowSchema.parse(data)
+    const parsedData = createWorkflowSchema.parse(data)
 
     const workflow = await prisma.workflow.create({
       data: {
         authorId: user.id,
         name: parsedData.name,
-        description: parsedData.description || null,
-        status: parsedData.status || 'inactive',
+        description: parsedData.description,
+        status: parsedData.status,
         nodes: parsedData.nodes,
-        edges: parsedData.edges
+        edges: parsedData.edges ?? []
       }
     })
 
@@ -90,7 +88,7 @@ export async function updateWorkflow(
   data: {
     name?: string
     description?: string
-    status?: 'active' | 'inactive' | 'paused'
+    status?: WorkflowStatus
     nodes?: any[]
     edges?: any[]
   }

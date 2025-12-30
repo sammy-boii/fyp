@@ -31,13 +31,14 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip'
+import { WorkflowStatus } from '@shared/prisma/generated/prisma/enums'
 
 export type WorkflowRow = {
   id: string
   name: string
   lastExecutedAt: string | null
   nodeCount: number
-  status: 'active' | 'inactive' | 'paused'
+  status: WorkflowStatus
   createdAt: string
   updatedAt: string
 }
@@ -46,18 +47,18 @@ const statusConfig: Record<
   WorkflowRow['status'],
   { label: string; icon: typeof CheckCircle2; className: string }
 > = {
-  active: {
-    label: 'Active',
+  [WorkflowStatus.ACTIVE]: {
+    label: WorkflowStatus.ACTIVE,
     icon: CheckCircle2,
     className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
   },
-  inactive: {
-    label: 'Inactive',
+  [WorkflowStatus.INACTIVE]: {
+    label: WorkflowStatus.INACTIVE,
     icon: Pause,
     className: 'bg-destructive/10 text-destructive'
   },
-  paused: {
-    label: 'Paused',
+  [WorkflowStatus.PAUSED]: {
+    label: WorkflowStatus.PAUSED,
     icon: Clock,
     className: 'bg-amber-500/15 text-amber-700 dark:text-amber-200'
   }
@@ -127,6 +128,8 @@ export const columns: ColumnDef<WorkflowRow>[] = [
     cell: ({ getValue }) => {
       const status = getValue() as WorkflowRow['status']
       const config = statusConfig[status]
+      console.log('status', status)
+      console.log('config', config)
       const Icon = config.icon
       return (
         <Badge className={config.className} variant='outline'>
@@ -196,7 +199,7 @@ function ActionCell({ workflow }: { workflow: WorkflowRow }) {
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            {workflow.status === 'active' ? (
+            {workflow.status === WorkflowStatus.ACTIVE ? (
               <DropdownMenuItem className='hover:bg-amber-500/10 focus:bg-amber-500/10 text-amber-500 hover:text-amber-500!'>
                 <Pause className='mr-1 text-amber-500 h-4 w-4' />
                 Pause

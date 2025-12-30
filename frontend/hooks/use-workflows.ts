@@ -7,6 +7,7 @@ import {
   deleteWorkflow
 } from '@/actions/workflow.actions'
 import { Node, Edge } from '@xyflow/react'
+import { toast } from 'sonner'
 
 export type WorkflowData = {
   name?: string
@@ -35,17 +36,19 @@ export function useCreateWorkflow() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: {
-      name: string
-      description?: string
-      status?: 'active' | 'inactive' | 'paused'
-      nodes: Node[]
-      edges: Edge[]
-    }) => createWorkflow(data),
-    onSuccess: () => {
+    mutationFn: createWorkflow,
+    onSuccess: (data) => {
+      if (data.error) {
+        throw data.error
+      }
       queryClient.invalidateQueries({
         queryKey: ['workflows']
       })
+
+      toast.success('Workflow saved successfully')
+    },
+    onError: (err) => {
+      toast.error(err.message)
     }
   })
 }

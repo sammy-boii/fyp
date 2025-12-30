@@ -240,7 +240,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
                   <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                     <SheetTrigger asChild>
                       <div className='border-2 p-1 rounded border-muted-foreground'>
-                        <Plus className='text-muted-foreground' size={16} />
+                        <Plus className='text-muted-foreground' size={24} />
                       </div>
                     </SheetTrigger>
 

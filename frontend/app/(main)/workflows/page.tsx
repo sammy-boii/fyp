@@ -1,12 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { Plus, Workflow } from 'lucide-react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { columns, WorkflowRow } from './columns'
 import { DataTable } from './data-table'
-import { useGetWorkflows } from '@/hooks/use-workflows'
+import { useCreateWorkflow, useGetWorkflows } from '@/hooks/use-workflows'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Empty,
@@ -15,9 +16,26 @@ import {
   EmptyMedia,
   EmptyTitle
 } from '@/components/ui/empty'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 
 export default function WorkflowsPage() {
+  const router = useRouter()
   const { data, isLoading, isError } = useGetWorkflows()
+  const createWorkflow = useCreateWorkflow()
+
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [newWorkflowName, setNewWorkflowName] = useState('')
+  const [newWorkflowDescription, setNewWorkflowDescription] = useState('')
 
   const workflows: WorkflowRow[] =
     data?.data?.map((w: any) => ({
@@ -47,13 +65,80 @@ export default function WorkflowsPage() {
               </p>
             </div>
           </div>
-          <Button className='gap-2' asChild>
-            <Link href='/workflows/new'>
-              <Plus className='h-4 w-4' />
-              Add workflow
-            </Link>
+          <Button
+            className='gap-2'
+            onClick={() => {
+              setNewWorkflowName('')
+              setNewWorkflowDescription('')
+              setCreateDialogOpen(true)
+            }}
+          >
+            <Plus className='h-4 w-4' />
+            Add workflow
           </Button>
         </header>
+
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create workflow</DialogTitle>
+              <DialogDescription>
+                Give your workflow a name and description. You can configure its
+                steps on the next screen.
+              </DialogDescription>
+            </DialogHeader>
+            <div className='space-y-4 py-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='new-workflow-name'>Name</Label>
+                <Input
+                  id='new-workflow-name'
+                  placeholder='My workflow'
+                  value={newWorkflowName}
+                  onChange={(e) => setNewWorkflowName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === 'Enter' &&
+                      newWorkflowName.trim() &&
+                      !createWorkflow.isPending
+                    ) {
+                      handleCreate()
+                    }
+                  }}
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='new-workflow-description'>Description</Label>
+                <Textarea
+                  id='new-workflow-description'
+                  placeholder='Describe what this workflow does'
+                  value={newWorkflowDescription}
+                  onChange={(e) => setNewWorkflowDescription(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant='outline'
+                onClick={() => {
+                  setCreateDialogOpen(false)
+                  setNewWorkflowName('')
+                  setNewWorkflowDescription('')
+                }}
+                disabled={createWorkflow.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreate}
+                disabled={
+                  !newWorkflowName.trim() || createWorkflow.isPending
+                }
+              >
+                {createWorkflow.isPending ? 'Creating...' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {isLoading ? (
           <div className='space-y-3'>
@@ -118,4 +203,32 @@ export default function WorkflowsPage() {
       </div>
     </div>
   )
+  function handleCreate() {
+    const name = newWorkflowName.trim()
+    if (!name) return
+
+    const payload = {
+      name,
+      description: newWorkflowDescription.trim() || undefined,
+      nodes: [],
+      edges: []
+    }
+
+    createWorkflow.mutate(payload, {
+      onSuccess: (result) => {
+        if (result?.error) {
+          // Error toast is already handled inside the hook
+          return
+        }
+
+        const created = result?.data as { id?: string } | undefined
+        if (created?.id) {
+          setCreateDialogOpen(false)
+          setNewWorkflowName('')
+          setNewWorkflowDescription('')
+          router.push(`/workflow/${created.id}`)
+        }
+      }
+    })
+  }
 }

@@ -17,7 +17,8 @@ import {
   Plus,
   ChevronRight,
   Edit2,
-  Save
+  Save,
+  SquarePen
 } from 'lucide-react'
 import Image from 'next/image'
 
@@ -228,9 +229,9 @@ export default function WorkflowViewPage() {
             variant='ghost'
             size='icon'
             onClick={() => router.push('/workflows')}
-            className='bg-sidebar-accent/50 hover:bg-sidebar-accent'
+            className='mr-4 hover:bg-sidebar-accent'
           >
-            <ArrowLeft className='h-4 w-4' />
+            <ArrowLeft className='size-4' />
           </Button>
           <h1 className='text-base font-semibold text-sidebar-foreground'>
             {workflowName || 'Untitled Workflow'}
@@ -238,20 +239,21 @@ export default function WorkflowViewPage() {
           <Button
             variant='ghost'
             size='icon'
-            className='h-7 w-7 text-sidebar-foreground/70 hover:text-sidebar-foreground'
+            className='size-7 text-foreground/70 hover:text-sidebar-foreground'
             onClick={() => {
               setEditWorkflowName(workflowName || '')
               setEditWorkflowDescription(workflowDescription || '')
               setEditDialogOpen(true)
             }}
           >
-            <Edit2 className='h-3.5 w-3.5' />
+            <SquarePen className='size-4' />
           </Button>
         </div>
         <Button
           size='sm'
           className='gap-2 min-w-20 items-center'
           onClick={handleSaveWorkflow}
+          isLoading={updateWorkflow.isPending}
           disabled={updateWorkflow.isPending || !workflowId}
         >
           <Save className='h-4 w-4' />
@@ -263,12 +265,8 @@ export default function WorkflowViewPage() {
       <div className='absolute right-4 top-20 z-10'>
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
-            <Button
-              variant='outline'
-              size='lg'
-              className='rounded-lg h-10 w-10 shadow-lg gap-0 border-2'
-            >
-              <Plus className='h-5 w-5 stroke-2' />
+            <Button variant='default' size='lg' className='rounded-lg size-10'>
+              <Plus className='size-5' />
             </Button>
           </SheetTrigger>
           <SheetContent side='right' className='sm:max-w-md'>
@@ -422,6 +420,8 @@ export default function WorkflowViewPage() {
   function handleSaveWorkflow() {
     if (!workflowId) return
 
+    const toastID = toast.loading('Saving workflow...')
+
     updateWorkflow.mutate(
       {
         id: workflowId,
@@ -432,11 +432,14 @@ export default function WorkflowViewPage() {
           edges
         }
       },
+
       {
         onSuccess: () => {
+          toast.dismiss(toastID)
           toast.success('Workflow updated successfully')
         },
         onError: (error) => {
+          toast.dismiss(toastID)
           toast.error(error.message || 'Failed to update workflow')
         }
       }

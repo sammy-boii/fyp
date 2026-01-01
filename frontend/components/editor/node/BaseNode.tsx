@@ -47,6 +47,11 @@ import {
 import googleDriveIcon from '@/public/google-drive.png'
 import gmailIcon from '@/public/gmail.png'
 import { NODE_TYPES } from '@/constants'
+import {
+  createNode,
+  createEdge,
+  calculateNewNodePosition
+} from '@/lib/react-flow-utils'
 
 const nodesOptions = [
   { id: NODE_TYPES.GMAIL, name: 'Gmail', icon: gmailIcon },
@@ -68,50 +73,21 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     const currentNode = nodes.find((n) => n.id === id)
     if (!currentNode) return
 
-    // Generate unique node ID using timestamp
-    const newNodeId = `n${Date.now()}-${Math.random()
-      .toString(36)
-      .substr(2, 9)}`
+    // Calculate position for the new node relative to current node
+    const newPosition = calculateNewNodePosition(nodes, edges, {
+      fromNode: currentNode,
+      offsetX: 250
+    })
 
-    // Position new node at the same Y level and a little to the right
-    const offsetX = 250 // Distance to the right
-    const newNode = {
-      id: newNodeId,
-      type: 'custom_node',
-      position: {
-        x: currentNode.position.x + offsetX,
-        y: currentNode.position.y
-      },
-      data: {
-        type: nodeType
-      }
-    }
+    // Create the new node using utility function
+    const newNode = createNode(nodeType, newPosition)
 
     // Add the new node
     setNodes((nds) => [...nds, newNode])
 
     // Create an edge from the current node to the new node
-    setEdges((eds) =>
-      addEdge(
-        {
-          id: `e${id}-${newNodeId}`,
-          source: id,
-          target: newNodeId,
-          type: 'default',
-          style: {
-            strokeWidth: 2,
-            stroke: '#9ca3af'
-          },
-          markerEnd: {
-            type: 'arrowclosed' as const,
-            color: '#9ca3af',
-            width: 12,
-            height: 12
-          }
-        },
-        eds
-      )
-    )
+    const newEdge = createEdge(id, newNode.id)
+    setEdges((eds) => addEdge(newEdge, eds))
 
     setSheetOpen(false)
   }

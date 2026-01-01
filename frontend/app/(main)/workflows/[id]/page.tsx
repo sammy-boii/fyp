@@ -7,19 +7,12 @@ import {
   applyEdgeChanges,
   applyNodeChanges,
   Edge,
-  ConnectionLineType
+  ConnectionLineType,
+  addEdge
 } from '@xyflow/react'
 
 import { useParams, useRouter } from 'next/navigation'
-import {
-  ArrowLeft,
-  Loader2,
-  Plus,
-  ChevronRight,
-  Edit2,
-  Save,
-  SquarePen
-} from 'lucide-react'
+import { ArrowLeft, Loader2, Plus, ChevronRight, Edit2 } from 'lucide-react'
 import Image from 'next/image'
 
 import type { Node, OnEdgesChange, OnNodesChange } from '@xyflow/react'
@@ -57,6 +50,16 @@ import {
   EmptyMedia,
   EmptyTitle
 } from '@/components/ui/empty'
+import { WorkflowHeader } from './_components/WorkflowHeader'
+import {
+  DEFAULT_EDGE_OPTIONS,
+  createNode,
+  createEdge,
+  calculateNewNodePosition,
+  findLastNode,
+  formatNodes,
+  formatEdges
+} from '@/lib/react-flow-utils'
 
 export default function WorkflowViewPage() {
   const params = useParams()
@@ -75,6 +78,7 @@ export default function WorkflowViewPage() {
   const [editWorkflowName, setEditWorkflowName] = useState('')
   const [editWorkflowDescription, setEditWorkflowDescription] = useState('')
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
+  const hasInitialized = useRef(false)
 
   const nodesOptions = [
     { id: NODE_TYPES.GMAIL, name: 'Gmail', icon: gmailIcon },
@@ -109,41 +113,23 @@ export default function WorkflowViewPage() {
     }
   }, [])
 
-  // Load workflow data when it's fetched
+  // Load workflow data when it's fetched (only initialize once)
   useEffect(() => {
-    if (data?.data) {
+    if (data?.data && !hasInitialized.current) {
       const workflow = data.data
       // Ensure nodes and edges are arrays
       const workflowNodes = Array.isArray(workflow.nodes) ? workflow.nodes : []
       const workflowEdges = Array.isArray(workflow.edges) ? workflow.edges : []
 
-      // Ensure nodes have the correct type
-      const formattedNodes: Node[] = workflowNodes.map((node: any) => ({
-        ...node,
-        type: node.type || 'custom_node'
-      }))
-
-      // Ensure edges have proper styling
-      const formattedEdges: Edge[] = workflowEdges.map((edge: any) => ({
-        ...edge,
-        style: {
-          strokeWidth: 2,
-          stroke: '#9ca3af',
-          ...edge.style
-        },
-        markerEnd: {
-          type: 'arrowclosed',
-          color: '#9ca3af',
-          width: 12,
-          height: 12,
-          ...edge.markerEnd
-        }
-      }))
+      // Format nodes and edges using utility functions
+      const formattedNodes: Node[] = formatNodes(workflowNodes)
+      const formattedEdges: Edge[] = formatEdges(workflowEdges)
 
       setNodes(formattedNodes)
       setEdges(formattedEdges)
       setWorkflowName(workflow.name || '')
       setWorkflowDescription(workflow.description || '')
+      hasInitialized.current = true
     }
   }, [data])
 
@@ -162,19 +148,26 @@ export default function WorkflowViewPage() {
   const addNode = (
     nodeType: typeof NODE_TYPES.GOOGLE_DRIVE | typeof NODE_TYPES.GMAIL
   ) => {
-    // Generate unique node ID using timestamp
-    const newNodeId = `n${Date.now()}-${Math.random()
-      .toString(36)
-      .substr(2, 9)}`
-    const newNode: Node = {
-      id: newNodeId,
-      type: 'custom_node',
-      position: { x: 280 + nodes.length * 200, y: 160 },
-      data: {
-        type: nodeType
-      }
-    }
+    // Find the last node in the chain
+    const lastNode = findLastNode(nodes, edges)
+
+    // Calculate position for the new node
+    const newPosition = calculateNewNodePosition(nodes, edges, {
+      fromNode: lastNode
+    })
+
+    // Create the new node using utility function
+    const newNode = createNode(nodeType, newPosition)
+
+    // Add the new node
     setNodes((nds) => [...nds, newNode])
+
+    // If there's a last node, create an edge from it to the new node
+    if (lastNode) {
+      const newEdge = createEdge(lastNode.id, newNode.id)
+      setEdges((eds) => addEdge(newEdge, eds))
+    }
+
     setSheetOpen(false)
   }
 
@@ -223,43 +216,18 @@ export default function WorkflowViewPage() {
       ref={reactFlowWrapper}
     >
       {/* Top Bar */}
-      <div className='w-full h-16 border-b border-sidebar-border bg-sidebar z-10 flex items-center justify-between px-6'>
-        <div className='flex items-center gap-3'>
-          <Button
-            variant='ghost'
-            size='icon'
-            onClick={() => router.push('/workflows')}
-            className='mr-4 hover:bg-sidebar-accent'
-          >
-            <ArrowLeft className='size-4' />
-          </Button>
-          <h1 className='text-base font-semibold text-sidebar-foreground'>
-            {workflowName || 'Untitled Workflow'}
-          </h1>
-          <Button
-            variant='ghost'
-            size='icon'
-            className='size-7 text-foreground/70 hover:text-sidebar-foreground'
-            onClick={() => {
-              setEditWorkflowName(workflowName || '')
-              setEditWorkflowDescription(workflowDescription || '')
-              setEditDialogOpen(true)
-            }}
-          >
-            <SquarePen className='size-4' />
-          </Button>
-        </div>
-        <Button
-          size='sm'
-          className='gap-2 min-w-20 items-center'
-          onClick={handleSaveWorkflow}
-          isLoading={updateWorkflow.isPending}
-          disabled={updateWorkflow.isPending || !workflowId}
-        >
-          <Save className='h-4 w-4' />
-          Save
-        </Button>
-      </div>
+      <WorkflowHeader
+        workflowName={workflowName}
+        onBack={() => router.push('/workflows')}
+        onEdit={() => {
+          setEditWorkflowName(workflowName || '')
+          setEditWorkflowDescription(workflowDescription || '')
+          setEditDialogOpen(true)
+        }}
+        onSave={handleSaveWorkflow}
+        isSaving={updateWorkflow.isPending}
+        workflowId={workflowId}
+      />
 
       {/* Add Node Button - Top Middle Right */}
       <div className='absolute right-4 top-20 z-10'>
@@ -323,19 +291,7 @@ export default function WorkflowViewPage() {
           edgeTypes={edgeTypes}
           className='bg-background'
           connectionLineType={ConnectionLineType.Bezier}
-          defaultEdgeOptions={{
-            type: 'bezier',
-            style: {
-              strokeWidth: 2,
-              stroke: '#9ca3af'
-            },
-            markerEnd: {
-              type: 'arrowclosed',
-              color: '#9ca3af',
-              width: 12,
-              height: 12
-            }
-          }}
+          defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
           fitView
           nodesDraggable={true}
           nodesConnectable={false}
@@ -426,10 +382,10 @@ export default function WorkflowViewPage() {
       {
         id: workflowId,
         data: {
-          name: workflowName || undefined,
-          description: workflowDescription || undefined,
-          nodes,
-          edges
+          name: workflowName,
+          description: workflowDescription,
+          nodes: nodes as unknown as any[],
+          edges: edges as unknown as any[]
         }
       },
 
@@ -457,22 +413,18 @@ export default function WorkflowViewPage() {
         id: workflowId,
         data: {
           name,
-          description: description || undefined,
-          nodes,
-          edges
+          description: description,
+          nodes: nodes as unknown as any[],
+          edges: edges as unknown as any[]
         }
       },
       {
         onSuccess: () => {
-          toast.success('Workflow updated successfully')
           setWorkflowName(name)
           setWorkflowDescription(description)
           setEditDialogOpen(false)
           setEditWorkflowName('')
           setEditWorkflowDescription('')
-        },
-        onError: (error) => {
-          toast.error(error.message || 'Failed to update workflow')
         }
       }
     )

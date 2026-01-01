@@ -1,0 +1,203 @@
+import type { Node, Edge, XYPosition } from '@xyflow/react'
+import { NODE_TYPES } from '@/constants'
+
+/**
+ * Default edge styling constants used throughout the application
+ */
+export const DEFAULT_EDGE_STYLE = {
+  strokeWidth: 2,
+  stroke: '#9ca3af'
+} as const
+
+export const DEFAULT_EDGE_MARKER_END = {
+  type: 'arrowclosed' as const,
+  color: '#9ca3af',
+  width: 12,
+  height: 12
+} as const
+
+/**
+ * Default edge options for ReactFlow component
+ */
+export const DEFAULT_EDGE_OPTIONS = {
+  type: 'bezier' as const,
+  style: DEFAULT_EDGE_STYLE,
+  markerEnd: DEFAULT_EDGE_MARKER_END
+} as const
+
+/**
+ * Generates a unique node ID using timestamp and random string
+ */
+export function generateNodeId(): string {
+  return `n${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+}
+
+/**
+ * Generates a unique edge ID from source and target node IDs
+ */
+export function generateEdgeId(sourceId: string, targetId: string): string {
+  return `e${sourceId}-${targetId}`
+}
+
+/**
+ * Creates a new edge with default styling
+ */
+export function createEdge(
+  sourceId: string,
+  targetId: string,
+  options?: {
+    id?: string
+    type?: string
+    style?: Partial<typeof DEFAULT_EDGE_STYLE>
+    markerEnd?: Partial<typeof DEFAULT_EDGE_MARKER_END>
+  }
+): Edge {
+  return {
+    id: options?.id || generateEdgeId(sourceId, targetId),
+    source: sourceId,
+    target: targetId,
+    type: options?.type || 'default',
+    style: {
+      ...DEFAULT_EDGE_STYLE,
+      ...options?.style
+    },
+    markerEnd: {
+      ...DEFAULT_EDGE_MARKER_END,
+      ...options?.markerEnd
+    }
+  }
+}
+
+/**
+ * Creates a new node with the specified type and position
+ */
+export function createNode(
+  nodeType: typeof NODE_TYPES.GOOGLE_DRIVE | typeof NODE_TYPES.GMAIL,
+  position: XYPosition,
+  options?: {
+    id?: string
+    type?: string
+  }
+): Node {
+  return {
+    id: options?.id || generateNodeId(),
+    type: options?.type || 'custom_node',
+    position,
+    data: {
+      type: nodeType
+    }
+  }
+}
+
+/**
+ * Finds the last node in a chain (node with no outgoing edges)
+ * If multiple such nodes exist, returns the rightmost one
+ */
+export function findLastNode(nodes: Node[], edges: Edge[]): Node | null {
+  const nodesWithNoOutgoing = nodes.filter(
+    (node) => !edges.some((edge) => edge.source === node.id)
+  )
+
+  if (nodesWithNoOutgoing.length === 0) {
+    return null
+  }
+
+  // Return the rightmost node
+  return nodesWithNoOutgoing.reduce((prev, curr) =>
+    curr.position.x > prev.position.x ? curr : prev
+  )
+}
+
+/**
+ * Finds the rightmost node in the nodes array
+ */
+export function findRightmostNode(nodes: Node[]): Node | null {
+  if (nodes.length === 0) {
+    return null
+  }
+
+  return nodes.reduce((prev, curr) =>
+    curr.position.x > prev.position.x ? curr : prev
+  )
+}
+
+/**
+ * Calculates position for a new node based on existing nodes
+ * @param nodes - Array of existing nodes
+ * @param edges - Array of existing edges
+ * @param offsetX - Horizontal offset from the previous node (default: 250)
+ * @param baseY - Base Y position when no nodes exist (default: 160)
+ * @param baseX - Base X position when no nodes exist (default: 280)
+ */
+export function calculateNewNodePosition(
+  nodes: Node[],
+  edges: Edge[],
+  options?: {
+    offsetX?: number
+    baseY?: number
+    baseX?: number
+    fromNode?: Node | null
+  }
+): XYPosition {
+  const offsetX = options?.offsetX ?? 250
+  const baseY = options?.baseY ?? 160
+  const baseX = options?.baseX ?? 280
+
+  // If a specific node is provided, position relative to it
+  if (options?.fromNode) {
+    return {
+      x: options.fromNode.position.x + offsetX,
+      y: options.fromNode.position.y
+    }
+  }
+
+  // Try to find the last node in the chain
+  const lastNode = findLastNode(nodes, edges)
+  if (lastNode) {
+    return {
+      x: lastNode.position.x + offsetX,
+      y: lastNode.position.y
+    }
+  }
+
+  // If no last node but nodes exist, use the rightmost node
+  if (nodes.length > 0) {
+    const rightmostNode = findRightmostNode(nodes)
+    if (rightmostNode) {
+      return {
+        x: rightmostNode.position.x + offsetX,
+        y: rightmostNode.position.y
+      }
+    }
+  }
+
+  // Default position when no nodes exist
+  return { x: baseX, y: baseY }
+}
+
+/**
+ * Formats edges with default styling (useful when loading from API)
+ */
+export function formatEdges(edges: any[]): Edge[] {
+  return edges.map((edge: any) => ({
+    ...edge,
+    style: {
+      ...DEFAULT_EDGE_STYLE,
+      ...edge.style
+    },
+    markerEnd: {
+      ...DEFAULT_EDGE_MARKER_END,
+      ...edge.markerEnd
+    }
+  }))
+}
+
+/**
+ * Formats nodes to ensure they have the correct type (useful when loading from API)
+ */
+export function formatNodes(nodes: any[]): Node[] {
+  return nodes.map((node: any) => ({
+    ...node,
+    type: node.type || 'custom_node'
+  }))
+}

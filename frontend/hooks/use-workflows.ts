@@ -6,16 +6,8 @@ import {
   updateWorkflow,
   deleteWorkflow
 } from '@/actions/workflow.actions'
-import { Node, Edge } from '@xyflow/react'
 import { toast } from 'sonner'
-
-export type WorkflowData = {
-  name?: string
-  description?: string
-  status?: 'active' | 'inactive' | 'paused'
-  nodes: Node[]
-  edges: Edge[]
-}
+import { Workflow } from '@shared/prisma/generated/prisma/client'
 
 export function useGetWorkflows() {
   return useQuery({
@@ -45,7 +37,7 @@ export function useCreateWorkflow() {
         queryKey: ['workflows']
       })
 
-      toast.success('Workflow saved successfully')
+      toast.success('Workflow created successfully')
     },
     onError: (err) => {
       toast.error(err.message)
@@ -57,15 +49,19 @@ export function useUpdateWorkflow() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<WorkflowData> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<Workflow> }) =>
       updateWorkflow(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ['workflows']
       })
+      toast.success('Workflow updated successfully')
       queryClient.invalidateQueries({
         queryKey: ['workflow', variables.id]
       })
+    },
+    onError: (err) => {
+      toast.error(err.message)
     }
   })
 }

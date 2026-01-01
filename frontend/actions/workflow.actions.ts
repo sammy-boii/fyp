@@ -4,10 +4,7 @@ import { prisma } from '@shared/db/prisma'
 import { tryCatch } from '@/lib/utils'
 import { getCurrentUser } from '@/data/dal'
 import { createWorkflowSchema } from '@/schema/workflow.schema'
-import {
-  Workflow,
-  WorkflowStatus
-} from '@shared/prisma/generated/prisma/client'
+import { Workflow } from '@shared/prisma/generated/prisma/client'
 
 export async function getWorkflows() {
   return tryCatch(async () => {
@@ -83,16 +80,7 @@ export async function createWorkflow(data: Partial<Workflow>) {
   })
 }
 
-export async function updateWorkflow(
-  id: string,
-  data: {
-    name?: string
-    description?: string
-    status?: WorkflowStatus
-    nodes?: any[]
-    edges?: any[]
-  }
-) {
+export async function updateWorkflow(id: string, data: Partial<Workflow>) {
   return tryCatch(async () => {
     const user = await getCurrentUser()
 

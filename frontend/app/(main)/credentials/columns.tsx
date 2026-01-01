@@ -523,7 +523,6 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
             </div>
             <DialogFooter>
               <Button
-                hideLoader
                 variant='outline'
                 onClick={() => {
                   setIsEditOpen(false)
@@ -534,6 +533,7 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                 Cancel
               </Button>
               <Button
+                isLoading={updateCredential.isPending}
                 className='w-28'
                 onClick={handleEditSubmit}
                 disabled={updateCredential.isPending}
@@ -575,7 +575,6 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
             <DialogFooter>
               <Button
                 variant='outline'
-                hideLoader
                 onClick={() => setIsDeleteOpen(false)}
                 disabled={deleteCredential.isPending}
               >
@@ -586,6 +585,7 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                 variant='destructive'
                 onClick={handleDelete}
                 disabled={deleteCredential.isPending}
+                isLoading={deleteCredential.isPending}
               >
                 Delete
               </Button>

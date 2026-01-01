@@ -26,8 +26,9 @@ export const updateProfileSchema = z.object({
     .string()
     .url('Avatar must be a valid URL')
     .optional()
+    .nullable()
     .or(z.literal(''))
-    .transform((val) => (val ? val : null))
+    .transform((val) => (val ? val : null)) // standardize falsy values to null
 })
 
 export const changePasswordSchema = z.object({

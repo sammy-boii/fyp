@@ -39,8 +39,8 @@ const buttonVariants = cva(
 function Button({
   className,
   variant,
+  isLoading,
   size,
-  hideLoader = false,
   asChild = false,
   disabled,
   children,
@@ -48,22 +48,18 @@ function Button({
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
-    hideLoader?: boolean
+    isLoading?: boolean
   }) {
   const Comp = asChild ? Slot : 'button'
 
   return (
     <Comp
       data-slot='button'
-      disabled={disabled}
+      disabled={disabled || isLoading}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >
-      {disabled && !hideLoader ? (
-        <Loader2 className='animate-spin' />
-      ) : (
-        children
-      )}
+      {isLoading ? <Loader2 className='animate-spin' /> : children}
     </Comp>
   )
 }

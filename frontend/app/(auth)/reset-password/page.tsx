@@ -175,6 +175,7 @@ const ResetPasswordForm = () => {
 
             <Button
               disabled={form.formState.isSubmitting}
+              isLoading={form.formState.isSubmitting}
               className='w-full flex items-center gap-2'
               type='submit'
             >

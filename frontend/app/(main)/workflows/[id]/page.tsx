@@ -11,7 +11,14 @@ import {
 } from '@xyflow/react'
 
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, Plus, ChevronRight, Edit2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  Loader2,
+  Plus,
+  ChevronRight,
+  Edit2,
+  Save
+} from 'lucide-react'
 import Image from 'next/image'
 
 import type { Node, OnEdgesChange, OnNodesChange } from '@xyflow/react'
@@ -29,6 +36,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import {
   Sheet,
@@ -61,7 +69,10 @@ export default function WorkflowViewPage() {
   const [edges, setEdges] = useState<Edge[]>([])
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [workflowName, setWorkflowName] = useState('')
+  const [workflowDescription, setWorkflowDescription] = useState('')
   const [editWorkflowName, setEditWorkflowName] = useState('')
+  const [editWorkflowDescription, setEditWorkflowDescription] = useState('')
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
 
   const nodesOptions = [
@@ -130,7 +141,8 @@ export default function WorkflowViewPage() {
 
       setNodes(formattedNodes)
       setEdges(formattedEdges)
-      setEditWorkflowName(workflow.name || '')
+      setWorkflowName(workflow.name || '')
+      setWorkflowDescription(workflow.description || '')
     }
   }, [data])
 
@@ -204,8 +216,6 @@ export default function WorkflowViewPage() {
     )
   }
 
-  const workflow = data.data
-
   return (
     <div
       className='w-full h-screen relative flex flex-col'
@@ -223,20 +233,30 @@ export default function WorkflowViewPage() {
             <ArrowLeft className='h-4 w-4' />
           </Button>
           <h1 className='text-base font-semibold text-sidebar-foreground'>
-            {workflow.name || 'Untitled Workflow'}
+            {workflowName || 'Untitled Workflow'}
           </h1>
           <Button
             variant='ghost'
             size='icon'
             className='h-7 w-7 text-sidebar-foreground/70 hover:text-sidebar-foreground'
             onClick={() => {
-              setEditWorkflowName(workflow.name || '')
+              setEditWorkflowName(workflowName || '')
+              setEditWorkflowDescription(workflowDescription || '')
               setEditDialogOpen(true)
             }}
           >
             <Edit2 className='h-3.5 w-3.5' />
           </Button>
         </div>
+        <Button
+          size='sm'
+          className='gap-2 min-w-20 items-center'
+          onClick={handleSaveWorkflow}
+          disabled={updateWorkflow.isPending || !workflowId}
+        >
+          <Save className='h-4 w-4' />
+          Save
+        </Button>
       </div>
 
       {/* Add Node Button - Top Middle Right */}
@@ -327,36 +347,47 @@ export default function WorkflowViewPage() {
         </ReactFlow>
       </div>
 
-      {/* Edit Name Dialog */}
+      {/* Edit Name & Description Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className='flex items-center gap-2'>
               <Edit2 className='h-5 w-5' />
-              Edit Workflow Name
+              Edit Workflow
             </DialogTitle>
             <DialogDescription>
-              Change the name of your workflow.
+              Change the name or description of your workflow.
             </DialogDescription>
           </DialogHeader>
           <div className='space-y-4 py-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='edit-workflow-name'>Workflow Name</Label>
-              <Input
-                id='edit-workflow-name'
-                placeholder='My Awesome Workflow'
-                value={editWorkflowName}
-                onChange={(e) => setEditWorkflowName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (
-                    e.key === 'Enter' &&
-                    editWorkflowName.trim() &&
-                    workflowId
-                  ) {
-                    handleUpdateName()
-                  }
-                }}
-              />
+            <div className='space-y-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='edit-workflow-name'>Workflow Name</Label>
+                <Input
+                  id='edit-workflow-name'
+                  placeholder='My Awesome Workflow'
+                  value={editWorkflowName}
+                  onChange={(e) => setEditWorkflowName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === 'Enter' &&
+                      editWorkflowName.trim() &&
+                      workflowId
+                    ) {
+                      handleUpdateDetails()
+                    }
+                  }}
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='edit-workflow-description'>Description</Label>
+                <Textarea
+                  id='edit-workflow-description'
+                  placeholder='Describe what this workflow does'
+                  value={editWorkflowDescription}
+                  onChange={(e) => setEditWorkflowDescription(e.target.value)}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -365,16 +396,22 @@ export default function WorkflowViewPage() {
               onClick={() => {
                 setEditDialogOpen(false)
                 setEditWorkflowName('')
+                setEditWorkflowDescription('')
               }}
               disabled={updateWorkflow.isPending}
             >
               Cancel
             </Button>
             <Button
-              onClick={handleUpdateName}
-              disabled={updateWorkflow.isPending || !editWorkflowName.trim()}
+              onClick={handleUpdateDetails}
+              disabled={
+                updateWorkflow.isPending ||
+                !editWorkflowName.trim() ||
+                !workflowId
+              }
+              isLoading={updateWorkflow.isPending}
             >
-              {updateWorkflow.isPending ? 'Saving...' : 'Save'}
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -382,22 +419,57 @@ export default function WorkflowViewPage() {
     </div>
   )
 
-  function handleUpdateName() {
-    if (!workflowId || !editWorkflowName.trim()) return
+  function handleSaveWorkflow() {
+    if (!workflowId) return
 
     updateWorkflow.mutate(
       {
         id: workflowId,
-        data: { name: editWorkflowName.trim() }
+        data: {
+          name: workflowName || undefined,
+          description: workflowDescription || undefined,
+          nodes,
+          edges
+        }
       },
       {
         onSuccess: () => {
-          toast.success('Workflow name updated successfully')
-          setEditDialogOpen(false)
-          setEditWorkflowName('')
+          toast.success('Workflow updated successfully')
         },
         onError: (error) => {
-          toast.error(error.message || 'Failed to update workflow name')
+          toast.error(error.message || 'Failed to update workflow')
+        }
+      }
+    )
+  }
+
+  function handleUpdateDetails() {
+    if (!workflowId || !editWorkflowName.trim()) return
+
+    const name = editWorkflowName.trim()
+    const description = editWorkflowDescription.trim()
+
+    updateWorkflow.mutate(
+      {
+        id: workflowId,
+        data: {
+          name,
+          description: description || undefined,
+          nodes,
+          edges
+        }
+      },
+      {
+        onSuccess: () => {
+          toast.success('Workflow updated successfully')
+          setWorkflowName(name)
+          setWorkflowDescription(description)
+          setEditDialogOpen(false)
+          setEditWorkflowName('')
+          setEditWorkflowDescription('')
+        },
+        onError: (error) => {
+          toast.error(error.message || 'Failed to update workflow')
         }
       }
     )

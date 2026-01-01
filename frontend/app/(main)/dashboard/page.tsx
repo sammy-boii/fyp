@@ -79,6 +79,7 @@ const DashboardPage = () => {
 
       if (avatarFile) {
         const { data, error } = await uploadCloudinaryImage(avatarFile)
+        console.log('D', data, error)
 
         if (error) {
           toast.error(error.message)
@@ -283,7 +284,6 @@ const DashboardPage = () => {
                         <DialogClose asChild>
                           <Button
                             disabled={isPending}
-                            hideLoader
                             variant='outline'
                             type='button'
                           >
@@ -293,6 +293,7 @@ const DashboardPage = () => {
                         <Button
                           className='w-20'
                           disabled={isPending}
+                          isLoading={isPending}
                           type='submit'
                         >
                           <Save />

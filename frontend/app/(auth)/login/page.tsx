@@ -134,6 +134,7 @@ export default function LoginPage() {
                 </div>
                 <Button
                   disabled={isPending}
+                  isLoading={isPending}
                   type='submit'
                   className='w-full flex gap-2 items-center'
                 >

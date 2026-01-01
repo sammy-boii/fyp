@@ -129,12 +129,12 @@ export default function WorkflowsPage() {
                 Cancel
               </Button>
               <Button
+                isLoading={createWorkflow.isPending}
+                className='w-18'
                 onClick={handleCreate}
-                disabled={
-                  !newWorkflowName.trim() || createWorkflow.isPending
-                }
+                disabled={!newWorkflowName.trim() || createWorkflow.isPending}
               >
-                {createWorkflow.isPending ? 'Creating...' : 'Create'}
+                Create
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -209,24 +209,18 @@ export default function WorkflowsPage() {
 
     const payload = {
       name,
-      description: newWorkflowDescription.trim() || undefined,
+      description: newWorkflowDescription.trim() ?? '',
       nodes: [],
       edges: []
     }
 
     createWorkflow.mutate(payload, {
       onSuccess: (result) => {
-        if (result?.error) {
-          // Error toast is already handled inside the hook
-          return
-        }
-
-        const created = result?.data as { id?: string } | undefined
-        if (created?.id) {
+        if (result?.data && result?.data?.id) {
           setCreateDialogOpen(false)
           setNewWorkflowName('')
           setNewWorkflowDescription('')
-          router.push(`/workflow/${created.id}`)
+          router.push(`/workflows/${result.data.id}`)
         }
       }
     })

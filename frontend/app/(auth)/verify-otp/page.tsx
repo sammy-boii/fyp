@@ -154,25 +154,18 @@ const VerifyOtpForm = () => {
               </InputOTP>
             </div>
             <Button
-              hideLoader
               disabled={otp.length !== 6 || isPending}
               type='submit'
+              isLoading={isPending}
               className='w-full mt-2'
             >
-              {isPending ? (
-                <Loader2 className='animate-spin' />
-              ) : (
-                <>
-                  Verify
-                  <Check />
-                </>
-              )}
+              Verify
+              <Check />
             </Button>
 
             <div className='flex flex-col items-center'>
               <Button
                 type='button'
-                hideLoader
                 variant={'ghost'}
                 onClick={handleResend}
                 disabled={isResendDisabled || isResendPending || isPending}

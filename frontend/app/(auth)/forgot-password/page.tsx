@@ -73,7 +73,12 @@ export default function ForgotPasswordPage() {
                 onChange={(evt) => setEmail(evt.target.value)}
               />
             </div>
-            <Button type='submit' className='w-full' disabled={isPending}>
+            <Button
+              type='submit'
+              className='w-full'
+              disabled={isPending}
+              isLoading={isPending}
+            >
               Continue
               <ArrowRight className='size-4' />
             </Button>

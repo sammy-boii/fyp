@@ -1,4 +1,6 @@
 - This is a simple n8n simple clone NextJS 15 application.
+  
+- This is a monorepo that contains frontend/ backend/ and shared/ folders.
 
 - Follow the existing folder structure.
 

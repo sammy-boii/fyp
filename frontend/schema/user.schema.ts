@@ -21,7 +21,10 @@ export const resetPasswordSchema = z
   })
 
 export const updateProfileSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .max(50, 'Name cannot exceed 50 characters'),
   avatar: z
     .string()
     .url('Avatar must be a valid URL')

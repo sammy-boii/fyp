@@ -3,6 +3,7 @@ import { NODE_TYPES } from '@/constants'
 import type { Node } from '@xyflow/react'
 import { LucideIcon } from 'lucide-react'
 import type { StaticImageData } from 'next/image'
+import { type ZodObject } from 'zod'
 
 // shared node types
 
@@ -12,7 +13,9 @@ export interface NodeAction {
   fields?: any[]
   description?: string
   icon: LucideIcon
-  configForm?: React.ReactNode
+  requiresCredential?: boolean
+  configForm: React.ReactNode
+  configFormSchema: ZodObject<any>
 }
 
 // the key for NodeDefinition must be a key of NODE_TYPES
@@ -40,6 +43,7 @@ export const nodeTypes = {
 
 // custom edge types for react flow
 import { CurvyEdge } from '@/components/editor/edge/CurvyEdge'
+import z from 'zod'
 
 export const edgeTypes = {
   curvy: CurvyEdge

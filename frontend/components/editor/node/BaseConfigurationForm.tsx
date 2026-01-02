@@ -1,12 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import {
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel
-} from '@/components/ui/field'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -17,13 +12,14 @@ import {
 import { NodeAction } from '@/types/node.types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Save } from 'lucide-react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, FormProvider } from 'react-hook-form'
 import { toast } from 'sonner'
 import z from 'zod'
 import { useGetCredentials } from '@/hooks/use-credentials'
 import Image from 'next/image'
 import gmailIcon from '@/public/gmail.png'
-import { useMemo } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 
 const providerMeta: Record<
   string,
@@ -63,114 +59,142 @@ function ProviderIcon({ provider }: { provider: string }) {
 
 export const BaseConfigurationForm = ({
   label,
-  description,
   icon: ActionIcon,
-  configForm
+  configForm,
+  requiresCredential = true,
+  configFormSchema
 }: NodeAction) => {
   const { data: credentialsData, isLoading: isLoadingCredentials } =
     useGetCredentials()
 
-  const credentials = useMemo(() => {
-    if (!credentialsData?.data) return []
-    return credentialsData.data
-  }, [credentialsData])
+  const credentials = credentialsData?.data || []
 
-  const formSchema = z.object({
-    credentialId: z.string().min(1, 'Please select a credential.')
+  const credentialSchema = z.object({
+    credentialId: z.string().min(1, 'Please select a valid credential')
   })
+
+  const formSchema = requiresCredential
+    ? configFormSchema.merge(credentialSchema)
+    : configFormSchema
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      credentialId: ''
+      credentialId: '',
+      ...(configFormSchema ? {} : {})
     }
   })
 
   function onSubmit(data: z.infer<typeof formSchema>) {
-    toast('Configuration saved', {
-      description: `Credential ID: ${data.credentialId}`,
-      position: 'bottom-right'
-    })
+    // All validation passed
+    console.log('✅ Form validation passed!')
+    console.log('📋 Submitted data:', data)
+    console.log('🔐 Credential ID:', data.credentialId)
   }
 
   return (
-    <div className='flex flex-col gap-6'>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className='flex flex-col gap-6'
-      >
-        {/* Credential Selection */}
-        <FieldGroup>
-          <FieldLabel>Credential</FieldLabel>
-          <FieldDescription>
-            Select the credential to use for this action
-          </FieldDescription>
-          <Controller
-            control={form.control}
-            name='credentialId'
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-                disabled={isLoadingCredentials || credentials.length === 0}
-              >
-                <SelectTrigger className='w-full'>
-                  <SelectValue placeholder='Select a credential' />
-                </SelectTrigger>
-                <SelectContent>
-                  {credentials.length === 0 ? (
-                    <SelectItem value='no-credentials' disabled>
-                      No credentials available
-                    </SelectItem>
-                  ) : (
-                    credentials.map((cred: any) => {
-                      const meta =
-                        providerMeta[cred.provider?.toLowerCase() || '']
-                      return (
-                        <SelectItem key={cred.id} value={cred.id}>
-                          <div className='flex items-center gap-2'>
-                            <ProviderIcon provider={cred.provider || ''} />
-                            <div className='flex flex-col'>
-                              <span className='text-sm font-medium'>
-                                {meta?.name || cred.provider}
-                              </span>
-                              {cred.service && (
-                                <span className='text-xs text-muted-foreground'>
-                                  {cred.service}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </SelectItem>
-                      )
-                    })
-                  )}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldError>{form.formState.errors.credentialId?.message}</FieldError>
-        </FieldGroup>
-
-        {/* Action-specific Config Form */}
-        {configForm && (
-          <div className='flex flex-col gap-4'>
-            <div className='flex items-center gap-2'>
-              {ActionIcon && (
-                <ActionIcon className='h-4 w-4 text-muted-foreground' />
-              )}
-              <FieldLabel>{label} Configuration</FieldLabel>
-            </div>
-            {description && <FieldDescription>{description}</FieldDescription>}
-            <div className='rounded-md border p-4'>{configForm}</div>
+    <Card className='h-full pr-2 rounded-none border-r border-b-0 border-l-0 border-t-0 flex flex-col'>
+      <CardHeader>
+        <CardTitle className='flex items-center gap-2 text-sm font-medium'>
+          <div className='bg-muted rounded p-1'>
+            <ActionIcon className='h-4 w-4 text-primary' />
           </div>
-        )}
+          {label}
+        </CardTitle>
+        <Separator />
+      </CardHeader>
+      <CardContent className='p-0 flex-1 flex flex-col overflow-hidden'>
+        <FormProvider {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className='flex flex-1 flex-col overflow-hidden'
+          >
+            <div className='flex-1 overflow-y-scroll pl-4 pr-2 py-4 scrollbar-thin'>
+              <div className='space-y-3'>
+                {/* Credential Selection */}
+                {requiresCredential && (
+                  <Controller
+                    control={form.control}
+                    name='credentialId'
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel className='text-xs'>
+                          Pick your credential
+                        </FieldLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={
+                            isLoadingCredentials || credentials.length === 0
+                          }
+                        >
+                          <SelectTrigger
+                            className='py-6 cursor-pointer w-full border-muted-foreground/20 bg-background hover:border-muted-foreground/40'
+                            aria-invalid={fieldState.invalid}
+                          >
+                            <SelectValue placeholder='Select credential' />
+                          </SelectTrigger>
+                          <SelectContent className='max-h-[300px]'>
+                            {credentials.length === 0 ? (
+                              <SelectItem value='no-credentials' disabled>
+                                <span className='text-sm text-muted-foreground'>
+                                  No credentials available
+                                </span>
+                              </SelectItem>
+                            ) : (
+                              credentials.map((cred: any) => {
+                                const meta =
+                                  providerMeta[
+                                    cred.provider?.toLowerCase() || ''
+                                  ]
+                                return (
+                                  <SelectItem
+                                    key={cred.id}
+                                    value={cred.id}
+                                    className='cursor-pointer'
+                                  >
+                                    <div className='flex items-center gap-3'>
+                                      <ProviderIcon
+                                        provider={cred.provider || ''}
+                                      />
+                                      <div className='flex flex-col items-start gap-0.5'>
+                                        <span className='text-sm font-medium'>
+                                          {meta?.name || cred.provider}
+                                        </span>
+                                        {cred.service && (
+                                          <span className='text-xs text-muted-foreground capitalize'>
+                                            {cred.service}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                )
+                              })
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FieldError errors={[fieldState.error]} />
+                      </Field>
+                    )}
+                  />
+                )}
 
-        <Button type='submit' className='w-full'>
-          <Save className='mr-2 h-4 w-4' />
-          Save Configuration
-        </Button>
-      </form>
-    </div>
+                {/* Action-specific Config Form */}
+                {configForm && <div>{configForm}</div>}
+              </div>
+            </div>
+
+            {/* Fixed Save Button */}
+            <div className='px-4 py-3'>
+              <Button type='submit' className='w-full' size='sm'>
+                <Save className='mr-2 size-4' />
+                Save Configuration
+              </Button>
+            </div>
+          </form>
+        </FormProvider>
+      </CardContent>
+    </Card>
   )
 }

@@ -8,7 +8,18 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 
 export default function Provider({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient()) // lazy init
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 5 * 60 * 1000
+          }
+        }
+      })
+  ) // lazy init
+
+  // wrapping it in a fn allows useState to handle the execution because JS only executes the fn wrapping part compared to not wrapping where JS immediately executes the constructor
 
   return (
     <>

@@ -218,6 +218,7 @@ export default function WorkflowViewPage() {
       {/* Top Bar */}
       <WorkflowHeader
         workflowName={workflowName}
+        workflowDescription={workflowDescription}
         onBack={() => router.push('/workflows')}
         onEdit={() => {
           setEditWorkflowName(workflowName || '')
@@ -357,6 +358,7 @@ export default function WorkflowViewPage() {
               Cancel
             </Button>
             <Button
+              className='min-w-16'
               onClick={handleUpdateDetails}
               disabled={
                 updateWorkflow.isPending ||

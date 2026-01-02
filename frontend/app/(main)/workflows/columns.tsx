@@ -36,6 +36,7 @@ import { WorkflowStatus } from '@shared/prisma/generated/prisma/enums'
 export type WorkflowRow = {
   id: string
   name: string
+  description: string | null
   lastExecutedAt: string | null
   nodeCount: number
   status: WorkflowStatus
@@ -95,14 +96,16 @@ export const columns: ColumnDef<WorkflowRow>[] = [
     cell: ({ row }) => {
       const workflow = row.original
       return (
-        <div className='flex items-center gap-3'>
+        <div className='flex max-w-52 items-center gap-3'>
           <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10'>
             <Workflow className='h-5 w-5 text-primary' />
           </div>
-          <div className='flex flex-col'>
-            <span className='text-sm font-semibold'>{workflow.name}</span>
-            <span className='text-xs text-muted-foreground'>
-              ID: {workflow.id}
+          <div className='flex flex-col flex-1 gap-0.5 overflow-hidden'>
+            <span className='text-sm font-semibold truncate block'>
+              {workflow.name}
+            </span>
+            <span className='text-xs text-muted-foreground truncate block'>
+              {workflow.description || 'No description'}
             </span>
           </div>
         </div>

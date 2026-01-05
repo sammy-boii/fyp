@@ -1,83 +1,70 @@
 'use client'
 
-import {
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel
-} from '@/components/ui/field'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { InputGroup, InputGroupTextarea } from '@/components/ui/input-group'
-import { Controller, useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import z from 'zod'
-
-const sendEmailFormSchema = z.object({
-  to: z.string().email('Please enter a valid email address'),
-  subject: z.string().min(1, 'Subject is required'),
-  body: z.string().min(1, 'Email body is required')
-})
+import { Controller, useFormContext } from 'react-hook-form'
 
 export function ReadEmailForm() {
-  const form = useForm<z.infer<typeof sendEmailFormSchema>>({
-    resolver: zodResolver(sendEmailFormSchema),
-    defaultValues: {
-      to: '',
-      subject: '',
-      body: ''
-    }
-  })
+  const { control } = useFormContext()
 
   return (
-    <form className='flex flex-col gap-4'>
-      <FieldGroup>
-        <FieldLabel>To</FieldLabel>
-        <FieldDescription>Recipient email address</FieldDescription>
-        <Controller
-          control={form.control}
-          name='to'
-          render={({ field }) => (
+    <div className='space-y-4'>
+      <Controller
+        name='to'
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>To</FieldLabel>
             <Input
               type='email'
               placeholder='recipient@example.com'
+              className='h-9 text-sm'
               {...field}
+              aria-invalid={fieldState.invalid}
             />
-          )}
-        />
-        <FieldError>{form.formState.errors.to?.message}</FieldError>
-      </FieldGroup>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
 
-      <FieldGroup>
-        <FieldLabel>Subject</FieldLabel>
-        <FieldDescription>Email subject line</FieldDescription>
-        <Controller
-          control={form.control}
-          name='subject'
-          render={({ field }) => (
-            <Input type='text' placeholder='Enter subject' {...field} />
-          )}
-        />
-        <FieldError>{form.formState.errors.subject?.message}</FieldError>
-      </FieldGroup>
+      <Controller
+        control={control}
+        name='subject'
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>Subject</FieldLabel>
+            <Input
+              type='text'
+              placeholder='Email subject'
+              className='h-9 text-sm'
+              {...field}
+              aria-invalid={fieldState.invalid}
+            />
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
 
-      <FieldGroup>
-        <FieldLabel>Body</FieldLabel>
-        <FieldDescription>Email message content</FieldDescription>
-        <Controller
-          control={form.control}
-          name='body'
-          render={({ field }) => (
+      <Controller
+        control={control}
+        name='body'
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>Body</FieldLabel>
             <InputGroup>
               <InputGroupTextarea
-                placeholder='Enter your message...'
-                rows={6}
+                placeholder='Type your message here...'
+                rows={5}
+                className='resize-none text-sm'
                 {...field}
+                aria-invalid={fieldState.invalid}
               />
             </InputGroup>
-          )}
-        />
-        <FieldError>{form.formState.errors.body?.message}</FieldError>
-      </FieldGroup>
-    </form>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+    </div>
   )
 }

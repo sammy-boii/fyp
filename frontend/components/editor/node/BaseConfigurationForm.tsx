@@ -13,7 +13,6 @@ import { NodeAction } from '@/types/node.types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Save } from 'lucide-react'
 import { Controller, useForm, FormProvider } from 'react-hook-form'
-import { toast } from 'sonner'
 import z from 'zod'
 import { useGetCredentials } from '@/hooks/use-credentials'
 import Image from 'next/image'
@@ -62,8 +61,18 @@ export const BaseConfigurationForm = ({
   icon: ActionIcon,
   configForm,
   requiresCredential = true,
-  configFormSchema
-}: NodeAction) => {
+  configFormSchema,
+  nodeId,
+  onSaveConfig,
+  onClose,
+  initialConfig
+}: NodeAction & {
+  configFormSchema?: z.ZodSchema
+  nodeId?: string
+  onSaveConfig?: (data: any) => void
+  onClose?: () => void
+  initialConfig?: any
+}) => {
   const { data: credentialsData, isLoading: isLoadingCredentials } =
     useGetCredentials()
 
@@ -79,7 +88,7 @@ export const BaseConfigurationForm = ({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialConfig || {
       credentialId: '',
       ...(configFormSchema ? {} : {})
     }
@@ -90,6 +99,20 @@ export const BaseConfigurationForm = ({
     console.log('✅ Form validation passed!')
     console.log('📋 Submitted data:', data)
     console.log('🔐 Credential ID:', data.credentialId)
+
+    // Call the callback to save configuration to the node
+    if (onSaveConfig && nodeId) {
+      onSaveConfig({
+        nodeId,
+        actionId: label,
+        config: data
+      })
+    }
+
+    // Close the dialog after saving
+    if (onClose) {
+      onClose()
+    }
   }
 
   return (

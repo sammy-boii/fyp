@@ -104,12 +104,51 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     setDeleteDialogOpen(false)
   }
 
+  const handleSaveConfig = (configData: {
+    nodeId: string
+    actionId: string
+    config: any
+  }) => {
+    // Update the node data with the configuration
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                config: configData.config,
+                actionId: configData.actionId
+              }
+            }
+          : node
+      )
+    )
+  }
+
+  // Check if node has existing config and find the action
+  const getPreSelectedAction = () => {
+    if (!data.actionId || !data.config) {
+      return undefined
+    }
+
+    // Find the action from the node's actions that matches the saved actionId
+    const action = node.actions.find((act) => act.id === data.actionId)
+    return action
+  }
+
   return (
     <ContextMenu>
       <ContextMenuTrigger>
         <div className='relative group'>
           <div className='absolute -top-5 right-0 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center'>
-            <NodeActionsSheet node={node} />
+            <NodeActionsSheet
+              node={node}
+              nodeId={id}
+              onSaveConfig={handleSaveConfig}
+              preSelectedAction={getPreSelectedAction()}
+              initialConfig={data.config}
+            />
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogTrigger asChild>
                 <Button

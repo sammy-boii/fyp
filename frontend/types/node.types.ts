@@ -33,6 +33,8 @@ export type SingleNodeDefinition = {
 
 export type BaseNodeProps = Node<{
   type: (typeof NODE_TYPES)[keyof typeof NODE_TYPES]
+  actionId?: string
+  config?: any
 }>
 
 // custom node types for react flow

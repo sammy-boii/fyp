@@ -19,11 +19,17 @@ import { BaseConfigurationForm } from './BaseConfigurationForm'
 const NodeConfigurationDialog = ({
   action: action,
   isOpen,
-  setIsOpen
+  setIsOpen,
+  nodeId,
+  onSaveConfig,
+  initialConfig
 }: {
   action: NodeAction
   isOpen: boolean
   setIsOpen: React.Dispatch<boolean>
+  nodeId?: string
+  onSaveConfig?: (data: any) => void
+  initialConfig?: any
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -52,7 +58,13 @@ const NodeConfigurationDialog = ({
 
           {/* Form Panel */}
           <ResizablePanel minSize={20}>
-            <BaseConfigurationForm {...action} />
+            <BaseConfigurationForm
+              {...action}
+              nodeId={nodeId}
+              onSaveConfig={onSaveConfig}
+              onClose={() => setIsOpen(false)}
+              initialConfig={initialConfig}
+            />
           </ResizablePanel>
 
           <ResizableHandle withHandle />

@@ -131,8 +131,6 @@ export const columns: ColumnDef<WorkflowRow>[] = [
     cell: ({ getValue }) => {
       const status = getValue() as WorkflowRow['status']
       const config = statusConfig[status]
-      console.log('status', status)
-      console.log('config', config)
       const Icon = config.icon
       return (
         <Badge className={config.className} variant='outline'>

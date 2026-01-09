@@ -41,3 +41,10 @@ export function decryptToken(encryptedBase64: string): string {
 
   return decrypted.toString('utf8')
 }
+
+/**
+ * Decrypt Gmail credential access token
+ */
+export function decryptGmailToken(encryptedToken: string): string {
+  return decryptToken(encryptedToken)
+}

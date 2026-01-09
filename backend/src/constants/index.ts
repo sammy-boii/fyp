@@ -11,6 +11,7 @@ export const FRONTEND_BASE_URL =
     : `http://localhost:3000`
 
 export const GMAIL_API_BASE_URL = 'https://gmail.googleapis.com/gmail/v1'
+export const GOOGLE_OAUTH_BASE_URL = 'https://oauth2.googleapis.com'
 
 export const API_ROUTES = {
   GMAIL: {
@@ -21,6 +22,11 @@ export const API_ROUTES = {
 
     GET_ATTACHMENT: (messageId: string, attachmentId: string) =>
       GMAIL_API_BASE_URL +
-      `/users/me/messages/${messageId}/attachments/${attachmentId}`
+      `/users/me/messages/${messageId}/attachments/${attachmentId}`,
+
+    SEND_MESSAGE: GMAIL_API_BASE_URL + `/users/me/messages/send`
+  },
+  OAUTH: {
+    REFRESH_TOKEN: GOOGLE_OAUTH_BASE_URL + '/token'
   }
 }

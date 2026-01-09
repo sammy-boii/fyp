@@ -81,6 +81,14 @@ export function AppSidebar() {
 
   const { data } = useGetProfile()
 
+  const isActive = (url: string) => {
+    // Exact match or starts with the URL followed by a slash
+    return (
+      pathName === url ||
+      (pathName.startsWith(url) && pathName[url.length] === '/')
+    )
+  }
+
   return (
     <Sidebar collapsible='icon' className='group'>
       <SidebarHeader className='relative'>
@@ -112,10 +120,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathName.startsWith(item.url)}
-                  >
+                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>

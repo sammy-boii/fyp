@@ -79,6 +79,11 @@ type Email = {
 export default function GmailPage() {
   const [emails, setEmails] = useState<Email[]>([])
   const [loading, setLoading] = useState(true)
+  const [to, setTo] = useState('')
+  const [subject, setSubject] = useState('')
+  const [body, setBody] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sendMessage, setSendMessage] = useState('')
 
   useEffect(() => {
     fetch('http://localhost:5000/api/gmail/messages', {
@@ -89,6 +94,51 @@ export default function GmailPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  const handleSendEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!to || !subject || !body) {
+      setSendMessage('Please fill in all fields')
+      return
+    }
+
+    setSending(true)
+    setSendMessage('')
+
+    try {
+      const res = await fetch('http://localhost:5000/api/gmail/messages/send', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          to,
+          subject,
+          body
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setSendMessage('Error: ' + (data.message || 'Failed to send email'))
+        return
+      }
+
+      setSendMessage('Email sent successfully!')
+      setTo('')
+      setSubject('')
+      setBody('')
+    } catch (error) {
+      setSendMessage(
+        'Error: ' + (error instanceof Error ? error.message : 'Unknown error')
+      )
+    } finally {
+      setSending(false)
+    }
+  }
+
   console.log(emails)
 
   if (loading) return <p className='text-center mt-10'>Loading emails...</p>
@@ -97,70 +147,144 @@ export default function GmailPage() {
     <div className='p-6 max-w-5xl mx-auto'>
       <h1 className='text-3xl font-bold mb-6'>Gmail Messages</h1>
 
-      {emails.map((email) => {
-        return (
-          <div
-            key={email.id}
-            className='border rounded-md p-4 mb-6 shadow-sm bg-white dark:bg-gray-800'
-          >
-            <div className='mb-2'>
-              <p className='font-semibold'>Subject: {email.subject}</p>
-              <p className='text-sm text-gray-500 dark:text-gray-300'>
-                From: {email.from}
-              </p>
-              <p className='text-sm text-gray-500 dark:text-gray-300'>
-                Date: {new Date(email.date).toLocaleString()}
-              </p>
-            </div>
-
-            <div
-              className='prose dark:prose-invert mb-4'
-              dangerouslySetInnerHTML={{ __html: email.body }}
+      {/* Send Email Form */}
+      <div className='bg-white dark:bg-gray-800 border rounded-md p-6 mb-8 shadow-sm'>
+        <h2 className='text-2xl font-bold mb-4'>Send Email</h2>
+        <form onSubmit={handleSendEmail} className='space-y-4'>
+          <div>
+            <label className='block text-sm font-medium mb-1'>To:</label>
+            <input
+              type='email'
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              placeholder='recipient@example.com'
+              className='w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600'
+              disabled={sending}
             />
-
-            {(email.attachments || []).map((att, idx) => {
-              // Extract actual image data if wrapped in JSON
-              const actualData = extractActualImageData(att.data)
-              const fixedBase64 = base64UrlToBase64(actualData)
-              const dataUrl = `data:${att.mimeType};base64,${fixedBase64}`
-              const isImage = att.mimeType.startsWith('image/')
-
-              return (
-                <div key={idx} className='flex flex-col items-start mb-4'>
-                  {isImage ? (
-                    <img
-                      src={dataUrl}
-                      alt={att.filename}
-                      className='max-w-xs max-h-48 border rounded mb-2'
-                      onError={(e) => {
-                        console.error('Image load error for:', att.filename)
-                        console.log('MIME type:', att.mimeType)
-                        console.log(
-                          'Actual data (first 50):',
-                          actualData.substring(0, 50)
-                        )
-                      }}
-                    />
-                  ) : (
-                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-2'>
-                      {att.filename}
-                    </p>
-                  )}
-
-                  <button
-                    onClick={() =>
-                      downloadAttachment(att.data, att.mimeType, att.filename)
-                    }
-                    className='px-3 py-2 border rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm cursor-pointer'
-                  >
-                    Download {att.filename}
-                  </button>
-                </div>
-              )
-            })}
           </div>
-        )
-      })}
+
+          <div>
+            <label className='block text-sm font-medium mb-1'>Subject:</label>
+            <input
+              type='text'
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder='Email subject'
+              className='w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600'
+              disabled={sending}
+            />
+          </div>
+
+          <div>
+            <label className='block text-sm font-medium mb-1'>Body:</label>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder='Email body'
+              rows={5}
+              className='w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600'
+              disabled={sending}
+            />
+          </div>
+
+          <button
+            type='submit'
+            disabled={sending}
+            className='px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400'
+          >
+            {sending ? 'Sending...' : 'Send Email'}
+          </button>
+
+          {sendMessage && (
+            <p
+              className={`mt-2 text-sm ${
+                sendMessage.includes('Error')
+                  ? 'text-red-600'
+                  : 'text-green-600'
+              }`}
+            >
+              {sendMessage}
+            </p>
+          )}
+        </form>
+      </div>
+
+      {/* Emails List */}
+      {emails.length === 0 ? (
+        <p className='text-center text-gray-500'>No emails found</p>
+      ) : (
+        <>
+          <h2 className='text-2xl font-bold mb-4'>Inbox ({emails.length})</h2>
+          {emails.map((email, i) => {
+            return (
+              <div
+                key={i}
+                className='border rounded-md p-4 mb-6 shadow-sm bg-white dark:bg-gray-800'
+              >
+                <div className='mb-2'>
+                  <p className='font-semibold'>Subject: {email.subject}</p>
+                  <p className='text-sm text-gray-500 dark:text-gray-300'>
+                    From: {email.from}
+                  </p>
+                  <p className='text-sm text-gray-500 dark:text-gray-300'>
+                    Date: {new Date(email.date).toLocaleString()}
+                  </p>
+                </div>
+
+                <div
+                  className='prose dark:prose-invert mb-4'
+                  dangerouslySetInnerHTML={{ __html: email.body }}
+                />
+
+                {(email.attachments || []).map((att, idx) => {
+                  // Extract actual image data if wrapped in JSON
+                  const actualData = extractActualImageData(att.data)
+                  const fixedBase64 = base64UrlToBase64(actualData)
+                  const dataUrl = `data:${att.mimeType};base64,${fixedBase64}`
+                  const isImage = att.mimeType.startsWith('image/')
+
+                  return (
+                    <div key={idx} className='flex flex-col items-start mb-4'>
+                      {isImage ? (
+                        <img
+                          src={dataUrl}
+                          alt={att.filename}
+                          className='max-w-xs max-h-48 border rounded mb-2'
+                          onError={(e) => {
+                            console.error('Image load error for:', att.filename)
+                            console.log('MIME type:', att.mimeType)
+                            console.log(
+                              'Actual data (first 50):',
+                              actualData.substring(0, 50)
+                            )
+                          }}
+                        />
+                      ) : (
+                        <p className='text-sm text-gray-600 dark:text-gray-400 mb-2'>
+                          {att.filename}
+                        </p>
+                      )}
+
+                      <button
+                        onClick={() =>
+                          downloadAttachment(
+                            att.data,
+                            att.mimeType,
+                            att.filename
+                          )
+                        }
+                        className='px-3 py-2 border rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm cursor-pointer'
+                      >
+                        Download {att.filename}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </>
+      )}
     </div>
   )
 }

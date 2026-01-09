@@ -79,7 +79,6 @@ const DashboardPage = () => {
 
       if (avatarFile) {
         const { data, error } = await uploadCloudinaryImage(avatarFile)
-        console.log('D', data, error)
 
         if (error) {
           toast.error(error.message)

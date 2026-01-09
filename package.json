@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev:frontend": "bunx kill-port 3000 && bun -F frontend dev",
-    "dev:backend": "bun -F backend dev",
+    "dev:backend": "bunx kill-port 5000 && bun -F backend dev",
     "build:frontend": "bun -F frontend build",
     "build:backend": "bun -F backend build",
     "dev": "bun -F '*' dev"

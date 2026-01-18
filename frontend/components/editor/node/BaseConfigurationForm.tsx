@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select'
 import { NodeAction } from '@/types/node.types'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Save } from 'lucide-react'
+import { Save, Loader2 } from 'lucide-react'
 import { Controller, useForm, FormProvider } from 'react-hook-form'
 import z from 'zod'
 import { useGetCredentials } from '@/hooks/use-credentials'
@@ -57,6 +57,7 @@ function ProviderIcon({ provider }: { provider: string }) {
 }
 
 export const BaseConfigurationForm = ({
+  id,
   label,
   icon: ActionIcon,
   configForm,
@@ -104,7 +105,7 @@ export const BaseConfigurationForm = ({
     if (onSaveConfig && nodeId) {
       onSaveConfig({
         nodeId,
-        actionId: label,
+        actionId: id,
         config: data
       })
     }
@@ -158,7 +159,14 @@ export const BaseConfigurationForm = ({
                             <SelectValue placeholder='Select credential' />
                           </SelectTrigger>
                           <SelectContent className='max-h-[300px]'>
-                            {credentials.length === 0 ? (
+                            {isLoadingCredentials ? (
+                              <div className='flex items-center justify-center gap-2 py-4 px-2'>
+                                <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />
+                                <span className='text-sm text-muted-foreground'>
+                                  Loading credentials...
+                                </span>
+                              </div>
+                            ) : credentials.length === 0 ? (
                               <SelectItem value='no-credentials' disabled>
                                 <span className='text-sm text-muted-foreground'>
                                   No credentials available

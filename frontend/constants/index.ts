@@ -3,4 +3,6 @@ export const NODE_TYPES = {
   GOOGLE_DRIVE: 'GOOGLE_DRIVE'
 } as const
 
+export const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000'
+
 // used as a key type for NODE_DEFINITION but for a value to be used as a key, it must be a literal. But we're dynamically allocating it and not using a literal value so const is needed to trick the transpiler.

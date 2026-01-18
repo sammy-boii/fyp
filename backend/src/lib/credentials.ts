@@ -108,6 +108,32 @@ export async function getValidGmailAccessToken(
     throw new Error('Gmail credential not found')
   }
 
+  return await validateAndRefreshToken(credential)
+}
+
+/**
+ * Get a valid decrypted access token by credentialId, refreshing if expired
+ */
+export async function getValidGmailAccessTokenByCredentialId(
+  credentialId: string
+): Promise<{ token: string; credential: any }> {
+  const credential = await prisma.oAuthCredential.findUnique({
+    where: { id: credentialId }
+  })
+
+  if (!credential) {
+    throw new Error('Credential not found')
+  }
+
+  return await validateAndRefreshToken(credential)
+}
+
+/**
+ * Validate and refresh token if needed
+ */
+async function validateAndRefreshToken(
+  credential: any
+): Promise<{ token: string; credential: any }> {
   // Check if token is expired
   if (
     credential.accessTokenExpiresAt &&

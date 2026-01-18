@@ -4,7 +4,7 @@ import { NodeAction } from '@/types/node.types'
 import { Mail, Search } from 'lucide-react'
 import { SendEmailForm } from './forms/SendEmailForm'
 import { ReadEmailForm } from './forms/ReadEmailForm'
-import { sendEmailFormSchema } from '@/schema/nodes/gmail.schema'
+import { sendEmailFormSchema, readEmailFormSchema } from '@/schema/nodes/gmail.schema'
 
 export const GMAIL_ACTIONS: NodeAction[] = [
   {
@@ -21,6 +21,7 @@ export const GMAIL_ACTIONS: NodeAction[] = [
     description: 'Read emails from Gmail inbox',
     icon: Search,
     configForm: <ReadEmailForm />,
-    configFormSchema: sendEmailFormSchema
+    configFormSchema: readEmailFormSchema
   }
 ]
+

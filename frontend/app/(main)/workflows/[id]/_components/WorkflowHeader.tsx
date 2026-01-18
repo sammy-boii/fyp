@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Save, SquarePen } from 'lucide-react'
+import { ArrowLeft, Save, SquarePen, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface WorkflowHeaderProps {
@@ -11,6 +11,8 @@ interface WorkflowHeaderProps {
   onSave: () => void
   isSaving: boolean
   workflowId: string | null
+  onExecute: () => void
+  isExecuting: boolean
 }
 
 export function WorkflowHeader({
@@ -19,7 +21,9 @@ export function WorkflowHeader({
   onEdit,
   onSave,
   isSaving,
-  workflowId
+  workflowId,
+  onExecute,
+  isExecuting
 }: WorkflowHeaderProps) {
   return (
     <div className='w-full h-16 border-b border-sidebar-border bg-sidebar z-10 flex items-center justify-between px-6'>
@@ -51,16 +55,29 @@ export function WorkflowHeader({
           <SquarePen className='size-4' />
         </Button>
       </div>
-      <Button
-        size='sm'
-        className='gap-2 min-w-20 items-center shrink-0'
-        onClick={onSave}
-        isLoading={isSaving}
-        disabled={isSaving || !workflowId}
-      >
-        <Save className='h-4 w-4' />
-        Save
-      </Button>
+      <div className='flex items-center gap-2 shrink-0'>
+        <Button
+          variant='outline'
+          size='sm'
+          className='gap-2 min-w-20 items-center'
+          onClick={onExecute}
+          isLoading={isExecuting}
+          disabled={isExecuting || !workflowId}
+        >
+          <Play className='h-4 w-4' />
+          Execute
+        </Button>
+        <Button
+          size='sm'
+          className='gap-2 min-w-20 items-center'
+          onClick={onSave}
+          isLoading={isSaving}
+          disabled={isSaving || !workflowId}
+        >
+          <Save className='h-4 w-4' />
+          Save
+        </Button>
+      </div>
     </div>
   )
 }

@@ -20,6 +20,7 @@ import type { Node, OnEdgesChange, OnNodesChange } from '@xyflow/react'
 import { nodeTypes, edgeTypes } from '@/types/node.types'
 import { Button } from '@/components/ui/button'
 import { useGetWorkflow, useUpdateWorkflow } from '@/hooks/use-workflows'
+import { executeWorkflow } from '@/actions/workflow.actions'
 import {
   Dialog,
   DialogContent,
@@ -79,6 +80,7 @@ export default function WorkflowViewPage() {
   const [editWorkflowDescription, setEditWorkflowDescription] = useState('')
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const hasInitialized = useRef(false)
+  const [isExecuting, setIsExecuting] = useState(false)
 
   const nodesOptions = [
     { id: NODE_TYPES.GMAIL, name: 'Gmail', icon: gmailIcon },
@@ -171,6 +173,89 @@ export default function WorkflowViewPage() {
     setSheetOpen(false)
   }
 
+  async function handleExecuteWorkflow() {
+    if (!workflowId) return
+
+    setIsExecuting(true)
+    const toastId = toast.loading('Executing workflow...')
+
+    try {
+      const result = await executeWorkflow(workflowId)
+
+      if (result.error) {
+        toast.dismiss(toastId)
+        toast.error(result.error.message || 'Failed to execute workflow')
+      } else {
+        toast.dismiss(toastId)
+        toast.success(
+          `Workflow executed successfully in ${result.data?.execution?.duration}ms`
+        )
+      }
+    } catch (error: any) {
+      toast.dismiss(toastId)
+      toast.error(error.message || 'Failed to execute workflow')
+    } finally {
+      setIsExecuting(false)
+    }
+  }
+
+  function handleSaveWorkflow() {
+    if (!workflowId) return
+
+    const toastID = toast.loading('Saving workflow...')
+
+    updateWorkflow.mutate(
+      {
+        id: workflowId,
+        data: {
+          name: workflowName,
+          description: workflowDescription,
+          nodes: nodes as unknown as any[],
+          edges: edges as unknown as any[]
+        }
+      },
+
+      {
+        onSuccess: () => {
+          toast.dismiss(toastID)
+          toast.success('Workflow updated successfully')
+        },
+        onError: (error) => {
+          toast.dismiss(toastID)
+          toast.error(error.message || 'Failed to update workflow')
+        }
+      }
+    )
+  }
+
+  function handleUpdateDetails() {
+    if (!workflowId || !editWorkflowName.trim()) return
+
+    const name = editWorkflowName.trim()
+    const description = editWorkflowDescription.trim()
+
+    updateWorkflow.mutate(
+      {
+        id: workflowId,
+        data: {
+          name,
+          description: description,
+          nodes: nodes as unknown as any[],
+          edges: edges as unknown as any[]
+        }
+      },
+      {
+        onSuccess: () => {
+          setWorkflowName(name)
+          setWorkflowDescription(description)
+          setEditDialogOpen(false)
+          setEditWorkflowName('')
+          setEditWorkflowDescription('')
+        }
+      }
+    )
+  }
+
   if (isLoading) {
     return (
       <div className='w-full h-screen flex items-center justify-center'>
@@ -228,6 +313,8 @@ export default function WorkflowViewPage() {
         onSave={handleSaveWorkflow}
         isSaving={updateWorkflow.isPending}
         workflowId={workflowId}
+        onExecute={handleExecuteWorkflow}
+        isExecuting={isExecuting}
       />
 
       {/* Add Node Button - Top Middle Right */}
@@ -374,61 +461,4 @@ export default function WorkflowViewPage() {
       </Dialog>
     </div>
   )
-
-  function handleSaveWorkflow() {
-    if (!workflowId) return
-
-    const toastID = toast.loading('Saving workflow...')
-
-    updateWorkflow.mutate(
-      {
-        id: workflowId,
-        data: {
-          name: workflowName,
-          description: workflowDescription,
-          nodes: nodes as unknown as any[],
-          edges: edges as unknown as any[]
-        }
-      },
-
-      {
-        onSuccess: () => {
-          toast.dismiss(toastID)
-          toast.success('Workflow updated successfully')
-        },
-        onError: (error) => {
-          toast.dismiss(toastID)
-          toast.error(error.message || 'Failed to update workflow')
-        }
-      }
-    )
-  }
-
-  function handleUpdateDetails() {
-    if (!workflowId || !editWorkflowName.trim()) return
-
-    const name = editWorkflowName.trim()
-    const description = editWorkflowDescription.trim()
-
-    updateWorkflow.mutate(
-      {
-        id: workflowId,
-        data: {
-          name,
-          description: description,
-          nodes: nodes as unknown as any[],
-          edges: edges as unknown as any[]
-        }
-      },
-      {
-        onSuccess: () => {
-          setWorkflowName(name)
-          setWorkflowDescription(description)
-          setEditDialogOpen(false)
-          setEditWorkflowName('')
-          setEditWorkflowDescription('')
-        }
-      }
-    )
-  }
 }

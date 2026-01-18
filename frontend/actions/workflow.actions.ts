@@ -1,10 +1,14 @@
 'use server'
 
+import { api } from '@/lib/api'
+
 import { prisma } from '@shared/db/prisma'
 import { tryCatch } from '@/lib/utils'
 import { getCurrentUser } from '@/data/dal'
 import { createWorkflowSchema } from '@/schema/workflow.schema'
 import { Workflow } from '@shared/prisma/generated/prisma/client'
+import { cookies } from 'next/headers'
+import { BACKEND_URL } from '@/constants'
 
 export async function getWorkflows() {
   return tryCatch(async () => {
@@ -58,7 +62,7 @@ export async function createWorkflow(data: Partial<Workflow>) {
 
     const workflow = await prisma.workflow.create({
       data: {
-        authorId: user.id,
+        author: { connect: { id: user.id } },
         name: parsedData.name,
         description: parsedData.description,
         status: parsedData.status,
@@ -151,5 +155,34 @@ export async function deleteWorkflow(id: string) {
     })
 
     return { success: true }
+  })
+}
+
+export async function executeWorkflow(id: string) {
+  return tryCatch(async () => {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      throw new Error('Not authenticated')
+    }
+ 
+    // Verify the workflow belongs to the current user
+    const workflow = await prisma.workflow.findUnique({
+      where: {
+        id,
+        authorId: user.id
+      }
+    })
+
+    if (!workflow) {
+      throw new Error('Workflow not found or access denied')
+    }
+
+
+    // Call backend API to execute workflow
+    // Token is auto-attached by api client via cookies
+    const result = await api.get(`api/workflow/run/${id}`).json<any>()
+
+    return result
   })
 }

@@ -19,7 +19,7 @@ import {
   Loader2
 } from 'lucide-react'
 import Image from 'next/image'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
 import { NODE_DEFINITIONS } from '@/constants/registry'
 import { useParams } from 'next/navigation'
@@ -105,13 +105,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     setSheetOpen(false)
   }
 
-  // Update connection state when component mounts or node changes
-  React.useEffect(() => {
-    const edges = getEdges()
-    setIsSourceConnected(edges.some((edge) => edge.source === id))
-  }, [id, getEdges])
-
-  const handleExecuteNode = async () => {
+  const handleExecuteNode = useCallback(async () => {
     if (!workflowId) return
 
     if (!data.actionId || !data.config) {
@@ -119,47 +113,43 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     }
 
     await executeNodeMutation.mutateAsync({ workflowId, nodeId: id })
-  }
+  }, [workflowId, data.actionId, data.config, executeNodeMutation, id])
 
-  const handleConfigure = () => {
+  const handleConfigure = useCallback(() => {
     setConfigDialogOpen(true)
-  }
+  }, [])
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     // Remove the node and all connected edges directly
     setNodes((nds) => nds.filter((n) => n.id !== id))
     setEdges((eds) => {
       const filtered = eds.filter((e) => e.source !== id && e.target !== id)
-      // Update connection state if this was a source
-      const wasSource = eds.some((e) => e.source === id)
-      if (wasSource) setIsSourceConnected(false)
       return filtered
     })
 
     setDeleteDialogOpen(false)
-  }
+  }, [id, setNodes, setEdges])
 
-  const handleSaveConfig = (configData: {
-    nodeId: string
-    actionId: string
-    config: any
-  }) => {
-    // Update the node data with the configuration
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === id
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                config: configData.config,
-                actionId: configData.actionId
+  const handleSaveConfig = useCallback(
+    (configData: { nodeId: string; actionId: string; config: any }) => {
+      // Update the node data with the configuration
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === id
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  config: configData.config,
+                  actionId: configData.actionId
+                }
               }
-            }
-          : node
+            : node
+        )
       )
-    )
-  }
+    },
+    [id, setNodes]
+  )
 
   // Check if node has existing config and find the action
   const getPreSelectedAction = () => {
@@ -176,11 +166,11 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     <ContextMenu>
       <ContextMenuTrigger>
         <div className='relative group'>
-          <div className='absolute -top-5 right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center'>
+          <div className='absolute -top-5 right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center'>
             <Button
               size='icon'
               variant='outline'
-              className='h-6 w-6 bg-background/95 backdrop-blur-sm border-border/50 shadow-sm hover:bg-green-500/10 hover:border-green-500/60 hover:text-green-500 hover:shadow-md disabled:opacity-40 disabled:hover:bg-background/95 transition-all'
+              className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-green-500/10 hover:border-green-500/60 hover:text-green-500 hover:shadow-md disabled:opacity-40 disabled:hover:bg-background transition-all'
               onClick={handleExecuteNode}
               disabled={
                 !data.actionId || !data.config || executeNodeMutation.isPending
@@ -206,7 +196,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
                 <Button
                   size='icon'
                   variant='outline'
-                  className='h-6 w-6 bg-background/95 backdrop-blur-sm border-border/50 shadow-sm hover:bg-destructive/10 hover:border-destructive/60 hover:text-destructive hover:shadow-md transition-all'
+                  className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-destructive/10 hover:border-destructive/60 hover:text-destructive hover:shadow-md transition-all'
                 >
                   <Trash2 className='h-3 w-3' />
                 </Button>
@@ -240,12 +230,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
             </Dialog>
           </div>
 
-          <Card
-            className={`
-        relative w-48 p-4 rounded-lg border transition-all duration-200
-        bg-card/95 backdrop-blur-sm border-border/50
-      `}
-          >
+          <Card className='relative w-48 p-4 rounded-lg border transition-colors bg-card border-border/50'>
             {/* Content */}
             <div className='flex items-center gap-3'>
               <div
@@ -256,7 +241,6 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     `}
               >
                 <div className='relative z-10'>
-                  {' '}
                   <Image
                     src={node.icon}
                     alt={node.label}
@@ -393,3 +377,13 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     </ContextMenu>
   )
 }
+
+// Wrap with memo to prevent unnecessary re-renders
+export const BaseNodeMemo = React.memo(BaseNode, (prevProps, nextProps) => {
+  // Only re-render if data or selected state changes
+  return (
+    prevProps.id === nextProps.id &&
+    prevProps.data === nextProps.data &&
+    prevProps.selected === nextProps.selected
+  )
+})

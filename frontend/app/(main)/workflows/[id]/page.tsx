@@ -135,16 +135,14 @@ export default function WorkflowViewPage() {
     }
   }, [data])
 
-  const onNodesChange: OnNodesChange = useCallback(
-    (changes) => {
-      setNodes((nds) => applyNodeChanges(changes, nds))
-    },
-    [setNodes]
-  )
+  const onNodesChange: OnNodesChange = useCallback((changes) => {
+    // Batch position updates to reduce re-renders during drag
+    setNodes((nds) => applyNodeChanges(changes, nds))
+  }, [])
 
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    [setEdges]
+    []
   )
 
   const addNode = (

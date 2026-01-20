@@ -41,9 +41,10 @@ export type BaseNodeProps = Node<{
 }>
 
 // custom node types for react flow
+import { BaseNodeMemo } from '@/components/editor/node/BaseNode'
 
 export const nodeTypes = {
-  custom_node: BaseNode
+  custom_node: BaseNodeMemo
 }
 
 // custom edge types for react flow

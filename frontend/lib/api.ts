@@ -14,11 +14,25 @@ export const api = ky.create({
   },
   hooks: {
     beforeRequest: [
-      async (request) => {
+      async (req) => {
         const cookieStore = await cookies()
         const token = cookieStore.get('token')?.value
         if (token) {
-          request.headers.set('Authorization', `Bearer ${token}`)
+          req.headers.set('Authorization', `Bearer ${token}`)
+        }
+      }
+    ],
+    afterResponse: [
+      async (_req, _options, res) => {
+        if (!res.ok) {
+          const contentType = res.headers.get('content-type')
+          if (contentType?.includes('application/json')) {
+            const errorData = await res.clone().json()
+            throw new Error(errorData.error)
+          } else {
+            const errorMsg = await res.clone().text()
+            throw new Error(errorMsg)
+          }
         }
       }
     ]

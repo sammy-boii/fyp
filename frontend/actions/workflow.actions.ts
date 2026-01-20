@@ -9,7 +9,10 @@ import {
   createWorkflowSchema,
   updateWorkflowSchema
 } from '@/schema/workflow.schema'
-import { Workflow } from '@shared/prisma/generated/prisma/client'
+import {
+  Workflow,
+  WorkflowExecution
+} from '@shared/prisma/generated/prisma/client'
 
 export async function getWorkflows() {
   return tryCatch(async () => {
@@ -163,6 +166,7 @@ export async function executeWorkflow(id: string) {
     }
 
     const result = await api.get(`api/workflow/run/${id}`).json<any>()
+    console.log('RESULT', result)
 
     return result
   })
@@ -190,8 +194,9 @@ export async function executeNode(workflowId: string, nodeId: string) {
 
     const result = await api
       .get(`api/workflow/execute/${workflowId}/${nodeId}`)
-      .json<any>()
+      .json<WorkflowExecution>()
 
+    console.log('RESULT', result)
     return result
   })
 }

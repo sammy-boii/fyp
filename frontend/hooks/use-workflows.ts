@@ -52,7 +52,10 @@ export function useUpdateWorkflow() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Workflow> }) =>
       updateWorkflow(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
+      if (data.error) {
+        throw data.error
+      }
       queryClient.invalidateQueries({
         queryKey: ['workflows']
       })
@@ -72,7 +75,10 @@ export function useDeleteWorkflow() {
 
   return useMutation({
     mutationFn: (id: string) => deleteWorkflow(id),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.error) {
+        throw data.error
+      }
       queryClient.invalidateQueries({
         queryKey: ['workflows']
       })
@@ -95,12 +101,9 @@ export function useExecuteNode() {
     }) => executeNode(workflowId, nodeId),
     onSuccess: (data) => {
       if (data.error) {
-        toast.error(String(data.error))
-      } else if (data.data?.success) {
-        toast.success('Node executed successfully')
-      } else {
-        toast.error(data.data?.error || 'Node execution failed')
+        throw data.error
       }
+      toast.success('Node executed successfully')
     },
     onError: (err) => {
       toast.error(err.message || 'Failed to execute node')

@@ -1,10 +1,8 @@
-
 import ky from 'ky'
 import { cookies } from 'next/headers'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/'
-
-console.log("BACKEND_URL", BACKEND_URL)
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/'
 
 export const api = ky.create({
   prefixUrl: BACKEND_URL,
@@ -17,14 +15,10 @@ export const api = ky.create({
   hooks: {
     beforeRequest: [
       async (request) => {
-        try {
-          const cookieStore = await cookies()
-          const token = cookieStore.get('token')?.value
-          if (token) {
-            request.headers.set('Authorization', `Bearer ${token}`)
-          }
-        } catch (error) {
-          console.warn('Could not attach token in the API client:', error)
+        const cookieStore = await cookies()
+        const token = cookieStore.get('token')?.value
+        if (token) {
+          request.headers.set('Authorization', `Bearer ${token}`)
         }
       }
     ]

@@ -5,10 +5,11 @@ import { api } from '@/lib/api'
 import { prisma } from '@shared/db/prisma'
 import { tryCatch } from '@/lib/utils'
 import { getCurrentUser } from '@/data/dal'
-import { createWorkflowSchema } from '@/schema/workflow.schema'
+import {
+  createWorkflowSchema,
+  updateWorkflowSchema
+} from '@/schema/workflow.schema'
 import { Workflow } from '@shared/prisma/generated/prisma/client'
-import { cookies } from 'next/headers'
-import { BACKEND_URL } from '@/constants'
 
 export async function getWorkflows() {
   return tryCatch(async () => {
@@ -20,10 +21,18 @@ export async function getWorkflows() {
 
     const workflows = await prisma.workflow.findMany({
       where: { authorId: user.id },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        executions: {
+          select: { id: true }
+        }
+      }
     })
 
-    return workflows
+    return workflows.map((w) => ({
+      ...w,
+      executionCount: w.executions.length
+    }))
   })
 }
 
@@ -65,22 +74,12 @@ export async function createWorkflow(data: Partial<Workflow>) {
         author: { connect: { id: user.id } },
         name: parsedData.name,
         description: parsedData.description,
-        status: parsedData.status,
         nodes: parsedData.nodes,
         edges: parsedData.edges ?? []
       }
     })
 
-    return {
-      id: workflow.id,
-      name: workflow.name,
-      description: workflow.description,
-      status: workflow.status,
-      nodes: workflow.nodes,
-      edges: workflow.edges,
-      createdAt: workflow.createdAt.toISOString(),
-      updatedAt: workflow.updatedAt.toISOString()
-    }
+    return workflow
   })
 }
 
@@ -104,29 +103,14 @@ export async function updateWorkflow(id: string, data: Partial<Workflow>) {
       throw new Error('Workflow not found or access denied')
     }
 
-    const updateData: any = {}
-    if (data.name !== undefined) updateData.name = data.name
-    if (data.description !== undefined)
-      updateData.description = data.description
-    if (data.status !== undefined) updateData.status = data.status
-    if (data.nodes !== undefined) updateData.nodes = data.nodes
-    if (data.edges !== undefined) updateData.edges = data.edges
+    const parsedData = updateWorkflowSchema.parse(data)
 
     const workflow = await prisma.workflow.update({
       where: { id },
-      data: updateData
+      data: parsedData
     })
 
-    return {
-      id: workflow.id,
-      name: workflow.name,
-      description: workflow.description,
-      status: workflow.status,
-      nodes: workflow.nodes,
-      edges: workflow.edges,
-      createdAt: workflow.createdAt.toISOString(),
-      updatedAt: workflow.updatedAt.toISOString()
-    }
+    return workflow
   })
 }
 
@@ -165,7 +149,7 @@ export async function executeWorkflow(id: string) {
     if (!user) {
       throw new Error('Not authenticated')
     }
- 
+
     // Verify the workflow belongs to the current user
     const workflow = await prisma.workflow.findUnique({
       where: {
@@ -178,10 +162,35 @@ export async function executeWorkflow(id: string) {
       throw new Error('Workflow not found or access denied')
     }
 
-
-    // Call backend API to execute workflow
-    // Token is auto-attached by api client via cookies
     const result = await api.get(`api/workflow/run/${id}`).json<any>()
+
+    return result
+  })
+}
+
+export async function executeNode(workflowId: string, nodeId: string) {
+  return tryCatch(async () => {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      throw new Error('Not authenticated')
+    }
+
+    // Verify the workflow belongs to the current user
+    const workflow = await prisma.workflow.findUnique({
+      where: {
+        id: workflowId,
+        authorId: user.id
+      }
+    })
+
+    if (!workflow) {
+      throw new Error('Workflow not found or access denied')
+    }
+
+    const result = await api
+      .get(`api/workflow/execute/${workflowId}/${nodeId}`)
+      .json<any>()
 
     return result
   })

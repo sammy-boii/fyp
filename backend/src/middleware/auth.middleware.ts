@@ -4,10 +4,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken'
 import { getCookie } from 'hono/cookie'
 
 export const authMiddleware = async (c: Context, next: Next) => {
-  
   let token = getCookie(c, 'token') // we up now 😏
-
-  console.log("TOKEN", token)
 
   // if fetch is called inside an action, we get the token from the Authorization header
   if (!token) {

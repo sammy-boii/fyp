@@ -1,12 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import {
-  SheetTrigger,
-  SheetContent,
-  Sheet,
-  SheetHeader
-} from '@/components/ui/sheet'
+import { SheetContent, Sheet, SheetHeader } from '@/components/ui/sheet'
 import { NodeAction, SingleNodeDefinition } from '@/types/node.types'
 import { ChevronRight, Settings } from 'lucide-react'
 import React, { useState } from 'react'
@@ -17,13 +12,17 @@ export const NodeActionsSheet = ({
   nodeId,
   onSaveConfig,
   preSelectedAction,
-  initialConfig
+  initialConfig,
+  open,
+  onOpenChange
 }: {
   node: SingleNodeDefinition
   nodeId: string
   onSaveConfig?: (data: any) => void
   preSelectedAction?: NodeAction
   initialConfig?: any
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) => {
   const [openActionsSheet, setOpenActionsSheet] = useState(false)
   const [selectedAction, setSelectedAction] = useState<NodeAction | null>(
@@ -50,13 +49,30 @@ export const NodeActionsSheet = ({
     }
   }
 
+  // Sync external open state with internal state
+  React.useEffect(() => {
+    if (open !== undefined) {
+      if (preSelectedAction) {
+        setSelectedAction(preSelectedAction)
+        setOpenConfigDialog(open)
+      } else {
+        setOpenActionsSheet(open)
+      }
+    }
+  }, [open, preSelectedAction])
+
+  const handleConfigDialogChange = (isOpen: boolean) => {
+    setOpenConfigDialog(isOpen)
+    onOpenChange?.(isOpen)
+  }
+
   return (
     <>
       {/* Configuration Dialog - shown when action is selected or already configured */}
       {selectedAction && (
         <NodeConfigurationDialog
           isOpen={openConfigDialog}
-          setIsOpen={setOpenConfigDialog}
+          setIsOpen={handleConfigDialogChange}
           action={selectedAction}
           nodeId={nodeId}
           onSaveConfig={onSaveConfig}
@@ -110,12 +126,12 @@ export const NodeActionsSheet = ({
 
       {/* Settings Button - Triggers either Sheet or Config Dialog */}
       <Button
-        size='sm'
+        size='icon'
         variant='outline'
-        className='h-6 w-6 p-0 bg-background/90 backdrop-blur-sm border-border/60 hover:bg-primary/10 hover:border-primary/50 hover:text-primary'
+        className='h-6 w-6 bg-background/95 backdrop-blur-sm border-border/50 shadow-sm hover:bg-primary/10 hover:border-primary/60 hover:text-primary hover:shadow-md transition-all'
         onClick={handleSettingsClick}
       >
-        <Settings className='h-3.5 w-3.5' />
+        <Settings className='h-3 w-3' />
       </Button>
     </>
   )

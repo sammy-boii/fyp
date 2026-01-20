@@ -5,18 +5,25 @@ import {
   Position,
   NodeProps,
   useReactFlow,
-  useEdges,
-  useNodes,
   addEdge
 } from '@xyflow/react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-import { Pause, Play, Settings, Trash2, Plus, ChevronRight } from 'lucide-react'
+import {
+  Play,
+  Settings,
+  Trash2,
+  Plus,
+  ChevronRight,
+  Loader2
+} from 'lucide-react'
 import Image from 'next/image'
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
 import { NODE_DEFINITIONS } from '@/constants/registry'
+import { useParams } from 'next/navigation'
+import { useExecuteNode } from '@/hooks/use-workflows'
 
 import { NodeActionsSheet } from './NodeActionsSheet'
 
@@ -60,16 +67,21 @@ const nodesOptions = [
 
 export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const node = NODE_DEFINITIONS[data.type]
-  const { setNodes, setEdges } = useReactFlow()
-  const edges = useEdges()
-  const nodes = useNodes()
+  const { setNodes, setEdges, getEdges, getNodes } = useReactFlow()
+  const params = useParams()
+  const workflowId = params?.id ? String(params.id) : null
+  const executeNodeMutation = useExecuteNode()
 
   const [sheetOpen, setSheetOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [configDialogOpen, setConfigDialogOpen] = useState(false)
+  const [isSourceConnected, setIsSourceConnected] = useState(false)
 
   const addNode = (
     nodeType: typeof NODE_TYPES.GOOGLE_DRIVE | typeof NODE_TYPES.GMAIL
   ) => {
+    const nodes = getNodes()
+    const edges = getEdges()
     const currentNode = nodes.find((n) => n.id === id)
     if (!currentNode) return
 
@@ -89,17 +101,40 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     const newEdge = createEdge(id, newNode.id)
     setEdges((eds) => addEdge(newEdge, eds))
 
+    setIsSourceConnected(true)
     setSheetOpen(false)
   }
 
-  // Check if the source handle is connected
-  // Using useEdges hook ensures the component re-renders when edges change
-  const isSourceConnected = edges.some((edge) => edge.source === id)
+  // Update connection state when component mounts or node changes
+  React.useEffect(() => {
+    const edges = getEdges()
+    setIsSourceConnected(edges.some((edge) => edge.source === id))
+  }, [id, getEdges])
+
+  const handleExecuteNode = async () => {
+    if (!workflowId) return
+
+    if (!data.actionId || !data.config) {
+      return
+    }
+
+    await executeNodeMutation.mutateAsync({ workflowId, nodeId: id })
+  }
+
+  const handleConfigure = () => {
+    setConfigDialogOpen(true)
+  }
 
   const handleDelete = () => {
     // Remove the node and all connected edges directly
     setNodes((nds) => nds.filter((n) => n.id !== id))
-    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id))
+    setEdges((eds) => {
+      const filtered = eds.filter((e) => e.source !== id && e.target !== id)
+      // Update connection state if this was a source
+      const wasSource = eds.some((e) => e.source === id)
+      if (wasSource) setIsSourceConnected(false)
+      return filtered
+    })
 
     setDeleteDialogOpen(false)
   }
@@ -141,22 +176,39 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     <ContextMenu>
       <ContextMenuTrigger>
         <div className='relative group'>
-          <div className='absolute -top-5 right-0 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center'>
+          <div className='absolute -top-5 right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center'>
+            <Button
+              size='icon'
+              variant='outline'
+              className='h-6 w-6 bg-background/95 backdrop-blur-sm border-border/50 shadow-sm hover:bg-green-500/10 hover:border-green-500/60 hover:text-green-500 hover:shadow-md disabled:opacity-40 disabled:hover:bg-background/95 transition-all'
+              onClick={handleExecuteNode}
+              disabled={
+                !data.actionId || !data.config || executeNodeMutation.isPending
+              }
+            >
+              {executeNodeMutation.isPending ? (
+                <Loader2 className='h-3 w-3 animate-spin' />
+              ) : (
+                <Play className='h-3 w-3' />
+              )}
+            </Button>
             <NodeActionsSheet
               node={node}
               nodeId={id}
               onSaveConfig={handleSaveConfig}
               preSelectedAction={getPreSelectedAction()}
               initialConfig={data.config}
+              open={configDialogOpen}
+              onOpenChange={setConfigDialogOpen}
             />
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogTrigger asChild>
                 <Button
-                  size='sm'
+                  size='icon'
                   variant='outline'
-                  className='h-6 w-6 p-0 bg-background/90 backdrop-blur-sm border-border/60 hover:bg-destructive/10 hover:border-destructive/50 hover:text-destructive'
+                  className='h-6 w-6 bg-background/95 backdrop-blur-sm border-border/50 shadow-sm hover:bg-destructive/10 hover:border-destructive/60 hover:text-destructive hover:shadow-md transition-all'
                 >
-                  <Trash2 className='h-3.5 w-3.5' />
+                  <Trash2 className='h-3 w-3' />
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -308,23 +360,33 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
         </div>
       </ContextMenuTrigger>
 
-      <ContextMenuContent className='w-44 space-y-2'>
-        <ContextMenuItem className='gap-3'>
-          <Play />
+      <ContextMenuContent className='w-44'>
+        <ContextMenuItem
+          className='gap-3'
+          onClick={handleExecuteNode}
+          disabled={
+            !data.actionId || !data.config || executeNodeMutation.isPending
+          }
+        >
+          {executeNodeMutation.isPending ? (
+            <Loader2 className='h-4 w-4 animate-spin' />
+          ) : (
+            <Play className='h-4 w-4' />
+          )}
           Run
         </ContextMenuItem>
-        <ContextMenuItem className='gap-3' disabled>
-          <Pause />
-          Pause
-        </ContextMenuItem>
 
-        <ContextMenuItem className='gap-3'>
-          <Settings />
+        <ContextMenuItem className='gap-3' onClick={handleConfigure}>
+          <Settings className='h-4 w-4' />
           Configure
         </ContextMenuItem>
 
-        <ContextMenuItem className='gap-3' variant='destructive'>
-          <Trash2 />
+        <ContextMenuItem
+          className='gap-3'
+          variant='destructive'
+          onClick={() => setDeleteDialogOpen(true)}
+        >
+          <Trash2 className='h-4 w-4' />
           Delete
         </ContextMenuItem>
       </ContextMenuContent>

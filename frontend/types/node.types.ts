@@ -1,3 +1,4 @@
+import { NODE_ACTION_ID } from './../../shared/src/constants'
 import { BaseNode } from '@/components/editor/node/BaseNode'
 import { NODE_TYPES } from '@/constants'
 import type { Node } from '@xyflow/react'
@@ -31,9 +32,11 @@ export type SingleNodeDefinition = {
   icon: StaticImageData
 }
 
+type ValueOf<T> = T[keyof T]
+
 export type BaseNodeProps = Node<{
-  type: (typeof NODE_TYPES)[keyof typeof NODE_TYPES]
-  actionId?: string
+  type: ValueOf<typeof NODE_TYPES>
+  actionId: ValueOf<typeof NODE_ACTION_ID>
   config?: any
 }>
 
@@ -45,7 +48,6 @@ export const nodeTypes = {
 
 // custom edge types for react flow
 import { CurvyEdge } from '@/components/editor/edge/CurvyEdge'
-import z from 'zod'
 
 export const edgeTypes = {
   curvy: CurvyEdge

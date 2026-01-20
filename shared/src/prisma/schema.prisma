@@ -7,12 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum WorkflowStatus {
-  ACTIVE
-  INACTIVE
-  PAUSED
-}
-
 enum NodeExecutionStatus {
   PENDING
   RUNNING
@@ -40,7 +34,6 @@ model Workflow {
 
   name        String
   description String?
-  status      WorkflowStatus @default(INACTIVE)
   nodes       Json
   edges       Json
 
@@ -48,10 +41,11 @@ model Workflow {
 
   schedule String? // cron expression
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastExecutedAt DateTime?
 
-  @@index([authorId, status])
+  @@index([authorId])
 }
 
 model WorkflowExecution {

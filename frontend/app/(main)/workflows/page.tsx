@@ -5,7 +5,7 @@ import { Plus, Workflow } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
-import { columns, WorkflowRow } from './columns'
+import { columns } from './columns'
 import { DataTable } from './data-table'
 import { useCreateWorkflow, useGetWorkflows } from '@/hooks/use-workflows'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -33,21 +33,11 @@ export default function WorkflowsPage() {
   const { data, isLoading, isError } = useGetWorkflows()
   const createWorkflow = useCreateWorkflow()
 
+  const workflows = data?.data || []
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [newWorkflowName, setNewWorkflowName] = useState('')
   const [newWorkflowDescription, setNewWorkflowDescription] = useState('')
-
-  const workflows: WorkflowRow[] =
-    data?.data?.map((w: any) => ({
-      id: w.id,
-      name: w.name,
-      description: w.description,
-      lastExecutedAt: w.lastExecutedAt,
-      nodeCount: Array.isArray(w.nodes) ? w.nodes.length : 0,
-      status: w.status,
-      createdAt: w.createdAt,
-      updatedAt: w.updatedAt
-    })) ?? []
 
   return (
     <div className='w-full bg-background'>

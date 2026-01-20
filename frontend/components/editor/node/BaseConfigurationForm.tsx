@@ -89,18 +89,22 @@ export const BaseConfigurationForm = ({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialConfig || {
+    defaultValues: {
       credentialId: '',
-      ...(configFormSchema ? {} : {})
+      maxResults: 10,
+      from: '',
+      to: '',
+      subject: '',
+      after: '',
+      before: '',
+      hasAttachment: false,
+      isUnread: false,
+      labelId: '',
+      ...initialConfig
     }
   })
 
   function onSubmit(data: z.infer<typeof formSchema>) {
-    // All validation passed
-    console.log('✅ Form validation passed!')
-    console.log('📋 Submitted data:', data)
-    console.log('🔐 Credential ID:', data.credentialId)
-
     // Call the callback to save configuration to the node
     if (onSaveConfig && nodeId) {
       onSaveConfig({

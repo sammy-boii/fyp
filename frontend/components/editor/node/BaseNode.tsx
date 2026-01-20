@@ -19,7 +19,7 @@ import {
   Loader2
 } from 'lucide-react'
 import Image from 'next/image'
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
 import { NODE_DEFINITIONS } from '@/constants/registry'
 import { useParams } from 'next/navigation'
@@ -51,19 +51,12 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog'
 
-import googleDriveIcon from '@/public/google-drive.png'
-import gmailIcon from '@/public/gmail.png'
-import { NODE_TYPES } from '@/constants'
+import { NODE_OPTIONS, NODE_TYPES } from '@/constants'
 import {
   createNode,
   createEdge,
   calculateNewNodePosition
 } from '@/lib/react-flow-utils'
-
-const nodesOptions = [
-  { id: NODE_TYPES.GMAIL, name: 'Gmail', icon: gmailIcon },
-  { id: NODE_TYPES.GOOGLE_DRIVE, name: 'Google Drive', icon: googleDriveIcon }
-]
 
 export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const node = NODE_DEFINITIONS[data.type]
@@ -306,7 +299,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
                         </SheetDescription>
                       </SheetHeader>
                       <div className='grid gap-3 p-4 pt-2'>
-                        {nodesOptions.map((option) => (
+                        {NODE_OPTIONS.map((option) => (
                           <button
                             key={option.id}
                             onClick={() => addNode(option.id)}

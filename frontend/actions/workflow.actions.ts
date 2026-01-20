@@ -3,7 +3,7 @@
 import { api } from '@/lib/api'
 
 import { prisma } from '@shared/db/prisma'
-import { tryCatch } from '@/lib/utils'
+import { ApiResponse, tryCatch } from '@/lib/utils'
 import { getCurrentUser } from '@/data/dal'
 import {
   createWorkflowSchema,
@@ -165,7 +165,9 @@ export async function executeWorkflow(id: string) {
       throw new Error('Workflow not found or access denied')
     }
 
-    const result = await api.get(`api/workflow/run/${id}`).json<any>()
+    const result = await api
+      .get(`api/workflow/run/${id}`)
+      .json<ApiResponse<WorkflowExecution>>()
     console.log('RESULT', result)
 
     return result

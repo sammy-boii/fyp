@@ -1,4 +1,4 @@
-import { NODE_ACTION_ID } from './../../../../shared/src/constants'
+import { NODE_ACTION_ID } from '@shared/constants'
 import { Context } from 'hono'
 import { AppError } from '@/src/types'
 import { tryCatch } from '@/src/lib/utils'
@@ -14,8 +14,51 @@ import {
 } from '@/src/executors/gmail-executor'
 import {
   NodeExecutionStatus,
+  TriggerType,
   WorkflowExecutionStatus
 } from '@shared/prisma/generated/prisma/enums'
+import { executeNodeLogic } from '@/src/executors/node-executor'
+
+const executeNode = async (
+  node: TWorkflowNode,
+  inputData: any,
+  executionId: string
+): Promise<TNodeExecutionResult> => {
+  const { actionId, config } = node.data
+
+  const nodeExecution = await prisma.nodeExecution.create({
+    data: {
+      executionId,
+      nodeId: node.id,
+      nodeType: node.type,
+      actionId: actionId,
+      config: config || {},
+      inputData: inputData || null,
+      status: NodeExecutionStatus.RUNNING,
+      startedAt: new Date()
+    }
+  })
+
+  const result: TNodeExecutionResult = await executeNodeLogic(
+    node,
+    config,
+    inputData
+  )
+
+  await prisma.nodeExecution.update({
+    where: { id: nodeExecution.id },
+    data: {
+      status: result.success
+        ? NodeExecutionStatus.COMPLETED
+        : NodeExecutionStatus.FAILED,
+      outputData: result.data || null,
+      error: result.error || null,
+      completedAt: new Date()
+    }
+  })
+
+  return result
+}
 
 const buildExecutionOrder = (
   nodes: TWorkflowNode[],
@@ -67,60 +110,6 @@ const buildExecutionOrder = (
   return executionOrder
 }
 
-const executeNode = async (
-  node: TWorkflowNode,
-  executionId: string,
-  inputData: any
-): Promise<TNodeExecutionResult> => {
-  const { actionId, config } = node.data
-
-  console.log(`[executeNode] Node ${node.id} | Action: ${actionId}`)
-
-  // Create node execution record
-  const nodeExecution = await prisma.nodeExecution.create({
-    data: {
-      executionId,
-      nodeId: node.id,
-      nodeType: node.type,
-      actionId: actionId,
-      config: config || {},
-      inputData: inputData || null,
-      status: NodeExecutionStatus.RUNNING,
-      startedAt: new Date()
-    }
-  })
-
-  let result: TNodeExecutionResult
-
-  switch (actionId) {
-    case NODE_ACTION_ID.SEND_EMAIL:
-      result = await executeSendEmail(config, inputData)
-      break
-
-    case NODE_ACTION_ID.READ_EMAIL:
-      result = await executeReadEmail(config, inputData)
-      break
-
-    default:
-      result = { success: false, error: `Unknown action: ${actionId}` }
-  }
-
-  // Update node execution record
-  await prisma.nodeExecution.update({
-    where: { id: nodeExecution.id },
-    data: {
-      status: result.success
-        ? NodeExecutionStatus.COMPLETED
-        : NodeExecutionStatus.FAILED,
-      outputData: result.data || null,
-      error: result.error || null,
-      completedAt: new Date()
-    }
-  })
-
-  return result
-}
-
 export const runWorkflow = tryCatch(async (c: Context) => {
   const workflowId = c.req.param('id')
   const user = c.get('user')
@@ -133,7 +122,6 @@ export const runWorkflow = tryCatch(async (c: Context) => {
     throw new AppError('Workflow ID is required', 400)
   }
 
-  // Fetch workflow
   const workflow = await prisma.workflow.findUnique({
     where: { id: workflowId }
   })
@@ -142,12 +130,10 @@ export const runWorkflow = tryCatch(async (c: Context) => {
     throw new AppError('Workflow not found', 404)
   }
 
-  // Verify ownership
   if (workflow.authorId !== user.id) {
     throw new AppError('Unauthorized to execute this workflow', 403)
   }
 
-  // Parse nodes and edges
   const nodes = workflow.nodes as TWorkflowNode[]
   const edges = workflow.edges as TWorkflowEdge[]
 
@@ -158,8 +144,8 @@ export const runWorkflow = tryCatch(async (c: Context) => {
   const execution = await prisma.workflowExecution.create({
     data: {
       workflowId: workflow.id,
-      status: 'RUNNING',
-      triggerType: 'MANUAL'
+      status: WorkflowExecutionStatus.RUNNING,
+      triggerType: TriggerType.MANUAL
     }
   })
 
@@ -170,28 +156,13 @@ export const runWorkflow = tryCatch(async (c: Context) => {
     const executionOrder = buildExecutionOrder(nodes, edges)
     console.log('Execution order:', executionOrder)
 
-    // Execute nodes in order, passing output to next node
-    const nodeOutputs = new Map<string, any>()
-
+    // Execute nodes in order without passing previous outputs
     for (const nodeId of executionOrder) {
       const node = nodes.find((n) => n.id === nodeId)
       if (!node) continue
 
-      // Find predecessor nodes to get their outputs
-      const predecessorOutputs = edges
-        .filter((e) => e.target === nodeId)
-        .map((e) => nodeOutputs.get(e.source))
-        .filter(Boolean)
-
-      // Combine all predecessor outputs as input
-      const inputData =
-        predecessorOutputs.length > 0
-          ? predecessorOutputs.length === 1
-            ? predecessorOutputs[0]
-            : { sources: predecessorOutputs }
-          : null
-
-      const result = await executeNode(node, execution.id, inputData)
+      // Execute node without inherited inputs
+      const result = await executeNode(node, null, execution.id)
 
       if (!result.success) {
         // Stop on failure
@@ -201,7 +172,7 @@ export const runWorkflow = tryCatch(async (c: Context) => {
         await prisma.workflowExecution.update({
           where: { id: execution.id },
           data: {
-            status: 'FAILED',
+            status: WorkflowExecutionStatus.FAILED,
             error: `Node ${nodeId} failed: ${result.error}`,
             duration,
             completedAt: new Date()
@@ -213,9 +184,6 @@ export const runWorkflow = tryCatch(async (c: Context) => {
           500
         )
       }
-
-      // Store output for downstream nodes
-      nodeOutputs.set(nodeId, result.data)
     }
 
     const duration = Date.now() - startTime
@@ -238,16 +206,8 @@ export const runWorkflow = tryCatch(async (c: Context) => {
     console.log(`\n=== Workflow Execution Complete (${duration}ms) ===\n`)
 
     return {
-      success: true,
-      message: 'Workflow executed successfully',
-      execution: {
-        id: execution.id,
-        workflowId: workflow.id,
-        workflowName: workflow.name,
-        duration,
-        nodeCount: nodes.length,
-        executedNodes: executionOrder.length
-      }
+      ...execution,
+      duration
     }
   } catch (error: any) {
     // If not already handled, mark as failed

@@ -18,7 +18,7 @@ type Failure<E = Error> = {
 
 type Result<T, E = Error> = Success<T> | Failure<E>
 
-export type ApiResponse<T, E> = Result<T, E>
+export type ApiResponse<T, E = Error> = Result<T, E>
 
 export async function tryCatch<T>(
   fn: () => Promise<T>,

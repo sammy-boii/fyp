@@ -1,10 +1,10 @@
-import ky from 'ky'
+import ky, { KyInstance } from 'ky'
 import { cookies } from 'next/headers'
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/'
 
-export const api = ky.create({
+export const api: KyInstance = ky.create({
   prefixUrl: BACKEND_URL,
   timeout: 10000,
   retry: {

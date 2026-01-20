@@ -6,7 +6,7 @@ import { getCookie } from 'hono/cookie'
 export const authMiddleware = async (c: Context, next: Next) => {
   let token = getCookie(c, 'token') // we up now 😏
 
-  // if fetch is called inside an action, we get the token from the Authorization header
+  // if fetch is called inside a server action, we get the token from the Authorization header as it cannot send the browser's cookies
   if (!token) {
     const authHeader = c.req.header('Authorization')
     if (authHeader && authHeader.startsWith('Bearer ')) {

@@ -32,8 +32,6 @@ export type SingleNodeDefinition = {
   icon: StaticImageData
 }
 
-type ValueOf<T> = T[keyof T]
-
 export type BaseNodeProps = Node<{
   type: ValueOf<typeof NODE_TYPES>
   actionId: ValueOf<typeof NODE_ACTION_ID>
@@ -49,6 +47,7 @@ export const nodeTypes = {
 
 // custom edge types for react flow
 import { CurvyEdge } from '@/components/editor/edge/CurvyEdge'
+import { ValueOf } from './index.types'
 
 export const edgeTypes = {
   curvy: CurvyEdge

@@ -41,9 +41,8 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet'
-import { NODE_TYPES } from '@/constants'
-import googleDriveIcon from '@/public/google-drive.png'
-import gmailIcon from '@/public/gmail.png'
+import { NODE_OPTIONS, NODE_TYPES } from '@/constants'
+
 import {
   Empty,
   EmptyDescription,
@@ -61,6 +60,7 @@ import {
   formatNodes,
   formatEdges
 } from '@/lib/react-flow-utils'
+import { ValueOf } from '@/types/index.types'
 
 export default function WorkflowViewPage() {
   const params = useParams()
@@ -81,11 +81,6 @@ export default function WorkflowViewPage() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const hasInitialized = useRef(false)
   const [isExecuting, setIsExecuting] = useState(false)
-
-  const nodesOptions = [
-    { id: NODE_TYPES.GMAIL, name: 'Gmail', icon: gmailIcon },
-    { id: NODE_TYPES.GOOGLE_DRIVE, name: 'Google Drive', icon: googleDriveIcon }
-  ]
 
   // Prevent backspace from deleting nodes
   useEffect(() => {
@@ -136,7 +131,6 @@ export default function WorkflowViewPage() {
   }, [data])
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
-    // Batch position updates to reduce re-renders during drag
     setNodes((nds) => applyNodeChanges(changes, nds))
   }, [])
 
@@ -145,9 +139,7 @@ export default function WorkflowViewPage() {
     []
   )
 
-  const addNode = (
-    nodeType: typeof NODE_TYPES.GOOGLE_DRIVE | typeof NODE_TYPES.GMAIL
-  ) => {
+  const addNode = (nodeType: ValueOf<typeof NODE_TYPES>) => {
     // Find the last node in the chain
     const lastNode = findLastNode(nodes, edges)
 
@@ -185,9 +177,9 @@ export default function WorkflowViewPage() {
         toast.error(result.error.message || 'Failed to execute workflow')
       } else {
         toast.dismiss(toastId)
-        toast.success(
-          `Workflow executed successfully in ${result.data?.execution?.duration}ms`
-        )
+        const duration = ((result.data.data?.duration ?? 0) / 1000).toFixed(2)
+        console.log(duration)
+        toast.success(`Workflow executed successfully in ${duration} s`)
       }
     } catch (error: any) {
       toast.dismiss(toastId)
@@ -333,7 +325,7 @@ export default function WorkflowViewPage() {
               </SheetDescription>
             </SheetHeader>
             <div className='grid gap-3 p-4 pt-2'>
-              {nodesOptions.map((option) => (
+              {NODE_OPTIONS.map((option) => (
                 <button
                   key={option.id}
                   onClick={() => addNode(option.id)}

@@ -26,55 +26,50 @@ export function WorkflowHeader({
   isExecuting
 }: WorkflowHeaderProps) {
   return (
-    <div className='w-full h-16 border-b border-sidebar-border bg-sidebar z-10 flex items-center justify-between px-6'>
-      <div className='flex items-center gap-3 min-w-0'>
+    <div className='w-full h-14 border-b border-sidebar-border bg-sidebar z-10 flex items-center justify-between px-4'>
+      <div className='flex items-center gap-2 min-w-0'>
         <Button
           variant='ghost'
           size='icon'
           onClick={onBack}
-          className='hover:bg-sidebar-accent shrink-0'
+          className='h-8 w-8 text-sidebar-foreground/70 hover:bg-sidebar-accent shrink-0'
         >
-          <ArrowLeft className='size-4' />
+          <ArrowLeft className='size-3.5' />
         </Button>
         <div className='flex flex-col min-w-0 flex-1 gap-0.5 overflow-hidden'>
-          <h1 className='text-base font-semibold text-sidebar-foreground truncate block'>
+          <h1 className='text-sm font-semibold text-sidebar-foreground truncate block'>
             {workflowName || 'Untitled Workflow'}
           </h1>
-          {/* {workflowDescription && (
-            <p className='text-xs text-muted-foreground truncate max-w-44 block'>
-              {workflowDescription}
-            </p>
-          )} */}
         </div>
         <Button
           variant='ghost'
           size='icon'
-          className='size-7 text-foreground/70 hover:text-sidebar-foreground shrink-0'
+          className='h-8 w-8 text-foreground/70 hover:text-sidebar-foreground shrink-0'
           onClick={onEdit}
         >
-          <SquarePen className='size-4' />
+          <SquarePen className='size-3.5' />
         </Button>
       </div>
-      <div className='flex items-center gap-2 shrink-0'>
+      <div className='flex items-center gap-1.5 shrink-0'>
         <Button
           variant='outline'
           size='sm'
-          className='gap-2 min-w-20 items-center'
+          className='gap-1.5 px-2 h-8 text-xs'
           onClick={onExecute}
           isLoading={isExecuting}
           disabled={isExecuting || !workflowId}
         >
-          <Play className='h-4 w-4' />
+          <Play className='h-3.5 w-3.5' />
           Execute
         </Button>
         <Button
           size='sm'
-          className='gap-2 min-w-20 items-center'
+          className='gap-1.5 px-2 h-8 text-xs'
           onClick={onSave}
           isLoading={isSaving}
           disabled={isSaving || !workflowId}
         >
-          <Save className='h-4 w-4' />
+          <Save className='h-3.5 w-3.5' />
           Save
         </Button>
       </div>

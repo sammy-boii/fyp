@@ -5,7 +5,8 @@ import {
   createWorkflow,
   updateWorkflow,
   deleteWorkflow,
-  executeNode
+  executeNode,
+  executeWorkflow
 } from '@/actions/workflow.actions'
 import { toast } from 'sonner'
 import { Workflow } from '@shared/prisma/generated/prisma/client'
@@ -86,6 +87,22 @@ export function useDeleteWorkflow() {
     },
     onError: (err) => {
       toast.error(err.message || 'Failed to delete workflow')
+    }
+  })
+}
+
+export function useExecuteWorkflow() {
+  return useMutation({
+    mutationFn: (workflowId: string) => executeWorkflow(workflowId),
+    onSuccess: (data) => {
+      if (data.error) {
+        throw data.error
+      }
+      const duration = ((data.data.data?.duration ?? 0) / 1000).toFixed(2)
+      toast.success(`Workflow executed successfully in ${duration}s`)
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to execute workflow')
     }
   })
 }

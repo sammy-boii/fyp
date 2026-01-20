@@ -4,8 +4,7 @@ import { getValidGmailAccessTokenByCredentialId } from '../lib/credentials'
 import { TNodeExecutionResult } from '../types/workflow.types'
 
 export const executeSendEmail = async (
-  config: any,
-  inputData: any
+  config: any
 ): Promise<TNodeExecutionResult> => {
   console.log(
     '[executeSendEmail] Starting with config:',
@@ -80,8 +79,7 @@ export const executeSendEmail = async (
 }
 
 export const executeReadEmail = async (
-  config: any,
-  inputData: any
+  config: any
 ): Promise<TNodeExecutionResult> => {
   console.log(
     '[executeReadEmail] Starting with config:',

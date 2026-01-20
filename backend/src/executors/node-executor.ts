@@ -15,11 +15,11 @@ export const executeNodeLogic = async (
 
   switch (actionId) {
     case NODE_ACTION_ID.SEND_EMAIL:
-      result = await executeSendEmail(config, inputData)
+      result = await executeSendEmail(config)
       break
 
     case NODE_ACTION_ID.READ_EMAIL:
-      result = await executeReadEmail(config, inputData)
+      result = await executeReadEmail(config)
       break
 
     default:

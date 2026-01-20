@@ -53,20 +53,27 @@ export function useUpdateWorkflow() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Workflow> }) =>
       updateWorkflow(id, data),
-    onSuccess: (data, variables) => {
+    onMutate: async () => {
+      const toastId = toast.loading('Saving workflow...')
+      return toastId
+    },
+    onSuccess: (data, variables, toastId) => {
       if (data.error) {
+        toast.dismiss(toastId as string)
         throw data.error
       }
       queryClient.invalidateQueries({
         queryKey: ['workflows']
       })
+      toast.dismiss(toastId as string)
       toast.success('Workflow updated successfully')
       queryClient.invalidateQueries({
         queryKey: ['workflow', variables.id]
       })
     },
-    onError: (err) => {
-      toast.error(err.message)
+    onError: (err, variables, toastId) => {
+      toast.dismiss(toastId as string)
+      toast.error(err.message || 'Failed to update workflow')
     }
   })
 }
@@ -94,14 +101,21 @@ export function useDeleteWorkflow() {
 export function useExecuteWorkflow() {
   return useMutation({
     mutationFn: (workflowId: string) => executeWorkflow(workflowId),
-    onSuccess: (data) => {
+    onMutate: async () => {
+      const toastId = toast.loading('Executing workflow...')
+      return toastId
+    },
+    onSuccess: (data, variables, toastId) => {
       if (data.error) {
+        toast.dismiss(toastId as string)
         throw data.error
       }
       const duration = ((data.data.data?.duration ?? 0) / 1000).toFixed(2)
+      toast.dismiss(toastId as string)
       toast.success(`Workflow executed successfully in ${duration}s`)
     },
-    onError: (err) => {
+    onError: (err, variables, toastId) => {
+      toast.dismiss(toastId as string)
       toast.error(err.message || 'Failed to execute workflow')
     }
   })

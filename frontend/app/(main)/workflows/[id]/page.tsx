@@ -46,6 +46,7 @@ import {
 import { ValueOf } from '@/types/index.types'
 import { NODE_TYPES } from '@/constants'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
+import WorkflowExecutionTab from './_components/WorkflowExecutionTab'
 
 export default function WorkflowViewPage() {
   const params = useParams()
@@ -206,7 +207,7 @@ export default function WorkflowViewPage() {
   }
 
   return (
-    <div className='relative'>
+    <div className='relative flex flex-col h-screen'>
       {/* Top Bar */}
       <WorkflowHeader
         workflowName={workflowName}
@@ -229,12 +230,12 @@ export default function WorkflowViewPage() {
         workflowId={workflowId}
       />
 
-      <Tabs defaultValue='editor' className='w-full'>
-        <TabsList className='left-1/2 -translate-x-1/2 absolute top-10 z-100'>
+      <Tabs defaultValue='editor'>
+        <TabsList className='absolute left-1/2 top-8 -translate-x-1/2 z-10'>
           <TabsTrigger value='editor'>Editor</TabsTrigger>
           <TabsTrigger value='executions'>Executions</TabsTrigger>
         </TabsList>
-        <TabsContent value='editor'>
+        <TabsContent value='editor' className='flex-1'>
           <div
             className='w-full h-[90vh] relative flex flex-col'
             ref={reactFlowWrapper}
@@ -277,12 +278,10 @@ export default function WorkflowViewPage() {
             </ReactFlow>
           </div>
         </TabsContent>
-        <TabsContent value='executions'>
-          Change your executions here.
+        <TabsContent value='executions' className='flex-1'>
+          <WorkflowExecutionTab />
         </TabsContent>
       </Tabs>
-
-      {/* ReactFlow Canvas */}
     </div>
   )
 }

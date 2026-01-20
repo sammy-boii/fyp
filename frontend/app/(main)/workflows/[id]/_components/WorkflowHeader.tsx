@@ -26,7 +26,7 @@ export function WorkflowHeader({
   isExecuting
 }: WorkflowHeaderProps) {
   return (
-    <div className='w-full h-14 border-b border-sidebar-border bg-sidebar z-10 flex items-center justify-between px-4'>
+    <div className='w-full h-14 bg-sidebar z-10 flex items-center justify-between px-4'>
       <div className='flex items-center gap-2 min-w-0'>
         <Button
           variant='ghost'

@@ -5,28 +5,20 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from '@/components/ui/collapsible'
+import { Progress } from '@/components/ui/progress'
 import { TimelineLayout } from '@/components/timeline'
 import {
   Trash2,
   CheckCircle2,
   XCircle,
-  Circle,
   Play,
   Wifi,
   WifiOff,
   Clock,
-  ChevronDown,
   Timer,
-  AlertCircle,
-  FileOutput
+  Cog
 } from 'lucide-react'
-import { useEffect, useRef, useMemo, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { useEffect, useRef, useMemo } from 'react'
 import type { TimelineElement } from '@/types/index.types'
 
 interface WorkflowExecutionTabProps {
@@ -88,13 +80,13 @@ const WorkflowExecutionTab = ({
   currentExecution,
   clearLogs
 }: WorkflowExecutionTabProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [expandedOutputs, setExpandedOutputs] = useState<Set<string>>(new Set())
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const endOfLogsRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    if (endOfLogsRef.current) {
+      endOfLogsRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
     }
   }, [executionLogs])
 
@@ -131,23 +123,18 @@ const WorkflowExecutionTab = ({
   }, [executionLogs])
 
   // Convert execution group logs to timeline items
-  const convertLogsToTimeline = (
-    logs: ExecutionLog[],
-    execId: string
-  ): TimelineElement[] => {
+  const convertLogsToTimeline = (logs: ExecutionLog[]): TimelineElement[] => {
     return logs.map((log, index) => {
       const hasOutput =
         log.data?.output && Object.keys(log.data.output).length > 0
       const hasError = !!log.data?.error
-      const nodeKey = `${execId}-${index}`
-      const isExpanded = expandedOutputs.has(nodeKey)
 
       const getIcon = () => {
         switch (log.type) {
           case 'workflow:start':
             return <Play className='h-5 w-5' />
           case 'node:start':
-            return <Circle className='h-5 w-5' />
+            return <Cog className='h-5 w-5' />
           case 'node:complete':
             return <CheckCircle2 className='h-5 w-5' />
           case 'node:error':
@@ -157,7 +144,7 @@ const WorkflowExecutionTab = ({
           case 'workflow:error':
             return <XCircle className='h-5 w-5' />
           default:
-            return <Circle className='h-5 w-5' />
+            return <Cog className='h-5 w-5' />
         }
       }
 
@@ -194,23 +181,31 @@ const WorkflowExecutionTab = ({
         }
       }
 
-      // Build description with expandable output/error
+      // Build description
       const buildDescription = () => {
-        const parts: string[] = []
-
         if (log.data?.duration) {
-          parts.push(`Duration: ${log.data.duration}ms`)
+          return `Completed in ${log.data.duration}ms`
         }
+        return ''
+      }
 
-        if (hasError) {
-          return log.data?.error || 'An error occurred'
+      // Build expandable content for output/error
+      const getExpandableContent = ():
+        | TimelineElement['expandableContent']
+        | undefined => {
+        if (hasError && log.data?.error) {
+          return {
+            type: 'error',
+            content: log.data.error
+          }
         }
-
-        if (hasOutput && !isExpanded) {
-          parts.push('Output available - click to expand')
+        if (hasOutput && log.data?.output) {
+          return {
+            type: 'output',
+            content: JSON.stringify(log.data.output, null, 2)
+          }
         }
-
-        return parts.join(' • ')
+        return undefined
       }
 
       return {
@@ -225,7 +220,8 @@ const WorkflowExecutionTab = ({
             ? 'completed'
             : log.type.includes('start')
               ? 'in-progress'
-              : ('pending' as const)
+              : ('pending' as const),
+        expandableContent: getExpandableContent()
       } satisfies TimelineElement
     })
   }
@@ -259,85 +255,10 @@ const WorkflowExecutionTab = ({
     }
   }
 
-  // Render output/error detail section for a log
-  const renderLogDetail = (
-    log: ExecutionLog,
-    index: number,
-    execId: string
-  ) => {
-    const nodeKey = `${execId}-${index}`
-    const hasOutput =
-      log.data?.output && Object.keys(log.data.output).length > 0
-    const hasError = !!log.data?.error
-    const isExpandable = hasOutput || hasError
-    const isExpanded = expandedOutputs.has(nodeKey)
-
-    if (!isExpandable) return null
-
-    return (
-      <Collapsible
-        key={nodeKey}
-        open={isExpanded}
-        onOpenChange={() => {
-          setExpandedOutputs((prev) => {
-            const newSet = new Set(prev)
-            if (newSet.has(nodeKey)) {
-              newSet.delete(nodeKey)
-            } else {
-              newSet.add(nodeKey)
-            }
-            return newSet
-          })
-        }}
-        className='ml-14 mt-1 mb-3'
-      >
-        <CollapsibleTrigger asChild>
-          <button
-            className={cn(
-              'flex items-center gap-2 text-xs px-3 py-1.5 rounded-full transition-colors',
-              hasError
-                ? 'text-destructive/80 hover:text-destructive hover:bg-destructive/10'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            )}
-          >
-            <ChevronDown
-              className={cn(
-                'h-3 w-3 transition-transform',
-                isExpanded && 'rotate-180'
-              )}
-            />
-            {hasError ? (
-              <>
-                <AlertCircle className='h-3 w-3' />
-                View Error Details
-              </>
-            ) : (
-              <>
-                <FileOutput className='h-3 w-3' />
-                View Output
-              </>
-            )}
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div
-            className={cn(
-              'mt-2 p-4 rounded-lg text-xs font-mono overflow-x-auto',
-              hasError ? 'bg-destructive/5 text-destructive' : 'bg-muted/50'
-            )}
-          >
-            {hasError ? (
-              <pre className='whitespace-pre-wrap'>{log.data?.error}</pre>
-            ) : (
-              <pre className='whitespace-pre-wrap'>
-                {JSON.stringify(log.data?.output, null, 2)}
-              </pre>
-            )}
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-    )
-  }
+  const progressValue = currentExecution?.progress
+    ? (currentExecution.progress.current / currentExecution.progress.total) *
+      100
+    : 0
 
   return (
     <div className='h-[90vh] flex flex-col p-6'>
@@ -375,34 +296,27 @@ const WorkflowExecutionTab = ({
       {currentExecution &&
         currentExecution.status === 'running' &&
         currentExecution.progress && (
-          <Card className='mb-6 border-primary/30 bg-primary/5'>
+          <Card className='mb-6 border-primary/20'>
             <CardContent className='p-4'>
-              <div className='flex items-center justify-between mb-2'>
+              <div className='flex items-center justify-between mb-3'>
                 <div className='flex items-center gap-2'>
-                  <Circle className='h-4 w-4 text-primary animate-pulse' />
+                  <div className='h-2 w-2 rounded-full bg-primary animate-pulse' />
                   <span className='text-sm font-medium'>
-                    Executing workflow...
+                    Executing workflow
                   </span>
                 </div>
-                <span className='text-sm text-muted-foreground'>
-                  Step {currentExecution.progress.current} of{' '}
-                  {currentExecution.progress.total}
+                <span className='text-sm text-muted-foreground font-mono'>
+                  {currentExecution.progress.current} /{' '}
+                  {currentExecution.progress.total} steps
                 </span>
               </div>
-              <div className='w-full bg-muted rounded-full h-2'>
-                <div
-                  className='bg-primary h-2 rounded-full transition-all duration-300'
-                  style={{
-                    width: `${(currentExecution.progress.current / currentExecution.progress.total) * 100}%`
-                  }}
-                />
-              </div>
+              <Progress value={progressValue} className='h-2' />
             </CardContent>
           </Card>
         )}
 
       {/* Execution Groups */}
-      <ScrollArea className='flex-1' ref={scrollRef}>
+      <ScrollArea className='flex-1' ref={scrollAreaRef}>
         {executionGroups.length === 0 ? (
           <div className='flex flex-col items-center justify-center py-20 text-muted-foreground'>
             <Clock className='h-16 w-16 mb-4 opacity-30' />
@@ -437,21 +351,17 @@ const WorkflowExecutionTab = ({
                   </div>
                 </CardHeader>
                 <CardContent className='pt-6 pb-4'>
-                  {/* Timeline with framer motion */}
                   <TimelineLayout
                     animate
-                    items={convertLogsToTimeline(group.logs, group.executionId)}
+                    items={convertLogsToTimeline(group.logs)}
                     size='md'
                     className='mx-0 max-w-none'
                   />
-
-                  {/* Expandable output/error sections */}
-                  {group.logs.map((log, index) =>
-                    renderLogDetail(log, index, group.executionId)
-                  )}
                 </CardContent>
               </Card>
             ))}
+            {/* Invisible element at the end for auto-scroll target */}
+            <div ref={endOfLogsRef} />
           </div>
         )}
       </ScrollArea>

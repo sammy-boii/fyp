@@ -5,7 +5,8 @@ import {
   Position,
   NodeProps,
   useReactFlow,
-  addEdge
+  addEdge,
+  useStore
 } from '@xyflow/react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -93,11 +94,10 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     return undefined
   }, [data.lastOutput, data.lastExecutedAt, data.actionId, id])
 
-  // Check if this node has outgoing edges - compute directly from edges
-  const edges = getEdges()
-  const isSourceConnected = useMemo(() => {
-    return edges.some((e) => e.source === id)
-  }, [edges, id])
+  // Check if this node has outgoing edges - subscribe to edge changes via useStore
+  const isSourceConnected = useStore((state) =>
+    state.edges.some((e) => e.source === id)
+  )
 
   const addNode = (
     nodeType: typeof NODE_TYPES.GOOGLE_DRIVE | typeof NODE_TYPES.GMAIL

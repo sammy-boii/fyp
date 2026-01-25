@@ -4,8 +4,13 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { motion, HTMLMotionProps } from 'framer-motion'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, ChevronDown, FileOutput, Circle } from 'lucide-react'
 import type { TimelineColor } from '@/types/index.types'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from '@/components/ui/collapsible'
 
 const timelineVariants = cva('flex flex-col relative', {
   variants: {
@@ -105,6 +110,11 @@ interface TimelineItemProps extends Omit<HTMLMotionProps<'li'>, 'ref'> {
   loading?: boolean
   /** Error message */
   error?: string
+  /** Expandable content for output/error details */
+  expandableContent?: {
+    type: 'output' | 'error'
+    content: string
+  }
 }
 
 const TimelineItem = React.forwardRef<HTMLLIElement, TimelineItemProps>(
@@ -122,6 +132,7 @@ const TimelineItem = React.forwardRef<HTMLLIElement, TimelineItemProps>(
       iconsize,
       loading,
       error,
+      expandableContent,
       // Omit unused Framer Motion props
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       initial,
@@ -133,6 +144,7 @@ const TimelineItem = React.forwardRef<HTMLLIElement, TimelineItemProps>(
     },
     ref
   ) => {
+    const [isExpanded, setIsExpanded] = React.useState(false)
     const commonClassName = cn('relative w-full mb-8 last:mb-0', className)
 
     // Loading State
@@ -153,7 +165,7 @@ const TimelineItem = React.forwardRef<HTMLLIElement, TimelineItemProps>(
 
             <div className='mx-3 flex flex-col items-center justify-start gap-y-2'>
               <div className='relative flex h-8 w-8 animate-pulse items-center justify-center rounded-full bg-muted ring-8 ring-background'>
-                <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />
+                <Circle className='h-4 w-4 text-muted-foreground' />
               </div>
               {showConnector && (
                 <div className='h-full w-0.5 animate-pulse bg-muted' />
@@ -243,6 +255,58 @@ const TimelineItem = React.forwardRef<HTMLLIElement, TimelineItemProps>(
             <TimelineTitle>{title}</TimelineTitle>
           </TimelineHeader>
           <TimelineDescription>{description}</TimelineDescription>
+
+          {/* Expandable content for output/error */}
+          {expandableContent && (
+            <Collapsible
+              open={isExpanded}
+              onOpenChange={setIsExpanded}
+              className='mt-2'
+            >
+              <CollapsibleTrigger asChild>
+                <button
+                  className={cn(
+                    'flex items-center gap-2 text-xs px-3 py-1.5 rounded-full transition-colors',
+                    expandableContent.type === 'error'
+                      ? 'text-destructive/80 hover:text-destructive hover:bg-destructive/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  <ChevronDown
+                    className={cn(
+                      'h-3 w-3 transition-transform',
+                      isExpanded && 'rotate-180'
+                    )}
+                  />
+                  {expandableContent.type === 'error' ? (
+                    <>
+                      <AlertCircle className='h-3 w-3' />
+                      View Error
+                    </>
+                  ) : (
+                    <>
+                      <FileOutput className='h-3 w-3' />
+                      View Output
+                    </>
+                  )}
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div
+                  className={cn(
+                    'mt-2 p-3 rounded-lg text-xs font-mono overflow-x-auto max-w-md',
+                    expandableContent.type === 'error'
+                      ? 'bg-destructive/5 text-destructive border border-destructive/20'
+                      : 'bg-muted/50 border'
+                  )}
+                >
+                  <pre className='whitespace-pre-wrap wrap-break-word'>
+                    {expandableContent.content}
+                  </pre>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </TimelineContent>
       </div>
     )
@@ -350,7 +414,7 @@ const TimelineConnector = React.forwardRef<
         'bg-muted': color === 'muted' || (!color && status === 'pending'),
         'bg-secondary': color === 'secondary',
         'bg-accent': color === 'accent',
-        'bg-gradient-to-b from-primary to-muted':
+        'bg-linear-to-b from-primary to-muted':
           !color && status === 'in-progress'
       },
       className

@@ -35,6 +35,11 @@ export interface TimelineElement {
   size?: TimelineSize
   loading?: boolean
   error?: string
+  /** Expandable content for output/error details */
+  expandableContent?: {
+    type: 'output' | 'error'
+    content: string
+  }
 }
 
 export interface TimelineProps {

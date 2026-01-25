@@ -70,6 +70,29 @@ export const executeSingleNode = async (c: Context) => {
 
     console.log(`\n=== Node Execution Complete (${duration}ms) ===\n`)
 
+    // Save the output back to the workflow node data
+    if (result.success && result.data) {
+      const updatedNodes = nodes.map((n) =>
+        n.id === nodeId
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                lastOutput: result.data,
+                lastExecutedAt: new Date().toISOString()
+              }
+            }
+          : n
+      )
+
+      await prisma.workflow.update({
+        where: { id: workflowId },
+        data: { nodes: updatedNodes as any }
+      })
+
+      console.log(`[executeSingleNode] Saved output to node ${nodeId}`)
+    }
+
     return c.json({
       success: result.success,
       message: result.success

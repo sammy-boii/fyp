@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 
 import { Play, Settings, Trash2, Plus, Loader2 } from 'lucide-react'
 import Image from 'next/image'
-import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
 import { NODE_DEFINITIONS } from '@/constants/registry'
 import { useParams } from 'next/navigation'
@@ -59,7 +59,6 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
-  const [isSourceConnected, setIsSourceConnected] = useState(false)
 
   // Get available inputs from predecessor nodes (stored in their data.lastOutput)
   const availableInputs = useMemo(() => {
@@ -94,12 +93,11 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     return undefined
   }, [data.lastOutput, data.lastExecutedAt, data.actionId, id])
 
-  // Update isSourceConnected if this node has outgoing edges
-  useEffect(() => {
-    const edges = getEdges()
-    const hasOutgoing = edges.some((e) => e.source === id)
-    setIsSourceConnected(hasOutgoing)
-  }, [getEdges, id])
+  // Check if this node has outgoing edges - compute directly from edges
+  const edges = getEdges()
+  const isSourceConnected = useMemo(() => {
+    return edges.some((e) => e.source === id)
+  }, [edges, id])
 
   const addNode = (
     nodeType: typeof NODE_TYPES.GOOGLE_DRIVE | typeof NODE_TYPES.GMAIL
@@ -125,7 +123,6 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     const newEdge = createEdge(id, newNode.id)
     setEdges((eds) => addEdge(newEdge, eds))
 
-    setIsSourceConnected(true)
     setSheetOpen(false)
   }
 

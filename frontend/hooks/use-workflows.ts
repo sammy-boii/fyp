@@ -122,6 +122,8 @@ export function useExecuteWorkflow() {
 }
 
 export function useExecuteNode() {
+  const queryClient = useQueryClient()
+
   return useMutation({
     mutationFn: ({
       workflowId,
@@ -130,11 +132,15 @@ export function useExecuteNode() {
       workflowId: string
       nodeId: string
     }) => executeNode(workflowId, nodeId),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       if (data.error) {
         throw data.error
       }
       toast.success('Node executed successfully')
+      // Invalidate the workflow query to get the updated node output
+      queryClient.invalidateQueries({
+        queryKey: ['workflow', variables.workflowId]
+      })
       // Return data to be available in mutateAsync result
       return data
     },

@@ -120,6 +120,39 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Executing node animation */
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 2s ease infinite;
+}
+
+@keyframes executing-border {
+  0%, 100% {
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.5), 
+                0 0 10px hsl(var(--primary) / 0.3),
+                0 0 20px hsl(var(--primary) / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.8), 
+                0 0 15px hsl(var(--primary) / 0.5),
+                0 0 30px hsl(var(--primary) / 0.3);
+  }
+}
+
+.animate-executing-border {
+  animation: executing-border 1.5s ease-in-out infinite;
+}
+
 /* Custom Scrollbar - Minimal thin line */
 .scrollbar-thin {
   scrollbar-width: thin;

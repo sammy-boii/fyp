@@ -284,7 +284,13 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
             </Dialog>
           </div>
 
-          <Card className='relative w-48 p-4 rounded-lg border transition-colors bg-card border-border/50'>
+          <Card
+            className={`relative w-48 p-4 rounded-lg border transition-all duration-300 bg-card ${
+              data.isExecuting
+                ? 'border-primary animate-executing-border'
+                : 'border-border/50'
+            }`}
+          >
             {/* Content */}
             <div className='flex items-center gap-3'>
               <div

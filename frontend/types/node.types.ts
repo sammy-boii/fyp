@@ -38,6 +38,7 @@ export type BaseNodeProps = Node<{
   config?: any
   lastOutput?: Record<string, any>
   lastExecutedAt?: string
+  isExecuting?: boolean
 }>
 
 // custom node types for react flow

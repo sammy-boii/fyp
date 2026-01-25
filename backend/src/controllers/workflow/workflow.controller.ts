@@ -18,13 +18,33 @@ import {
   WorkflowExecutionStatus
 } from '@shared/prisma/generated/prisma/enums'
 import { executeNodeLogic } from '@/src/executors/node-executor'
+import { replacePlaceholdersInConfig } from '@/src/lib/placeholder'
+import {
+  emitWorkflowStart,
+  emitNodeStart,
+  emitNodeComplete,
+  emitNodeError,
+  emitWorkflowComplete,
+  emitWorkflowError
+} from '@/src/lib/websocket'
 
 const executeNode = async (
   node: TWorkflowNode,
   inputData: any,
-  executionId: string
+  executionId: string,
+  nodeOutputs: Map<string, Record<string, any>>
 ): Promise<TNodeExecutionResult> => {
   const { actionId, config } = node.data
+
+  // Replace placeholders in config with actual values from previous node outputs
+  const resolvedConfig = config
+    ? replacePlaceholdersInConfig(config, nodeOutputs)
+    : config
+
+  console.log(
+    `[Workflow] Executing node ${node.id} with resolved config:`,
+    JSON.stringify(resolvedConfig, null, 2)
+  )
 
   const nodeExecution = await prisma.nodeExecution.create({
     data: {
@@ -32,7 +52,7 @@ const executeNode = async (
       nodeId: node.id,
       nodeType: node.type,
       actionId: actionId,
-      config: config || {},
+      config: resolvedConfig || {},
       inputData: inputData || null,
       status: NodeExecutionStatus.RUNNING,
       startedAt: new Date()
@@ -41,7 +61,7 @@ const executeNode = async (
 
   const result: TNodeExecutionResult = await executeNodeLogic(
     node,
-    config,
+    resolvedConfig,
     inputData
   )
 
@@ -151,22 +171,52 @@ export const runWorkflow = tryCatch(async (c: Context) => {
 
   const startTime = Date.now()
 
+  // Emit workflow start event
+  emitWorkflowStart(workflowId, execution.id, nodes.length)
+
+  // Store outputs from executed nodes for placeholder replacement
+  const nodeOutputs = new Map<string, Record<string, any>>()
+
   try {
     // Build execution order
     const executionOrder = buildExecutionOrder(nodes, edges)
     console.log('Execution order:', executionOrder)
 
-    // Execute nodes in order without passing previous outputs
+    // Execute nodes in order, passing outputs between nodes
+    let currentNodeIndex = 0
     for (const nodeId of executionOrder) {
       const node = nodes.find((n) => n.id === nodeId)
       if (!node) continue
 
-      // Execute node without inherited inputs
-      const result = await executeNode(node, null, execution.id)
+      currentNodeIndex++
+      const progress = {
+        current: currentNodeIndex,
+        total: executionOrder.length
+      }
+
+      // Emit node start event
+      emitNodeStart(
+        workflowId,
+        execution.id,
+        nodeId,
+        node.data.type || 'Unknown',
+        node.data.actionId || '',
+        progress
+      )
+
+      // Execute node with accumulated outputs from previous nodes
+      const result = await executeNode(node, null, execution.id, nodeOutputs)
 
       if (!result.success) {
-        // Stop on failure
-        console.error(`Node ${nodeId} failed:`, result.error)
+        // Emit node error event
+        emitNodeError(
+          workflowId,
+          execution.id,
+          nodeId,
+          result.error || 'Unknown error',
+          progress
+        )
+
         const duration = Date.now() - startTime
 
         await prisma.workflowExecution.update({
@@ -179,11 +229,31 @@ export const runWorkflow = tryCatch(async (c: Context) => {
           }
         })
 
+        // Emit workflow error event
+        emitWorkflowError(
+          workflowId,
+          execution.id,
+          `Node ${nodeId} failed: ${result.error}`,
+          duration
+        )
+
         throw new AppError(
           `Workflow execution failed at node ${nodeId}: ${result.error}`,
           500
         )
       }
+
+      // Store the output for use by subsequent nodes
+      if (result.data) {
+        nodeOutputs.set(nodeId, result.data)
+        console.log(
+          `[Workflow] Stored output for node ${nodeId}:`,
+          JSON.stringify(result.data, null, 2)
+        )
+      }
+
+      // Emit node complete event
+      emitNodeComplete(workflowId, execution.id, nodeId, result.data, progress)
     }
 
     const duration = Date.now() - startTime
@@ -202,6 +272,9 @@ export const runWorkflow = tryCatch(async (c: Context) => {
       where: { id: workflow.id },
       data: { lastExecutedAt: new Date() }
     })
+
+    // Emit workflow complete event
+    emitWorkflowComplete(workflowId, execution.id, duration)
 
     console.log(`\n=== Workflow Execution Complete (${duration}ms) ===\n`)
 
@@ -227,6 +300,9 @@ export const runWorkflow = tryCatch(async (c: Context) => {
           completedAt: new Date()
         }
       })
+
+      // Emit workflow error event
+      emitWorkflowError(workflowId, execution.id, error.message, duration)
     }
 
     console.error(`\n=== Workflow Execution Failed ===`)

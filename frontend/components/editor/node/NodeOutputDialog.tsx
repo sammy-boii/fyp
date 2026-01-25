@@ -2,19 +2,15 @@
 
 import React from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Copy,
-  Check,
-  Clock,
-  CheckCircle2,
-  FileJson,
-  ChevronRight
-} from 'lucide-react'
+import { Copy, Check, Clock, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NodeOutputData } from '@/lib/node-execution-store'
 import { createPlaceholder } from '@/lib/placeholder-utils'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from '@/components/ui/collapsible'
 
 type NodeOutputDialogProps = {
   output?: NodeOutputData
@@ -22,30 +18,29 @@ type NodeOutputDialogProps = {
 
 const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null)
-
-  const handleCopyValue = (key: string, value: any) => {
-    const textValue =
-      typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)
-    navigator.clipboard.writeText(textValue)
-    setCopiedKey(key)
-    setTimeout(() => setCopiedKey(null), 2000)
-  }
+  const [expandedKeys, setExpandedKeys] = React.useState<Set<string>>(
+    () => new Set(output ? Object.keys(output.output) : [])
+  )
 
   const handleCopyPlaceholder = (key: string) => {
     if (output) {
       const placeholder = createPlaceholder(output.nodeId, key)
       navigator.clipboard.writeText(placeholder)
-      setCopiedKey(`placeholder-${key}`)
+      setCopiedKey(key)
       setTimeout(() => setCopiedKey(null), 2000)
     }
   }
 
-  const handleCopyAll = () => {
-    if (output?.output) {
-      navigator.clipboard.writeText(JSON.stringify(output.output, null, 2))
-      setCopiedKey('__all__')
-      setTimeout(() => setCopiedKey(null), 2000)
-    }
+  const toggleKey = (key: string) => {
+    setExpandedKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
   }
 
   if (!output) {
@@ -65,11 +60,7 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
     )
   }
 
-  const renderValue = (
-    value: any,
-    path: string,
-    depth = 0
-  ): React.ReactNode => {
+  const renderValue = (value: any): React.ReactNode => {
     if (value === null)
       return <span className='text-orange-500 font-mono text-xs'>null</span>
     if (value === undefined)
@@ -79,57 +70,27 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
 
     if (typeof value === 'boolean') {
       return (
-        <Badge
-          variant={value ? 'default' : 'secondary'}
+        <span
           className={cn(
             'text-xs font-mono',
-            value && 'bg-green-500/20 text-green-600'
+            value ? 'text-green-600' : 'text-muted-foreground'
           )}
         >
           {String(value)}
-        </Badge>
-      )
-    }
-
-    if (typeof value === 'number') {
-      return (
-        <span className='text-blue-500 font-mono text-xs font-medium'>
-          {value}
         </span>
       )
     }
 
+    if (typeof value === 'number') {
+      return <span className='text-blue-500 font-mono text-xs'>{value}</span>
+    }
+
     if (typeof value === 'string') {
-      // Highlight placeholders in the string
-      const placeholderRegex = /\{\{([^}]+)\}\}/g
-      const parts = value.split(placeholderRegex)
-
-      if (parts.length > 1) {
-        // String contains placeholders
+      if (value.length > 100) {
         return (
-          <div className='text-xs text-foreground bg-muted/30 p-2 rounded mt-1 break-all max-h-32 overflow-y-auto font-mono'>
-            {value.split(/(\{\{[^}]+\}\})/).map((part, i) => {
-              if (part.match(/^\{\{[^}]+\}\}$/)) {
-                return (
-                  <span
-                    key={i}
-                    className='bg-primary/20 text-primary px-1 py-0.5 rounded font-semibold'
-                  >
-                    {part}
-                  </span>
-                )
-              }
-              return <span key={i}>{part}</span>
-            })}
-          </div>
-        )
-      }
-
-      if (value.length > 150) {
-        return (
-          <div className='text-xs text-foreground bg-muted/30 p-2 rounded mt-1 break-all max-h-32 overflow-y-auto'>
-            {value}
-          </div>
+          <span className='text-xs text-foreground font-mono break-all'>
+            {value.substring(0, 100)}...
+          </span>
         )
       }
       return <span className='text-xs text-foreground font-mono'>{value}</span>
@@ -142,30 +103,9 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
         )
       }
       return (
-        <div className='mt-1 space-y-1'>
-          <Badge
-            variant='outline'
-            className='text-xs bg-blue-500/10 text-blue-600 border-blue-500/20'
-          >
-            Array [{value.length}]
-          </Badge>
-          {depth < 2 && (
-            <div className='pl-3 border-l-2 border-blue-500/20 space-y-2 mt-2'>
-              {value.slice(0, 3).map((item, index) => (
-                <div key={index} className='text-xs'>
-                  <span className='text-blue-500 font-mono'>[{index}]</span>
-                  <ChevronRight className='inline h-3 w-3 mx-1 text-muted-foreground' />
-                  {renderValue(item, `${path}[${index}]`, depth + 1)}
-                </div>
-              ))}
-              {value.length > 3 && (
-                <p className='text-xs text-muted-foreground italic'>
-                  ...and {value.length - 3} more items
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+        <span className='text-xs text-muted-foreground font-mono'>
+          Array [{value.length}]
+        </span>
       )
     }
 
@@ -178,126 +118,83 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
           </span>
         )
       }
-
-      if (depth >= 2) {
-        return (
-          <Badge
-            variant='outline'
-            className='text-xs bg-purple-500/10 text-purple-600 border-purple-500/20'
-          >
-            Object
-          </Badge>
-        )
-      }
-
       return (
-        <div className='pl-3 border-l-2 border-purple-500/20 space-y-2 mt-1'>
-          {entries.slice(0, 8).map(([key, val]) => (
-            <div key={key} className='text-xs'>
-              <span className='font-medium text-purple-600 font-mono'>
-                {key}
-              </span>
-              <ChevronRight className='inline h-3 w-3 mx-1 text-muted-foreground' />
-              {renderValue(val, `${path}.${key}`, depth + 1)}
-            </div>
-          ))}
-          {entries.length > 8 && (
-            <p className='text-xs text-muted-foreground italic'>
-              ...and {entries.length - 8} more properties
-            </p>
-          )}
-        </div>
+        <span className='text-xs text-muted-foreground font-mono'>
+          Object {'{'}...{'}'}
+        </span>
       )
     }
 
     return <span className='text-xs font-mono'>{String(value)}</span>
   }
 
+  const outputEntries = Object.entries(output.output)
+
   return (
     <ScrollArea className='h-[calc(90vh-12rem)]'>
       <div className='space-y-4 pr-3'>
-        {/* Header with status and timestamp */}
-        <div className='flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg p-3'>
-          <div className='flex items-center gap-2'>
-            <CheckCircle2 className='h-4 w-4 text-green-500' />
-            <span className='text-xs text-muted-foreground'>
-              Last executed:{' '}
-              <span className='text-foreground font-medium'>
-                {output.executedAt.toLocaleTimeString()}
-              </span>
-            </span>
-          </div>
-          <Button
-            variant='ghost'
-            size='sm'
-            className='h-7 text-xs hover:bg-green-500/10'
-            onClick={handleCopyAll}
-          >
-            {copiedKey === '__all__' ? (
-              <>
-                <Check className='h-3 w-3 mr-1 text-green-500' />
-                Copied!
-              </>
-            ) : (
-              <>
-                <FileJson className='h-3 w-3 mr-1' />
-                Copy JSON
-              </>
-            )}
-          </Button>
+        {/* Last executed timestamp - subtle, in corner style */}
+        <div className='text-xs text-muted-foreground text-right'>
+          Last executed: {output.executedAt.toLocaleTimeString()}
         </div>
 
-        {/* Output data */}
-        <div className='space-y-3'>
-          {Object.entries(output.output).map(([key, value]) => (
-            <div
+        {outputEntries.map(([key, value]) => {
+          const isExpanded = expandedKeys.has(key)
+          const isCopied = copiedKey === key
+
+          return (
+            <Collapsible
               key={key}
-              className={cn(
-                'p-3 rounded-lg border bg-card',
-                'hover:border-primary/30 transition-colors'
-              )}
+              open={isExpanded}
+              onOpenChange={() => toggleKey(key)}
+              className='border rounded-lg overflow-hidden'
             >
-              <div className='flex items-center justify-between gap-2 mb-2'>
-                <code className='text-sm font-semibold text-primary font-mono'>
-                  {key}
-                </code>
-                <div className='flex items-center gap-1'>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    className='h-6 px-2 text-xs'
-                    onClick={() => handleCopyPlaceholder(key)}
-                  >
-                    {copiedKey === `placeholder-${key}` ? (
-                      <>
-                        <Check className='h-3 w-3 mr-1 text-green-500' />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className='h-3 w-3 mr-1' />
-                        Placeholder
-                      </>
+              <CollapsibleTrigger asChild>
+                <div className='flex items-center gap-3 p-3 bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors'>
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 text-muted-foreground transition-transform shrink-0',
+                      isExpanded && 'rotate-180'
                     )}
-                  </Button>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='h-6 w-6 shrink-0'
-                    onClick={() => handleCopyValue(key, value)}
-                  >
-                    {copiedKey === key ? (
-                      <Check className='h-3 w-3 text-green-500' />
-                    ) : (
-                      <Copy className='h-3 w-3' />
+                  />
+                  <div className='flex-1 min-w-0'>
+                    <code className='text-sm font-semibold text-primary font-mono'>
+                      {key}
+                    </code>
+                    {!isExpanded && (
+                      <p className='text-xs text-muted-foreground truncate mt-0.5'>
+                        {renderValue(value)}
+                      </p>
                     )}
-                  </Button>
+                  </div>
+                  <div
+                    className='shrink-0'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleCopyPlaceholder(key)
+                    }}
+                  >
+                    {isCopied ? (
+                      <Check className='h-4 w-4 text-green-500' />
+                    ) : (
+                      <Copy className='h-4 w-4 text-muted-foreground/50 hover:text-muted-foreground transition-colors' />
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div>{renderValue(value, key)}</div>
-            </div>
-          ))}
-        </div>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <div className='p-3 text-xs font-mono bg-muted/20 max-h-48 overflow-auto'>
+                  <pre className='whitespace-pre-wrap break-all'>
+                    {typeof value === 'object'
+                      ? JSON.stringify(value, null, 2)
+                      : String(value)}
+                  </pre>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )
+        })}
       </div>
     </ScrollArea>
   )

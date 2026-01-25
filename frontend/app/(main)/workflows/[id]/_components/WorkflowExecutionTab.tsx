@@ -18,7 +18,7 @@ import {
   Timer,
   Cog
 } from 'lucide-react'
-import { useEffect, useRef, useMemo } from 'react'
+import { useMemo } from 'react'
 import type { TimelineElement } from '@/types/index.types'
 
 interface WorkflowExecutionTabProps {
@@ -80,16 +80,6 @@ const WorkflowExecutionTab = ({
   currentExecution,
   clearLogs
 }: WorkflowExecutionTabProps) => {
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const endOfLogsRef = useRef<HTMLDivElement>(null)
-
-  // Auto-scroll to bottom when new logs arrive
-  useEffect(() => {
-    if (endOfLogsRef.current) {
-      endOfLogsRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
-    }
-  }, [executionLogs])
-
   // Group logs by execution ID
   const executionGroups: ExecutionGroup[] = useMemo(() => {
     const groups: Map<string, ExecutionGroup> = new Map()
@@ -316,7 +306,7 @@ const WorkflowExecutionTab = ({
         )}
 
       {/* Execution Groups */}
-      <ScrollArea className='flex-1' ref={scrollAreaRef}>
+      <ScrollArea className='flex-1'>
         {executionGroups.length === 0 ? (
           <div className='flex flex-col items-center justify-center py-20 text-muted-foreground'>
             <Clock className='h-16 w-16 mb-4 opacity-30' />
@@ -360,8 +350,6 @@ const WorkflowExecutionTab = ({
                 </CardContent>
               </Card>
             ))}
-            {/* Invisible element at the end for auto-scroll target */}
-            <div ref={endOfLogsRef} />
           </div>
         )}
       </ScrollArea>

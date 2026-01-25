@@ -4,12 +4,6 @@ import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip'
-import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger
@@ -92,14 +86,6 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
   return (
     <ScrollArea className='h-[calc(90vh-12rem)]'>
       <div className='space-y-4 pr-3'>
-        {/* Instructions */}
-        <div className='bg-primary/5 border border-primary/20 rounded-lg p-3'>
-          <p className='text-xs text-muted-foreground'>
-            <span className='font-medium text-foreground'>Tip:</span> Click on a
-            variable to copy its placeholder, or drag it into a form field.
-          </p>
-        </div>
-
         {availableInputs.map((source) => {
           const nodeType = source.nodeType as keyof typeof NODE_TYPES
           const nodeDef = NODE_DEFINITIONS[nodeType]
@@ -137,83 +123,56 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
                       {shortenNodeId(source.nodeId)}
                     </span>
                   </div>
-                  <Badge
-                    variant='secondary'
-                    className='text-xs shrink-0 bg-primary/10 text-primary'
-                  >
+                  <Badge variant='secondary' className='text-xs shrink-0'>
                     {source.variables.length}
                   </Badge>
                 </div>
               </CollapsibleTrigger>
 
               <CollapsibleContent>
-                <div className='p-2 space-y-1 bg-background'>
+                <div className='p-2 space-y-1'>
                   {source.variables.map((variable) => {
                     const fullPath = `${source.nodeId}.${variable.path}`
                     const isCopied = copiedPath === fullPath
 
                     return (
-                      <TooltipProvider key={variable.path} delayDuration={300}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div
-                              draggable
-                              onDragStart={(e) =>
-                                handleDragStart(e, source.nodeId, variable.path)
-                              }
-                              onClick={() =>
-                                handleCopyPlaceholder(
-                                  source.nodeId,
-                                  variable.path
-                                )
-                              }
-                              className={cn(
-                                'flex items-center gap-2 p-2 rounded-md',
-                                'hover:bg-primary/5 cursor-grab active:cursor-grabbing',
-                                'transition-all group border border-transparent',
-                                'hover:border-primary/20'
-                              )}
-                            >
-                              <GripVertical className='h-3 w-3 text-muted-foreground/50 group-hover:text-primary/50 transition-colors shrink-0' />
+                      <div
+                        key={variable.path}
+                        draggable
+                        onDragStart={(e) =>
+                          handleDragStart(e, source.nodeId, variable.path)
+                        }
+                        onClick={() =>
+                          handleCopyPlaceholder(source.nodeId, variable.path)
+                        }
+                        className={cn(
+                          'flex items-center gap-2 p-2 rounded-md',
+                          'hover:bg-muted/50 cursor-grab active:cursor-grabbing',
+                          'transition-all group border border-transparent',
+                          'hover:border-border'
+                        )}
+                      >
+                        <GripVertical className='h-3 w-3 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors shrink-0' />
 
-                              <div className='flex-1 min-w-0'>
-                                <div className='flex items-center gap-2'>
-                                  <code className='text-xs font-semibold text-primary font-mono truncate'>
-                                    {variable.path}
-                                  </code>
-                                </div>
-                                <p className='text-xs text-muted-foreground truncate mt-0.5'>
-                                  {formatValueForDisplay(variable.value)}
-                                </p>
-                              </div>
+                        <div className='flex-1 min-w-0'>
+                          <div className='flex items-center gap-2'>
+                            <code className='text-xs font-semibold text-primary font-mono truncate'>
+                              {variable.path}
+                            </code>
+                          </div>
+                          <p className='text-xs text-muted-foreground truncate mt-0.5'>
+                            {formatValueForDisplay(variable.value)}
+                          </p>
+                        </div>
 
-                              <div className='shrink-0'>
-                                {isCopied ? (
-                                  <Check className='h-4 w-4 text-green-500' />
-                                ) : (
-                                  <Copy className='h-4 w-4 text-muted-foreground/50 group-hover:text-primary/70 transition-colors' />
-                                )}
-                              </div>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent
-                            side='left'
-                            className='max-w-xs bg-popover'
-                          >
-                            <div className='space-y-2'>
-                              <p className='text-xs text-muted-foreground'>
-                                Click to copy placeholder:
-                              </p>
-                              <code className='block bg-primary/10 text-primary px-2 py-1 rounded text-xs font-mono break-all'>
-                                {createPlaceholder(
-                                  source.nodeId,
-                                  variable.path
-                                )}
-                              </code>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                        <div className='shrink-0'>
+                          {isCopied ? (
+                            <Check className='h-4 w-4 text-green-500' />
+                          ) : (
+                            <Copy className='h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors' />
+                          )}
+                        </div>
+                      </div>
                     )
                   })}
                 </div>

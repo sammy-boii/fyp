@@ -6,7 +6,7 @@ const BACKEND_URL =
 
 export const api: KyInstance = ky.create({
   prefixUrl: BACKEND_URL,
-  timeout: 10000,
+  timeout: 50000,
   retry: {
     limit: 1,
     methods: ['get', 'put', 'head', 'delete', 'options', 'trace'],

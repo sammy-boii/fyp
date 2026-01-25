@@ -232,7 +232,7 @@ export default function WorkflowViewPage() {
   }
 
   async function handleExecuteWorkflow() {
-    if (!workflowId) return
+    if (!workflowId || executeWorkflow.isPending) return
     await executeWorkflow.mutateAsync(workflowId)
   }
 

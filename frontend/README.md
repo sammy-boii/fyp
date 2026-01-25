@@ -4,8 +4,6 @@
 
 - Follow the existing folder structure.
 
-- Keep things modular
-
 - shadcnUI is used for base styles.
 
 - Refer to the latest and best practices libraries

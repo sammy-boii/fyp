@@ -71,6 +71,13 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
   const [isSourceConnected, setIsSourceConnected] = useState(false)
 
+  // Update isSourceConnected if this node has outgoing edges
+  React.useEffect(() => {
+    const edges = getEdges()
+    const hasOutgoing = edges.some((e) => e.source === id)
+    setIsSourceConnected(hasOutgoing)
+  }, [getEdges, id])
+
   const addNode = (
     nodeType: typeof NODE_TYPES.GOOGLE_DRIVE | typeof NODE_TYPES.GMAIL
   ) => {
@@ -155,6 +162,8 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     const action = node.actions.find((act) => act.id === data.actionId)
     return action
   }
+
+  console.log(isSourceConnected, 'AA')
 
   return (
     <ContextMenu>

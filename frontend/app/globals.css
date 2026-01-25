@@ -121,70 +121,21 @@
   }
 }
 
-/* Executing node animation */
-@keyframes gradient-x {
+/* Executing node animation - Pulsating primary border */
+@keyframes pulse-border {
   0%, 100% {
-    background-position: 0% 50%;
+    border-color: oklch(0.835 0.239 147.17);
+    box-shadow: 0 0 0 0 oklch(0.835 0.239 147.17 / 0.4);
   }
   50% {
-    background-position: 100% 50%;
+    border-color: oklch(0.835 0.239 147.17);
+    box-shadow: 0 0 0 4px oklch(0.835 0.239 147.17 / 0);
   }
-}
-
-.animate-gradient-x {
-  background-size: 200% 200%;
-  animation: gradient-x 2s ease infinite;
-}
-
-/* Rotating border animation for executing nodes */
-@keyframes rotate-border {
-  0% {
-    --border-angle: 0deg;
-  }
-  100% {
-    --border-angle: 360deg;
-  }
-}
-
-@property --border-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
 }
 
 .animate-executing-border {
-  position: relative;
-  background: hsl(var(--card));
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-.animate-executing-border::before {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border-radius: calc(var(--radius) + 3px);
-  background: conic-gradient(
-    from var(--border-angle),
-    hsl(var(--primary)) 0%,
-    transparent 15%,
-    transparent 45%,
-    hsl(var(--primary)) 50%,
-    transparent 65%,
-    transparent 95%,
-    hsl(var(--primary)) 100%
-  );
-  z-index: -1;
-  animation: rotate-border 1.5s linear infinite;
-}
-
-.animate-executing-border::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: calc(var(--radius) + 1px);
-  background: hsl(var(--card));
-  z-index: -1;
+  border: 2px solid oklch(0.835 0.239 147.17);
+  animation: pulse-border 1.5s ease-in-out infinite;
 }
 
 /* Custom Scrollbar - Minimal thin line */

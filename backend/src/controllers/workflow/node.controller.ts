@@ -1,9 +1,13 @@
 import { Context } from 'hono'
 import { prisma } from '@shared/db/prisma'
-import { TWorkflowNode } from '@/src/types/workflow.types'
+import { TWorkflowNode, TWorkflowEdge } from '@/src/types/workflow.types'
 
 import { AppError } from '@/src/types'
 import { executeNodeLogic } from '@/src/executors/node-executor'
+import {
+  buildNodeOutputsMap,
+  replacePlaceholdersInConfig
+} from '@/src/lib/placeholder'
 
 export const executeSingleNode = async (c: Context) => {
   try {
@@ -31,6 +35,7 @@ export const executeSingleNode = async (c: Context) => {
     }
 
     const nodes = workflow.nodes as TWorkflowNode[]
+    const edges = (workflow.edges || []) as TWorkflowEdge[]
     const node = nodes.find((n) => n.id === nodeId)
 
     if (!node) {
@@ -43,10 +48,23 @@ export const executeSingleNode = async (c: Context) => {
 
     console.log(`\n=== Executing Node: ${node.id} ===`)
 
+    // Build node outputs map from predecessor nodes
+    const nodeOutputsMap = buildNodeOutputsMap(nodeId, nodes, edges)
+    console.log(
+      `[executeSingleNode] Found ${nodeOutputsMap.size} predecessor outputs`
+    )
+
+    // Replace placeholders in the config with actual values
+    const resolvedConfig = replacePlaceholdersInConfig(
+      node.data.config,
+      nodeOutputsMap
+    )
+    console.log('[executeSingleNode] Resolved config:', resolvedConfig)
+
     const startTime = Date.now()
 
-    // Execute the node
-    const result = await executeNodeLogic(node, node.data.config)
+    // Execute the node with resolved config
+    const result = await executeNodeLogic(node, resolvedConfig)
 
     const duration = Date.now() - startTime
 

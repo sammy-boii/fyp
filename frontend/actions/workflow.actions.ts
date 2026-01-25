@@ -13,6 +13,7 @@ import {
   Workflow,
   WorkflowExecution
 } from '@shared/prisma/generated/prisma/client'
+import { NodeExecutionResult } from '@/types/index.types'
 
 export async function getWorkflows() {
   return tryCatch(async () => {
@@ -196,7 +197,7 @@ export async function executeNode(workflowId: string, nodeId: string) {
 
     const result = await api
       .get(`api/workflow/execute/${workflowId}/${nodeId}`)
-      .json<WorkflowExecution>()
+      .json<NodeExecutionResult>()
 
     console.log('RESULT', result)
     return result

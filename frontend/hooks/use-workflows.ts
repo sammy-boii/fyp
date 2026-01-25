@@ -135,6 +135,8 @@ export function useExecuteNode() {
         throw data.error
       }
       toast.success('Node executed successfully')
+      // Return data to be available in mutateAsync result
+      return data
     },
     onError: (err) => {
       toast.error(err.message || 'Failed to execute node')

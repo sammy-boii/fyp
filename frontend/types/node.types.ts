@@ -36,6 +36,8 @@ export type BaseNodeProps = Node<{
   type: ValueOf<typeof NODE_TYPES>
   actionId: ValueOf<typeof NODE_ACTION_ID>
   config?: any
+  lastOutput?: Record<string, any>
+  lastExecutedAt?: string
 }>
 
 // custom node types for react flow

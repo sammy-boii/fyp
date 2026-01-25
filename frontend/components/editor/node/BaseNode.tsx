@@ -10,20 +10,17 @@ import {
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-import {
-  Play,
-  Settings,
-  Trash2,
-  Plus,
-  ChevronRight,
-  Loader2
-} from 'lucide-react'
+import { Play, Settings, Trash2, Plus, Loader2 } from 'lucide-react'
 import Image from 'next/image'
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
 import { NODE_DEFINITIONS } from '@/constants/registry'
 import { useParams } from 'next/navigation'
 import { useExecuteNode } from '@/hooks/use-workflows'
+import {
+  getAvailableInputsFromNodes,
+  NodeOutputData
+} from '@/lib/node-execution-store'
 
 import { NodeActionsSheet } from './NodeActionsSheet'
 
@@ -33,14 +30,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger
 } from '@/components/ui/context-menu'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger
-} from '@/components/ui/sheet'
+import { Sheet, SheetTrigger } from '@/components/ui/sheet'
 import {
   Dialog,
   DialogContent,
@@ -71,8 +61,41 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
   const [isSourceConnected, setIsSourceConnected] = useState(false)
 
+  // Get available inputs from predecessor nodes (stored in their data.lastOutput)
+  const availableInputs = useMemo(() => {
+    const edges = getEdges()
+    const nodes = getNodes()
+    return getAvailableInputsFromNodes(
+      id,
+      edges.map((e) => ({ source: e.source, target: e.target })),
+      nodes.map((n) => ({
+        id: n.id,
+        data: {
+          type: n.data.type as string,
+          actionId: n.data.actionId as string | undefined,
+          lastOutput: n.data.lastOutput as Record<string, any> | undefined
+        }
+      }))
+    )
+  }, [id, getEdges, getNodes])
+
+  // Get this node's output from its data
+  const nodeOutput: NodeOutputData | undefined = useMemo(() => {
+    if (data.lastOutput) {
+      return {
+        nodeId: id,
+        actionId: data.actionId || '',
+        output: data.lastOutput,
+        executedAt: data.lastExecutedAt
+          ? new Date(data.lastExecutedAt)
+          : new Date()
+      }
+    }
+    return undefined
+  }, [data.lastOutput, data.lastExecutedAt, data.actionId, id])
+
   // Update isSourceConnected if this node has outgoing edges
-  React.useEffect(() => {
+  useEffect(() => {
     const edges = getEdges()
     const hasOutgoing = edges.some((e) => e.source === id)
     setIsSourceConnected(hasOutgoing)
@@ -113,8 +136,36 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
       return
     }
 
-    await executeNodeMutation.mutateAsync({ workflowId, nodeId: id })
-  }, [workflowId, data.actionId, data.config, executeNodeMutation, id])
+    const result = await executeNodeMutation.mutateAsync({
+      workflowId,
+      nodeId: id
+    })
+
+    // Store the output in the node's data (persisted with workflow)
+    if (result?.data?.output) {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === id
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  lastOutput: result.data.output,
+                  lastExecutedAt: new Date().toISOString()
+                }
+              }
+            : n
+        )
+      )
+    }
+  }, [
+    workflowId,
+    data.actionId,
+    data.config,
+    executeNodeMutation,
+    id,
+    setNodes
+  ])
 
   const handleConfigure = useCallback(() => {
     setConfigDialogOpen(true)
@@ -163,8 +214,6 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     return action
   }
 
-  console.log(isSourceConnected, 'AA')
-
   return (
     <ContextMenu>
       <ContextMenuTrigger>
@@ -193,6 +242,8 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
               initialConfig={data.config}
               open={configDialogOpen}
               onOpenChange={setConfigDialogOpen}
+              availableInputs={availableInputs}
+              nodeOutput={nodeOutput}
             />
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogTrigger asChild>

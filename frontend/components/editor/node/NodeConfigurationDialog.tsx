@@ -15,6 +15,7 @@ import { ArchiveRestore } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { BaseConfigurationForm } from './BaseConfigurationForm'
+import { NodeInputSource, NodeOutputData } from '@/lib/node-execution-store'
 
 const NodeConfigurationDialog = ({
   action: action,
@@ -22,7 +23,9 @@ const NodeConfigurationDialog = ({
   setIsOpen,
   nodeId,
   onSaveConfig,
-  initialConfig
+  initialConfig,
+  availableInputs = [],
+  nodeOutput
 }: {
   action: NodeAction
   isOpen: boolean
@@ -30,6 +33,8 @@ const NodeConfigurationDialog = ({
   nodeId?: string
   onSaveConfig?: (data: any) => void
   initialConfig?: any
+  availableInputs?: NodeInputSource[]
+  nodeOutput?: NodeOutputData
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -49,7 +54,7 @@ const NodeConfigurationDialog = ({
                 <Separator />
               </CardHeader>
               <CardContent className='p-4 pt-0'>
-                <NodeInputDialog />
+                <NodeInputDialog availableInputs={availableInputs} />
               </CardContent>
             </Card>
           </ResizablePanel>
@@ -82,7 +87,7 @@ const NodeConfigurationDialog = ({
                 <Separator />
               </CardHeader>
               <CardContent className='p-4 pt-0'>
-                <NodeOutputDialog />
+                <NodeOutputDialog output={nodeOutput} />
               </CardContent>
             </Card>
           </ResizablePanel>

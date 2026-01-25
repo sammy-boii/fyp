@@ -6,6 +6,7 @@ import { NodeAction, SingleNodeDefinition } from '@/types/node.types'
 import { ChevronRight, Settings } from 'lucide-react'
 import React, { useState } from 'react'
 import NodeConfigurationDialog from './NodeConfigurationDialog'
+import { NodeInputSource, NodeOutputData } from '@/lib/node-execution-store'
 
 export const NodeActionsSheet = ({
   node,
@@ -14,7 +15,9 @@ export const NodeActionsSheet = ({
   preSelectedAction,
   initialConfig,
   open,
-  onOpenChange
+  onOpenChange,
+  availableInputs = [],
+  nodeOutput
 }: {
   node: SingleNodeDefinition
   nodeId: string
@@ -23,6 +26,8 @@ export const NodeActionsSheet = ({
   initialConfig?: any
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  availableInputs?: NodeInputSource[]
+  nodeOutput?: NodeOutputData
 }) => {
   const [openActionsSheet, setOpenActionsSheet] = useState(false)
   const [selectedAction, setSelectedAction] = useState<NodeAction | null>(
@@ -77,6 +82,8 @@ export const NodeActionsSheet = ({
           nodeId={nodeId}
           onSaveConfig={onSaveConfig}
           initialConfig={initialConfig}
+          availableInputs={availableInputs}
+          nodeOutput={nodeOutput}
         />
       )}
 

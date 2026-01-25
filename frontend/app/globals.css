@@ -136,21 +136,55 @@
   animation: gradient-x 2s ease infinite;
 }
 
-@keyframes executing-border {
-  0%, 100% {
-    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.5), 
-                0 0 10px hsl(var(--primary) / 0.3),
-                0 0 20px hsl(var(--primary) / 0.2);
+/* Rotating border animation for executing nodes */
+@keyframes rotate-border {
+  0% {
+    --border-angle: 0deg;
   }
-  50% {
-    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.8), 
-                0 0 15px hsl(var(--primary) / 0.5),
-                0 0 30px hsl(var(--primary) / 0.3);
+  100% {
+    --border-angle: 360deg;
   }
 }
 
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
 .animate-executing-border {
-  animation: executing-border 1.5s ease-in-out infinite;
+  position: relative;
+  background: hsl(var(--card));
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.animate-executing-border::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: calc(var(--radius) + 3px);
+  background: conic-gradient(
+    from var(--border-angle),
+    hsl(var(--primary)) 0%,
+    transparent 15%,
+    transparent 45%,
+    hsl(var(--primary)) 50%,
+    transparent 65%,
+    transparent 95%,
+    hsl(var(--primary)) 100%
+  );
+  z-index: -1;
+  animation: rotate-border 1.5s linear infinite;
+}
+
+.animate-executing-border::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: calc(var(--radius) + 1px);
+  background: hsl(var(--card));
+  z-index: -1;
 }
 
 /* Custom Scrollbar - Minimal thin line */

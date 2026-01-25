@@ -286,8 +286,8 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
 
           <Card
             className={`relative w-48 p-4 rounded-lg border transition-all duration-300 bg-card ${
-              data.isExecuting
-                ? 'border-primary animate-executing-border'
+              data.isExecuting || executeNodeMutation.isPending
+                ? 'border-transparent animate-executing-border'
                 : 'border-border/50'
             }`}
           >

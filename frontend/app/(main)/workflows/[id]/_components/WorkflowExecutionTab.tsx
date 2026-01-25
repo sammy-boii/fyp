@@ -1,10 +1,6 @@
 'use client'
 
-import { useParams } from 'next/navigation'
-import {
-  useWorkflowWebSocket,
-  ExecutionLog
-} from '@/hooks/use-workflow-websocket'
+import { ExecutionLog } from '@/hooks/use-workflow-websocket'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,13 +19,24 @@ import {
 import { cn } from '@/lib/utils'
 import { useEffect, useRef } from 'react'
 
-const WorkflowExecutionTab = () => {
-  const params = useParams()
-  const workflowId = params?.id ? String(params.id) : null
-  const scrollRef = useRef<HTMLDivElement>(null)
+interface WorkflowExecutionTabProps {
+  isConnected: boolean
+  executionLogs: ExecutionLog[]
+  currentExecution: {
+    id: string
+    status: 'running' | 'completed' | 'failed'
+    progress?: { current: number; total: number }
+  } | null
+  clearLogs: () => void
+}
 
-  const { isConnected, executionLogs, currentExecution, clearLogs } =
-    useWorkflowWebSocket(workflowId)
+const WorkflowExecutionTab = ({
+  isConnected,
+  executionLogs,
+  currentExecution,
+  clearLogs
+}: WorkflowExecutionTabProps) => {
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when new logs arrive
   useEffect(() => {

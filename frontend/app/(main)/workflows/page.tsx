@@ -220,7 +220,7 @@ export default function WorkflowsPage() {
           setCreateDialogOpen(false)
           setNewWorkflowName('')
           setNewWorkflowDescription('')
-          router.push(`/workflows/${result.data.id}`)
+          window.location.href = `/workflows/${result.data.id}`
         }
       }
     })

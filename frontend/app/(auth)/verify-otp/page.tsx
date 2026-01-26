@@ -187,7 +187,7 @@ const VerifyOtpForm = () => {
 
               <div
                 className='flex cursor-pointer items-end gap-1 text-sm justify-center text-muted-foreground hover:text-foreground'
-                onClick={router.back}
+                onClick={window.history.back}
               >
                 <ChevronsLeft className='size-4' />
                 Back

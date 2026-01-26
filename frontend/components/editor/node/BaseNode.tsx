@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 
 import { Play, Settings, Trash2, Plus, Loader2 } from 'lucide-react'
 import Image from 'next/image'
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
 import { NODE_DEFINITIONS } from '@/constants/registry'
 import { useParams } from 'next/navigation'
@@ -62,13 +62,12 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
 
   // Get available inputs from predecessor nodes (stored in their data.lastOutput)
-  const availableInputs = useMemo(() => {
-    const edges = getEdges()
-    const nodes = getNodes()
+  // Using useStore to properly subscribe to node/edge changes
+  const availableInputs = useStore((state) => {
     return getAvailableInputsFromNodes(
       id,
-      edges.map((e) => ({ source: e.source, target: e.target })),
-      nodes.map((n) => ({
+      state.edges.map((e) => ({ source: e.source, target: e.target })),
+      state.nodes.map((n) => ({
         id: n.id,
         data: {
           type: n.data.type as string,
@@ -77,22 +76,23 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
         }
       }))
     )
-  }, [id, getEdges, getNodes])
+  })
 
-  // Get this node's output from its data
-  const nodeOutput: NodeOutputData | undefined = useMemo(() => {
-    if (data.lastOutput) {
+  // Get this node's output from its data - use useStore to ensure reactivity
+  const nodeOutput: NodeOutputData | undefined = useStore((state) => {
+    const currentNode = state.nodes.find((n) => n.id === id)
+    if (currentNode?.data?.lastOutput) {
       return {
         nodeId: id,
-        actionId: data.actionId || '',
-        output: data.lastOutput,
-        executedAt: data.lastExecutedAt
-          ? new Date(data.lastExecutedAt)
+        actionId: (currentNode.data.actionId as string) || '',
+        output: currentNode.data.lastOutput as Record<string, any>,
+        executedAt: currentNode.data.lastExecutedAt
+          ? new Date(currentNode.data.lastExecutedAt as string)
           : new Date()
       }
     }
     return undefined
-  }, [data.lastOutput, data.lastExecutedAt, data.actionId, id])
+  })
 
   // Check if this node has outgoing edges - subscribe to edge changes via useStore
   const isSourceConnected = useStore((state) =>
@@ -127,19 +127,36 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   }
 
   const handleExecuteNode = useCallback(async () => {
-    if (!workflowId) return
-
-    if (!data.actionId || !data.config) {
+    if (!workflowId) {
+      console.log('[ExecuteNode] No workflowId')
       return
     }
+
+    if (!data.actionId || !data.config) {
+      console.log('[ExecuteNode] Missing actionId or config:', {
+        actionId: data.actionId,
+        config: data.config
+      })
+      return
+    }
+
+    console.log('[ExecuteNode] Starting execution:', {
+      workflowId,
+      nodeId: id,
+      actionId: data.actionId,
+      config: data.config
+    })
 
     const result = await executeNodeMutation.mutateAsync({
       workflowId,
       nodeId: id
     })
 
+    console.log('[ExecuteNode] Execution result:', result)
+
     // Store the output in the node's data (persisted with workflow)
     if (result?.data?.output) {
+      console.log('[ExecuteNode] Updating node with output:', result.data.output)
       setNodes((nds) =>
         nds.map((n) =>
           n.id === id
@@ -154,6 +171,12 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
             : n
         )
       )
+    } else {
+      console.log('[ExecuteNode] No output in result:', {
+        result,
+        hasData: !!result?.data,
+        hasOutput: !!result?.data?.output
+      })
     }
   }, [
     workflowId,

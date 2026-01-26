@@ -20,6 +20,7 @@ export type NodeInputSource = {
   nodeLabel?: string
   actionId?: string
   variables: NodeVariable[]
+  rawOutput?: Record<string, any>
 }
 
 // Helper to flatten an object into variable paths
@@ -134,7 +135,8 @@ export const getAvailableInputsFromNodes = (
         nodeId,
         nodeType: node.data.type,
         actionId: node.data.actionId,
-        variables: flattenObject(node.data.lastOutput)
+        variables: flattenObject(node.data.lastOutput),
+        rawOutput: node.data.lastOutput
       }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)

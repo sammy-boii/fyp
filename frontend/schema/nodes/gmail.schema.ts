@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const sendEmailFormSchema = z.object({
-  to: z.string().email('Please enter a valid email address'),
+  to: z.string().min(1, 'Please enter a recipient'),
   subject: z.string().optional(),
   body: z.string().optional()
 })
@@ -12,8 +12,8 @@ export const readEmailFormSchema = z.object({
     .min(1, 'Must fetch at least 1 email')
     .max(100, 'Maximum 100 emails')
     .default(10),
-  from: z.string().email('Please enter a valid email').optional().or(z.literal('')),
-  to: z.string().email('Please enter a valid email').optional().or(z.literal('')),
+  from: z.string().optional(),
+  to: z.string().optional(),
   subject: z.string().optional(),
   after: z.string().optional(), // Date string in YYYY-MM-DD format
   before: z.string().optional(), // Date string in YYYY-MM-DD format

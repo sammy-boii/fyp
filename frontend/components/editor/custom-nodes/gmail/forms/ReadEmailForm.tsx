@@ -2,6 +2,7 @@
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { PlaceholderInput } from '@/components/ui/placeholder-input'
 import {
   Select,
   SelectContent,
@@ -123,8 +124,8 @@ export function ReadEmailForm() {
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel className='text-xs font-medium'>From</FieldLabel>
-                <Input
-                  type='email'
+                <PlaceholderInput
+                  type='text'
                   placeholder='sender@example.com'
                   className='h-9 text-sm'
                   {...field}
@@ -142,8 +143,8 @@ export function ReadEmailForm() {
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel className='text-xs font-medium'>To</FieldLabel>
-                <Input
-                  type='email'
+                <PlaceholderInput
+                  type='text'
                   placeholder='recipient@example.com'
                   className='h-9 text-sm'
                   {...field}
@@ -163,7 +164,7 @@ export function ReadEmailForm() {
                 <FieldLabel className='text-xs font-medium'>
                   Subject Contains
                 </FieldLabel>
-                <Input
+                <PlaceholderInput
                   type='text'
                   placeholder='Meeting notes'
                   className='h-9 text-sm'

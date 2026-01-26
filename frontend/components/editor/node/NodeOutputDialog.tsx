@@ -8,7 +8,10 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
-  Info
+  Info,
+  Database,
+  List,
+  Braces
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NodeOutputData } from '@/lib/node-execution-store'
@@ -57,18 +60,29 @@ const OutputField = ({
     switch (field.type) {
       case 'array':
         return (
-          <Badge variant='secondary' className='text-xs font-mono'>
-            [{field.arrayLength}]
+          <Badge
+            variant='secondary'
+            className='text-[10px] font-mono px-1.5 py-0 h-5 gap-1'
+          >
+            <List className='h-3 w-3' />
+            {field.arrayLength}
           </Badge>
         )
       case 'object':
         return (
-          <Badge variant='secondary' className='text-xs font-mono'>
-            {'{...}'}
+          <Badge
+            variant='secondary'
+            className='text-[10px] font-mono px-1.5 py-0 h-5 gap-1'
+          >
+            <Braces className='h-3 w-3' />
           </Badge>
         )
       case 'null':
-        return <span className='text-orange-500 font-mono text-xs'>null</span>
+        return (
+          <span className='text-muted-foreground/60 font-mono text-[10px]'>
+            null
+          </span>
+        )
       case 'boolean':
         return (
           <span className='text-xs font-mono text-muted-foreground'>
@@ -83,12 +97,12 @@ const OutputField = ({
         )
       case 'string':
         const displayValue =
-          field.value?.length > 60
-            ? `${field.value.substring(0, 60)}...`
+          field.value?.length > 40
+            ? `${field.value.substring(0, 40)}...`
             : field.value
         return (
-          <span className='text-xs text-foreground font-mono truncate max-w-[200px] block'>
-            {displayValue}
+          <span className='text-xs text-muted-foreground font-mono truncate max-w-[180px] block'>
+            "{displayValue}"
           </span>
         )
       default:
@@ -101,21 +115,24 @@ const OutputField = ({
     return (
       <div
         className={cn(
-          'flex items-center gap-2 p-2 rounded-md group',
-          'hover:bg-muted/50 transition-colors cursor-pointer'
+          'flex items-center gap-2 py-1.5 px-2 rounded-md group',
+          'hover:bg-accent/50 transition-all cursor-pointer',
+          'border border-transparent hover:border-border/50'
         )}
-        style={{ paddingLeft: `${(depth + 1) * 12}px` }}
+        style={{ marginLeft: `${depth * 16}px` }}
         onClick={(e) => handleCopyPlaceholder(e, field.path)}
       >
-        <div className='w-4' /> {/* Spacer for alignment */}
+        <div className='w-4 flex items-center justify-center'>
+          <div className='w-1.5 h-1.5 rounded-full bg-muted-foreground/30' />
+        </div>
         <div className='flex-1 min-w-0 flex items-center gap-2'>
-          <code className='text-xs font-semibold text-foreground font-mono'>
+          <code className='text-xs font-medium text-foreground/80 font-mono'>
             {field.key}
           </code>
           {field.description && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className='h-3 w-3 text-muted-foreground' />
+                <Info className='h-3 w-3 text-muted-foreground/50' />
               </TooltipTrigger>
               <TooltipContent>
                 <p className='text-xs'>{field.description}</p>
@@ -126,9 +143,9 @@ const OutputField = ({
         <div className='flex items-center gap-2'>
           {renderValueBadge()}
           {isCopied ? (
-            <Check className='h-4 w-4 text-green-500 shrink-0' />
+            <Check className='h-3.5 w-3.5 text-green-600 dark:text-green-500 shrink-0' />
           ) : (
-            <Copy className='h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors shrink-0' />
+            <Copy className='h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0' />
           )}
         </div>
       </div>
@@ -141,24 +158,27 @@ const OutputField = ({
       <CollapsibleTrigger asChild>
         <div
           className={cn(
-            'flex items-center gap-2 p-2 rounded-md cursor-pointer',
-            'hover:bg-muted/50 transition-colors group'
+            'flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer',
+            'hover:bg-accent/50 transition-all group',
+            'border border-transparent hover:border-border/50'
           )}
-          style={{ paddingLeft: `${(depth + 1) * 12}px` }}
+          style={{ marginLeft: `${depth * 16}px` }}
         >
-          {isExpanded ? (
-            <ChevronDown className='h-4 w-4 text-muted-foreground shrink-0' />
-          ) : (
-            <ChevronRight className='h-4 w-4 text-muted-foreground shrink-0' />
-          )}
+          <div className='w-4 flex items-center justify-center'>
+            {isExpanded ? (
+              <ChevronDown className='h-3.5 w-3.5 text-muted-foreground' />
+            ) : (
+              <ChevronRight className='h-3.5 w-3.5 text-muted-foreground' />
+            )}
+          </div>
           <div className='flex-1 min-w-0 flex items-center gap-2'>
-            <code className='text-xs font-semibold text-foreground font-mono'>
+            <code className='text-xs font-medium text-foreground/80 font-mono'>
               {field.label || field.key}
             </code>
             {field.description && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Info className='h-3 w-3 text-muted-foreground' />
+                  <Info className='h-3 w-3 text-muted-foreground/50' />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className='text-xs'>{field.description}</p>
@@ -173,16 +193,16 @@ const OutputField = ({
               className='shrink-0'
             >
               {isCopied ? (
-                <Check className='h-4 w-4 text-green-500' />
+                <Check className='h-3.5 w-3.5 text-green-600 dark:text-green-500' />
               ) : (
-                <Copy className='h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors' />
+                <Copy className='h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors' />
               )}
             </div>
           </div>
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className='border-l border-border/50 ml-4'>
+        <div className='border-l-2 border-border/30 ml-[23px] pl-1'>
           {field.children?.map((child) => (
             <OutputField
               key={child.path}
@@ -200,13 +220,13 @@ const OutputField = ({
 const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
   if (!output) {
     return (
-      <div className='flex flex-col items-center justify-center py-12 text-center'>
-        <div className='p-4 rounded-full bg-muted/50 mb-4'>
-          <Clock className='h-8 w-8 text-muted-foreground' />
+      <div className='flex flex-col items-center justify-center py-16 text-center'>
+        <div className='p-4 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 mb-4 ring-1 ring-border/50'>
+          <Clock className='h-8 w-8 text-muted-foreground/60' />
         </div>
-        <div className='text-muted-foreground'>
-          <p className='font-medium mb-1'>No output yet</p>
-          <p className='text-xs max-w-[200px]'>
+        <div className='text-muted-foreground space-y-1'>
+          <p className='font-medium'>No output yet</p>
+          <p className='text-xs max-w-[220px] text-muted-foreground/70'>
             Execute this node to see its output here. The output will be
             available as input for subsequent nodes.
           </p>
@@ -219,19 +239,26 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
 
   return (
     <ScrollArea className='h-[calc(90vh-12rem)]'>
-      <div className='space-y-3 pr-3'>
-        {/* Summary and timestamp */}
-        <div className='flex items-center justify-between text-xs text-muted-foreground pb-2 border-b'>
-          {parsedOutput.summary && (
-            <span className='font-medium text-foreground'>
-              {parsedOutput.summary}
-            </span>
-          )}
-          <span>Last executed: {output.executedAt.toLocaleTimeString()}</span>
+      <div className='space-y-4 pr-3'>
+        {/* Header with summary */}
+        <div className='flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-accent/30 to-transparent border border-border/50'>
+          <div className='p-2 rounded-md bg-background shadow-sm ring-1 ring-border/50'>
+            <Database className='h-4 w-4 text-muted-foreground' />
+          </div>
+          <div className='flex-1 min-w-0'>
+            {parsedOutput.summary && (
+              <p className='text-sm font-medium text-foreground truncate'>
+                {parsedOutput.summary}
+              </p>
+            )}
+            <p className='text-[10px] text-muted-foreground'>
+              Last executed: {output.executedAt.toLocaleTimeString()}
+            </p>
+          </div>
         </div>
 
         {/* Output fields */}
-        <div className='space-y-1'>
+        <div className='space-y-0.5 rounded-lg border border-border/50 p-2 bg-card/50'>
           {parsedOutput.fields.map((field) => (
             <OutputField
               key={field.path}
@@ -241,13 +268,15 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
           ))}
         </div>
 
-        {/* Tip for using placeholders */}
-        <div className='mt-4 p-3 bg-muted/30 rounded-md'>
-          <p className='text-xs text-muted-foreground'>
-            <strong>Tip:</strong> Click on any field to copy its placeholder.
-            Use placeholders like{' '}
-            <code className='font-mono'>{'{{nodeId.path}}'}</code> in subsequent
-            nodes to reference these values.
+        {/* Tip */}
+        <div className='p-3 rounded-lg bg-muted/30 border border-dashed border-border/50'>
+          <p className='text-[11px] text-muted-foreground leading-relaxed'>
+            <span className='font-medium text-foreground/70'>Tip:</span> Click
+            any field to copy its placeholder. Use{' '}
+            <code className='font-mono text-[10px] px-1 py-0.5 rounded bg-muted'>
+              {'{{nodeId.path}}'}
+            </code>{' '}
+            in subsequent nodes.
           </p>
         </div>
       </div>

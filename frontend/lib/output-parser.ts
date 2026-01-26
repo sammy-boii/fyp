@@ -184,8 +184,9 @@ const parseObjectToFields = (
  */
 const parseReadEmailOutput = (output: Record<string, any>): ParsedOutput => {
   const fields: ParsedOutputField[] = []
-  const emails = output.emails || []
-  const count = output.count || 0
+  const rawEmails = output.emails
+  const emails = Array.isArray(rawEmails) ? rawEmails : []
+  const count = output.count || emails.length || 0
   const query = output.query || ''
 
   // Add count field

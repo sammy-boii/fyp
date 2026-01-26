@@ -65,90 +65,85 @@ export default function WorkflowViewPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [workflowName, setWorkflowName] = useState('')
   const [workflowDescription, setWorkflowDescription] = useState('')
-  const [executingNodeId, setExecutingNodeId] = useState<string | null>(null)
+  const [, setExecutingNodeId] = useState<string | null>(null)
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const hasInitialized = useRef(false)
 
   // WebSocket for live execution updates
-  const {
-    executingNodeId: wsExecutingNodeId,
-    isConnected,
-    executionLogs,
-    currentExecution,
-    clearLogs
-  } = useWorkflowWebSocket(workflowId, {
-    onNodeStart: (nodeId) => {
-      setExecutingNodeId(nodeId)
-      // Update node data to show executing state
-      setNodes((nds) =>
-        nds.map((n) => ({
-          ...n,
-          data: {
-            ...n.data,
-            isExecuting: n.id === nodeId
-          }
-        }))
-      )
-    },
-    onNodeComplete: (nodeId, output) => {
-      setExecutingNodeId(null)
-      // Update node data to clear executing state and store output
-      setNodes((nds) =>
-        nds.map((n) => ({
-          ...n,
-          data: {
-            ...n.data,
-            isExecuting: false,
-            ...(n.id === nodeId && output
-              ? {
-                  lastOutput: output,
-                  lastExecutedAt: new Date().toISOString()
-                }
-              : {})
-          }
-        }))
-      )
-    },
-    onNodeError: (nodeId) => {
-      setExecutingNodeId(null)
-      // Clear executing state on error
-      setNodes((nds) =>
-        nds.map((n) => ({
-          ...n,
-          data: {
-            ...n.data,
-            isExecuting: false
-          }
-        }))
-      )
-    },
-    onWorkflowComplete: () => {
-      setExecutingNodeId(null)
-      // Clear all executing states
-      setNodes((nds) =>
-        nds.map((n) => ({
-          ...n,
-          data: {
-            ...n.data,
-            isExecuting: false
-          }
-        }))
-      )
-    },
-    onWorkflowError: () => {
-      setExecutingNodeId(null)
-      // Clear all executing states
-      setNodes((nds) =>
-        nds.map((n) => ({
-          ...n,
-          data: {
-            ...n.data,
-            isExecuting: false
-          }
-        }))
-      )
-    }
-  })
+  const { isConnected, executionLogs, currentExecution, clearLogs } =
+    useWorkflowWebSocket(workflowId, {
+      onNodeStart: (nodeId) => {
+        setExecutingNodeId(nodeId)
+        // Update node data to show executing state
+        setNodes((nds) =>
+          nds.map((n) => ({
+            ...n,
+            data: {
+              ...n.data,
+              isExecuting: n.id === nodeId
+            }
+          }))
+        )
+      },
+      onNodeComplete: (nodeId, output) => {
+        setExecutingNodeId(null)
+        // Update node data to clear executing state and store output
+        setNodes((nds) =>
+          nds.map((n) => ({
+            ...n,
+            data: {
+              ...n.data,
+              isExecuting: false,
+              ...(n.id === nodeId && output
+                ? {
+                    lastOutput: output,
+                    lastExecutedAt: new Date().toISOString()
+                  }
+                : {})
+            }
+          }))
+        )
+      },
+      onNodeError: () => {
+        setExecutingNodeId(null)
+        // Clear executing state on error
+        setNodes((nds) =>
+          nds.map((n) => ({
+            ...n,
+            data: {
+              ...n.data,
+              isExecuting: false
+            }
+          }))
+        )
+      },
+      onWorkflowComplete: () => {
+        setExecutingNodeId(null)
+        // Clear all executing states
+        setNodes((nds) =>
+          nds.map((n) => ({
+            ...n,
+            data: {
+              ...n.data,
+              isExecuting: false
+            }
+          }))
+        )
+      },
+      onWorkflowError: () => {
+        setExecutingNodeId(null)
+        // Clear all executing states
+        setNodes((nds) =>
+          nds.map((n) => ({
+            ...n,
+            data: {
+              ...n.data,
+              isExecuting: false
+            }
+          }))
+        )
+      }
+    })
 
   // Prevent backspace from deleting nodes
   useEffect(() => {

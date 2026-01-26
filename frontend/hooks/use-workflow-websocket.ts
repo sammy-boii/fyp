@@ -158,7 +158,7 @@ export function useWorkflowWebSocket(
         // Add to logs with unique ID
         const logEntry: ExecutionLog = {
           ...data,
-          id: `${data.executionId}-${data.timestamp}-${Math.random().toString(36).substr(2, 9)}`
+          id: `${data.executionId}-${data.timestamp}-${Math.random().toString(36).slice(2, 11)}`
         }
         setExecutionLogs((prev) => [...prev, logEntry])
 

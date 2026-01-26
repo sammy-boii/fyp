@@ -173,10 +173,10 @@ function ActionCell({ workflow }: { workflow: WorkflowRow }) {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant='ghost' size='icon' className='h-8 w-8' asChild>
-                <Link href={`/workflows/${workflow.id}`}>
+                <a href={`/workflows/${workflow.id}`}>
                   <ExternalLink className='h-4 w-4' />
                   <span className='sr-only'>Open workflow</span>
-                </Link>
+                </a>
               </Button>
             </TooltipTrigger>
             <TooltipContent>Open workflow</TooltipContent>

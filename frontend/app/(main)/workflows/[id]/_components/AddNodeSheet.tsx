@@ -1,15 +1,12 @@
 'use client'
 
-import { Plus, ChevronRight } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
 import {
-  Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
-  SheetTitle,
-  SheetTrigger
+  SheetTitle
 } from '@/components/ui/sheet'
 import { NODE_OPTIONS } from '@/constants'
 import { ValueOf } from '@/types/index.types'

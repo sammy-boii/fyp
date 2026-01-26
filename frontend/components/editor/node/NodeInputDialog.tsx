@@ -118,7 +118,7 @@ const InputField = ({
             : field.value
         return (
           <span className='text-xs text-muted-foreground font-mono truncate max-w-[150px] block'>
-            "{displayValue}"
+            {displayValue}
           </span>
         )
       default:
@@ -263,7 +263,7 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
   if (availableInputs.length === 0) {
     return (
       <div className='flex flex-col items-center justify-center py-16 text-center'>
-        <div className='p-4 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 mb-4 ring-1 ring-border/50'>
+        <div className='p-4 rounded-xl bg-linear-to-br from-muted/50 to-muted/30 mb-4 ring-1 ring-border/50'>
           <Braces className='h-8 w-8 text-muted-foreground/60' />
         </div>
         <div className='text-muted-foreground space-y-1'>
@@ -281,7 +281,7 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
     <ScrollArea className='h-[calc(90vh-12rem)]'>
       <div className='space-y-4 pr-3'>
         {/* Header */}
-        <div className='flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-accent/30 to-transparent border border-border/50'>
+        <div className='flex items-center gap-3 p-3 rounded-lg bg-linear-to-r from-accent/30 to-transparent border border-border/50'>
           <div className='p-2 rounded-md bg-background shadow-sm ring-1 ring-border/50'>
             <Workflow className='h-4 w-4 text-muted-foreground' />
           </div>

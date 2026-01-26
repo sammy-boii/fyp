@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Plus, Workflow } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { columns } from './columns'
@@ -29,7 +28,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 export default function WorkflowsPage() {
-  const router = useRouter()
   const { data, isLoading, isError } = useGetWorkflows()
   const createWorkflow = useCreateWorkflow()
 

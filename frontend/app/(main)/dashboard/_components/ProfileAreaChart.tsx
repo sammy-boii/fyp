@@ -13,8 +13,6 @@ import {
 import {
   ChartConfig,
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent
 } from '@/components/ui/chart'
@@ -168,7 +166,7 @@ export function ProfileAreaChart() {
         </div>
         <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger
-            className='hidden w-[160px] rounded-lg sm:ml-auto sm:flex'
+            className='hidden w-40 rounded-lg sm:ml-auto sm:flex'
             aria-label='Select a value'
           >
             <SelectValue placeholder='Last 3 months' />
@@ -225,7 +223,7 @@ export function ProfileAreaChart() {
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(value) => {
+              tickFormatter={(value: any) => {
                 const date = new Date(value)
                 return date.toLocaleDateString('en-US', {
                   month: 'short',
@@ -237,7 +235,7 @@ export function ProfileAreaChart() {
               cursor={false}
               content={
                 <ChartTooltipContent
-                  labelFormatter={(value) => {
+                  labelFormatter={(value: any) => {
                     return new Date(value).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric'
@@ -261,7 +259,7 @@ export function ProfileAreaChart() {
               stroke='var(--color-desktop)'
               stackId='a'
             />
-            <ChartLegend content={<ChartLegendContent />} />
+            {/* <ChartLegend content={<ChartLegendContent />} /> */}
           </AreaChart>
         </ChartContainer>
       </CardContent>

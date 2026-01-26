@@ -1,8 +1,12 @@
 import { NodeAction } from '@/types/node.types'
 import { Download, List, Upload } from 'lucide-react'
 
+import z from 'zod'
+
 export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
   {
+    configForm: <div />,
+    configFormSchema: z.object({}),
     id: 'upload_file',
     label: 'Upload File',
     description: 'Upload a file to Google Drive',
@@ -33,6 +37,8 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
     ]
   },
   {
+    configForm: <div />,
+    configFormSchema: z.object({}),
     id: 'download_file',
     label: 'Download File',
     description: 'Download a file from Google Drive',
@@ -57,6 +63,8 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
     ]
   },
   {
+    configForm: <div />,
+    configFormSchema: z.object({}),
     id: 'list_files',
     label: 'List Files',
     description: 'List files in Google Drive',

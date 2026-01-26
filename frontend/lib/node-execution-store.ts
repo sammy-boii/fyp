@@ -18,13 +18,15 @@ export type NodeInputSource = {
   nodeId: string
   nodeType: string
   nodeLabel?: string
+  actionId?: string
   variables: NodeVariable[]
 }
 
 // Helper to flatten an object into variable paths
 export const flattenObject = (
   obj: Record<string, any>,
-  prefix = ''
+  prefix = '',
+  maxArrayItems = 5
 ): NodeVariable[] => {
   const result: NodeVariable[] = []
 
@@ -33,17 +35,46 @@ export const flattenObject = (
 
     if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
       // Recursively flatten nested objects
-      result.push(...flattenObject(value, fullPath))
+      result.push(...flattenObject(value, fullPath, maxArrayItems))
     } else if (Array.isArray(value)) {
-      // For arrays, add the array itself
+      // For arrays, add the array itself with length info
       result.push({
         key,
         value: `[Array of ${value.length} items]`,
         path: fullPath
       })
-      // Also add first item properties if it's an array of objects
-      if (value.length > 0 && typeof value[0] === 'object') {
-        result.push(...flattenObject(value[0], `${fullPath}[0]`))
+      
+      // Also add array length as a variable
+      result.push({
+        key: 'length',
+        value: value.length,
+        path: `${fullPath}.length`
+      })
+      
+      // Add properties from array items (up to maxArrayItems)
+      const itemsToProcess = Math.min(value.length, maxArrayItems)
+      for (let i = 0; i < itemsToProcess; i++) {
+        const item = value[i]
+        if (item !== null && typeof item === 'object') {
+          // Flatten each array item's properties
+          result.push(...flattenObject(item, `${fullPath}[${i}]`, 2))
+        } else {
+          // For primitive arrays, add each item
+          result.push({
+            key: `[${i}]`,
+            value: item,
+            path: `${fullPath}[${i}]`
+          })
+        }
+      }
+      
+      // If there are more items, add a hint
+      if (value.length > maxArrayItems) {
+        result.push({
+          key: 'more',
+          value: `... ${value.length - maxArrayItems} more items available`,
+          path: `${fullPath}[${maxArrayItems}]` // Placeholder for continuation
+        })
       }
     } else {
       result.push({ key, value, path: fullPath })
@@ -102,6 +133,7 @@ export const getAvailableInputsFromNodes = (
       return {
         nodeId,
         nodeType: node.data.type,
+        actionId: node.data.actionId,
         variables: flattenObject(node.data.lastOutput)
       }
     })

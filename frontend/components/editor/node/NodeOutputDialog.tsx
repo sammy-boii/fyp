@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Copy, Check, Clock, ChevronDown } from 'lucide-react'
+import { Copy, Check, Clock, ChevronDown, ChevronRight, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NodeOutputData } from '@/lib/node-execution-store'
 import { createPlaceholder } from '@/lib/placeholder-utils'
@@ -11,38 +11,191 @@ import {
   CollapsibleContent,
   CollapsibleTrigger
 } from '@/components/ui/collapsible'
+import { Badge } from '@/components/ui/badge'
+import {
+  parseNodeOutput,
+  ParsedOutputField
+} from '@/lib/output-parser'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 
 type NodeOutputDialogProps = {
   output?: NodeOutputData
 }
 
-const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
+const OutputField = ({
+  field,
+  nodeId,
+  depth = 0
+}: {
+  field: ParsedOutputField
+  nodeId: string
+  depth?: number
+}) => {
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null)
-  const [expandedKeys, setExpandedKeys] = React.useState<Set<string>>(
-    () => new Set(output ? Object.keys(output.output) : [])
-  )
+  const [isExpanded, setIsExpanded] = React.useState(depth < 1)
 
-  const handleCopyPlaceholder = (key: string) => {
-    if (output) {
-      const placeholder = createPlaceholder(output.nodeId, key)
-      navigator.clipboard.writeText(placeholder)
-      setCopiedKey(key)
-      setTimeout(() => setCopiedKey(null), 2000)
+  const handleCopyPlaceholder = (e: React.MouseEvent, path: string) => {
+    e.stopPropagation()
+    const placeholder = createPlaceholder(nodeId, path)
+    navigator.clipboard.writeText(placeholder)
+    setCopiedKey(path)
+    setTimeout(() => setCopiedKey(null), 2000)
+  }
+
+  const isCopied = copiedKey === field.path
+  const hasChildren = field.children && field.children.length > 0
+
+  const renderValueBadge = () => {
+    switch (field.type) {
+      case 'array':
+        return (
+          <Badge variant='secondary' className='text-xs font-mono'>
+            [{field.arrayLength}]
+          </Badge>
+        )
+      case 'object':
+        return (
+          <Badge variant='secondary' className='text-xs font-mono'>
+            {'{...}'}
+          </Badge>
+        )
+      case 'null':
+        return (
+          <span className='text-orange-500 font-mono text-xs'>null</span>
+        )
+      case 'boolean':
+        return (
+          <span
+            className={cn(
+              'text-xs font-mono',
+              field.value ? 'text-green-600' : 'text-muted-foreground'
+            )}
+          >
+            {String(field.value)}
+          </span>
+        )
+      case 'number':
+        return <span className='text-blue-500 font-mono text-xs'>{field.value}</span>
+      case 'string':
+        const displayValue = field.value?.length > 60 
+          ? `${field.value.substring(0, 60)}...` 
+          : field.value
+        return (
+          <span className='text-xs text-foreground font-mono truncate max-w-[200px] block'>
+            {displayValue}
+          </span>
+        )
+      default:
+        return null
     }
   }
 
-  const toggleKey = (key: string) => {
-    setExpandedKeys((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) {
-        next.delete(key)
-      } else {
-        next.add(key)
-      }
-      return next
-    })
+  if (!hasChildren) {
+    // Leaf node - simple display
+    return (
+      <div
+        className={cn(
+          'flex items-center gap-2 p-2 rounded-md group',
+          'hover:bg-muted/50 transition-colors cursor-pointer'
+        )}
+        style={{ paddingLeft: `${(depth + 1) * 12}px` }}
+        onClick={(e) => handleCopyPlaceholder(e, field.path)}
+      >
+        <div className='w-4' /> {/* Spacer for alignment */}
+        <div className='flex-1 min-w-0 flex items-center gap-2'>
+          <code className='text-xs font-semibold text-primary font-mono'>
+            {field.key}
+          </code>
+          {field.description && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className='h-3 w-3 text-muted-foreground' />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className='text-xs'>{field.description}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+        <div className='flex items-center gap-2'>
+          {renderValueBadge()}
+          {isCopied ? (
+            <Check className='h-4 w-4 text-green-500 shrink-0' />
+          ) : (
+            <Copy className='h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors shrink-0' />
+          )}
+        </div>
+      </div>
+    )
   }
 
+  // Expandable node with children
+  return (
+    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+      <CollapsibleTrigger asChild>
+        <div
+          className={cn(
+            'flex items-center gap-2 p-2 rounded-md cursor-pointer',
+            'hover:bg-muted/50 transition-colors group'
+          )}
+          style={{ paddingLeft: `${(depth + 1) * 12}px` }}
+        >
+          {isExpanded ? (
+            <ChevronDown className='h-4 w-4 text-muted-foreground shrink-0' />
+          ) : (
+            <ChevronRight className='h-4 w-4 text-muted-foreground shrink-0' />
+          )}
+          <div className='flex-1 min-w-0 flex items-center gap-2'>
+            <code className='text-xs font-semibold text-primary font-mono'>
+              {field.label || field.key}
+            </code>
+            {field.description && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className='h-3 w-3 text-muted-foreground' />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className='text-xs'>{field.description}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+          <div className='flex items-center gap-2'>
+            {renderValueBadge()}
+            <div
+              onClick={(e) => handleCopyPlaceholder(e, field.path)}
+              className='shrink-0'
+            >
+              {isCopied ? (
+                <Check className='h-4 w-4 text-green-500' />
+              ) : (
+                <Copy className='h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors' />
+              )}
+            </div>
+          </div>
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className='border-l border-border/50 ml-4'>
+          {field.children?.map((child) => (
+            <OutputField
+              key={child.path}
+              field={child}
+              nodeId={nodeId}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  )
+}
+
+const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
   if (!output) {
     return (
       <div className='flex flex-col items-center justify-center py-12 text-center'>
@@ -60,141 +213,41 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
     )
   }
 
-  const renderValue = (value: any): React.ReactNode => {
-    if (value === null)
-      return <span className='text-orange-500 font-mono text-xs'>null</span>
-    if (value === undefined)
-      return (
-        <span className='text-orange-500 font-mono text-xs'>undefined</span>
-      )
-
-    if (typeof value === 'boolean') {
-      return (
-        <span
-          className={cn(
-            'text-xs font-mono',
-            value ? 'text-green-600' : 'text-muted-foreground'
-          )}
-        >
-          {String(value)}
-        </span>
-      )
-    }
-
-    if (typeof value === 'number') {
-      return <span className='text-blue-500 font-mono text-xs'>{value}</span>
-    }
-
-    if (typeof value === 'string') {
-      if (value.length > 100) {
-        return (
-          <span className='text-xs text-foreground font-mono break-all'>
-            {value.substring(0, 100)}...
-          </span>
-        )
-      }
-      return <span className='text-xs text-foreground font-mono'>{value}</span>
-    }
-
-    if (Array.isArray(value)) {
-      if (value.length === 0) {
-        return (
-          <span className='text-muted-foreground text-xs font-mono'>[]</span>
-        )
-      }
-      return (
-        <span className='text-xs text-muted-foreground font-mono'>
-          Array [{value.length}]
-        </span>
-      )
-    }
-
-    if (typeof value === 'object') {
-      const entries = Object.entries(value)
-      if (entries.length === 0) {
-        return (
-          <span className='text-muted-foreground text-xs font-mono'>
-            {'{}'}
-          </span>
-        )
-      }
-      return (
-        <span className='text-xs text-muted-foreground font-mono'>
-          Object {'{'}...{'}'}
-        </span>
-      )
-    }
-
-    return <span className='text-xs font-mono'>{String(value)}</span>
-  }
-
-  const outputEntries = Object.entries(output.output)
+  const parsedOutput = parseNodeOutput(output.actionId, output.output)
 
   return (
     <ScrollArea className='h-[calc(90vh-12rem)]'>
-      <div className='space-y-4 pr-3'>
-        {/* Last executed timestamp - subtle, in corner style */}
-        <div className='text-xs text-muted-foreground text-right'>
-          Last executed: {output.executedAt.toLocaleTimeString()}
+      <div className='space-y-3 pr-3'>
+        {/* Summary and timestamp */}
+        <div className='flex items-center justify-between text-xs text-muted-foreground pb-2 border-b'>
+          {parsedOutput.summary && (
+            <span className='font-medium text-foreground'>
+              {parsedOutput.summary}
+            </span>
+          )}
+          <span>
+            Last executed: {output.executedAt.toLocaleTimeString()}
+          </span>
         </div>
 
-        {outputEntries.map(([key, value]) => {
-          const isExpanded = expandedKeys.has(key)
-          const isCopied = copiedKey === key
+        {/* Output fields */}
+        <div className='space-y-1'>
+          {parsedOutput.fields.map((field) => (
+            <OutputField
+              key={field.path}
+              field={field}
+              nodeId={output.nodeId}
+            />
+          ))}
+        </div>
 
-          return (
-            <Collapsible
-              key={key}
-              open={isExpanded}
-              onOpenChange={() => toggleKey(key)}
-              className='border rounded-lg overflow-hidden'
-            >
-              <CollapsibleTrigger asChild>
-                <div className='flex items-center gap-3 p-3 bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors'>
-                  <ChevronDown
-                    className={cn(
-                      'h-4 w-4 text-muted-foreground transition-transform shrink-0',
-                      isExpanded && 'rotate-180'
-                    )}
-                  />
-                  <div className='flex-1 min-w-0'>
-                    <code className='text-sm font-semibold text-primary font-mono'>
-                      {key}
-                    </code>
-                    {!isExpanded && (
-                      <p className='text-xs text-muted-foreground truncate mt-0.5'>
-                        {renderValue(value)}
-                      </p>
-                    )}
-                  </div>
-                  <div
-                    className='shrink-0'
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleCopyPlaceholder(key)
-                    }}
-                  >
-                    {isCopied ? (
-                      <Check className='h-4 w-4 text-green-500' />
-                    ) : (
-                      <Copy className='h-4 w-4 text-muted-foreground/50 hover:text-muted-foreground transition-colors' />
-                    )}
-                  </div>
-                </div>
-              </CollapsibleTrigger>
-
-              <CollapsibleContent>
-                <div className='p-3 text-xs font-mono bg-muted/20 max-h-48 overflow-auto'>
-                  <pre className='whitespace-pre-wrap break-all'>
-                    {typeof value === 'object'
-                      ? JSON.stringify(value, null, 2)
-                      : String(value)}
-                  </pre>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )
-        })}
+        {/* Tip for using placeholders */}
+        <div className='mt-4 p-3 bg-muted/30 rounded-md'>
+          <p className='text-xs text-muted-foreground'>
+            <strong>Tip:</strong> Click on any field to copy its placeholder. Use placeholders like{' '}
+            <code className='text-primary'>{'{{nodeId.path}}'}</code> in subsequent nodes to reference these values.
+          </p>
+        </div>
       </div>
     </ScrollArea>
   )

@@ -68,6 +68,7 @@ export default function WorkflowViewPage() {
   const [, setExecutingNodeId] = useState<string | null>(null)
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const hasInitialized = useRef(false)
+  const isExecutingRef = useRef(false)
 
   // WebSocket for live execution updates
   const { isConnected, executionLogs, currentExecution, clearLogs } =
@@ -226,12 +227,19 @@ export default function WorkflowViewPage() {
     setSheetOpen(false)
   }
 
-  async function handleExecuteWorkflow() {
-    if (!workflowId || executeWorkflow.isPending) return
-    await executeWorkflow.mutateAsync(workflowId)
-  }
+  const handleExecuteWorkflow = useCallback(async () => {
+    // Use ref to prevent double execution
+    if (!workflowId || executeWorkflow.isPending || isExecutingRef.current) return
+    
+    isExecutingRef.current = true
+    try {
+      await executeWorkflow.mutateAsync(workflowId)
+    } finally {
+      isExecutingRef.current = false
+    }
+  }, [workflowId, executeWorkflow])
 
-  function handleSaveWorkflow() {
+  const handleSaveWorkflow = useCallback(() => {
     if (!workflowId) return
 
     updateWorkflow.mutate({
@@ -243,7 +251,7 @@ export default function WorkflowViewPage() {
         edges: edges as unknown as any[]
       }
     })
-  }
+  }, [workflowId, workflowName, workflowDescription, nodes, edges, updateWorkflow])
 
   if (isLoading) {
     return (
@@ -296,7 +304,7 @@ export default function WorkflowViewPage() {
         isSaving={updateWorkflow.isPending}
         workflowId={workflowId}
         onExecute={handleExecuteWorkflow}
-        isExecuting={executeWorkflow.isPending}
+        isExecuting={executeWorkflow.isPending || isExecutingRef.current}
       />
 
       {/* Edit Workflow Dialog */}

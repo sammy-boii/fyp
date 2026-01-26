@@ -2,7 +2,14 @@
 
 import React from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Copy, Check, Clock, ChevronDown, ChevronRight, Info } from 'lucide-react'
+import {
+  Copy,
+  Check,
+  Clock,
+  ChevronDown,
+  ChevronRight,
+  Info
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NodeOutputData } from '@/lib/node-execution-store'
 import { createPlaceholder } from '@/lib/placeholder-utils'
@@ -12,10 +19,7 @@ import {
   CollapsibleTrigger
 } from '@/components/ui/collapsible'
 import { Badge } from '@/components/ui/badge'
-import {
-  parseNodeOutput,
-  ParsedOutputField
-} from '@/lib/output-parser'
+import { parseNodeOutput, ParsedOutputField } from '@/lib/output-parser'
 import {
   Tooltip,
   TooltipContent,
@@ -64,26 +68,24 @@ const OutputField = ({
           </Badge>
         )
       case 'null':
-        return (
-          <span className='text-orange-500 font-mono text-xs'>null</span>
-        )
+        return <span className='text-orange-500 font-mono text-xs'>null</span>
       case 'boolean':
         return (
-          <span
-            className={cn(
-              'text-xs font-mono',
-              field.value ? 'text-green-600' : 'text-muted-foreground'
-            )}
-          >
+          <span className='text-xs font-mono text-muted-foreground'>
             {String(field.value)}
           </span>
         )
       case 'number':
-        return <span className='text-blue-500 font-mono text-xs'>{field.value}</span>
+        return (
+          <span className='font-mono text-xs text-muted-foreground'>
+            {field.value}
+          </span>
+        )
       case 'string':
-        const displayValue = field.value?.length > 60 
-          ? `${field.value.substring(0, 60)}...` 
-          : field.value
+        const displayValue =
+          field.value?.length > 60
+            ? `${field.value.substring(0, 60)}...`
+            : field.value
         return (
           <span className='text-xs text-foreground font-mono truncate max-w-[200px] block'>
             {displayValue}
@@ -107,7 +109,7 @@ const OutputField = ({
       >
         <div className='w-4' /> {/* Spacer for alignment */}
         <div className='flex-1 min-w-0 flex items-center gap-2'>
-          <code className='text-xs font-semibold text-primary font-mono'>
+          <code className='text-xs font-semibold text-foreground font-mono'>
             {field.key}
           </code>
           {field.description && (
@@ -150,7 +152,7 @@ const OutputField = ({
             <ChevronRight className='h-4 w-4 text-muted-foreground shrink-0' />
           )}
           <div className='flex-1 min-w-0 flex items-center gap-2'>
-            <code className='text-xs font-semibold text-primary font-mono'>
+            <code className='text-xs font-semibold text-foreground font-mono'>
               {field.label || field.key}
             </code>
             {field.description && (
@@ -225,9 +227,7 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
               {parsedOutput.summary}
             </span>
           )}
-          <span>
-            Last executed: {output.executedAt.toLocaleTimeString()}
-          </span>
+          <span>Last executed: {output.executedAt.toLocaleTimeString()}</span>
         </div>
 
         {/* Output fields */}
@@ -244,8 +244,10 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
         {/* Tip for using placeholders */}
         <div className='mt-4 p-3 bg-muted/30 rounded-md'>
           <p className='text-xs text-muted-foreground'>
-            <strong>Tip:</strong> Click on any field to copy its placeholder. Use placeholders like{' '}
-            <code className='text-primary'>{'{{nodeId.path}}'}</code> in subsequent nodes to reference these values.
+            <strong>Tip:</strong> Click on any field to copy its placeholder.
+            Use placeholders like{' '}
+            <code className='font-mono'>{'{{nodeId.path}}'}</code> in subsequent
+            nodes to reference these values.
           </p>
         </div>
       </div>

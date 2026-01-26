@@ -8,7 +8,14 @@ export type ParsedOutputField = {
   label: string
   value: any
   path: string
-  type: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'null' | 'unknown'
+  type:
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'array'
+    | 'object'
+    | 'null'
+    | 'unknown'
   description?: string
   isExpandable: boolean
   arrayLength?: number
@@ -71,7 +78,7 @@ const parseArrayField = (
   // If array has items, parse the first item's structure
   if (value.length > 0) {
     const firstItem = value[0]
-    
+
     // For arrays of objects, show the structure of items
     if (typeof firstItem === 'object' && firstItem !== null) {
       // Add individual array items (show first 3)
@@ -79,7 +86,7 @@ const parseArrayField = (
       for (let i = 0; i < itemsToShow; i++) {
         const itemPath = `${path}[${i}]`
         const itemChildren = parseObjectToFields(value[i], itemPath)
-        
+
         children.push({
           key: `[${i}]`,
           label: `Item ${i + 1}`,
@@ -416,7 +423,10 @@ export const getAvailablePlaceholders = (
 /**
  * Format value for display based on type
  */
-export const formatValueByType = (value: any, type: ParsedOutputField['type']): string => {
+export const formatValueByType = (
+  value: any,
+  type: ParsedOutputField['type']
+): string => {
   switch (type) {
     case 'null':
       return 'null'

@@ -229,8 +229,9 @@ export default function WorkflowViewPage() {
 
   const handleExecuteWorkflow = useCallback(async () => {
     // Use ref to prevent double execution
-    if (!workflowId || executeWorkflow.isPending || isExecutingRef.current) return
-    
+    if (!workflowId || executeWorkflow.isPending || isExecutingRef.current)
+      return
+
     isExecutingRef.current = true
     try {
       await executeWorkflow.mutateAsync(workflowId)
@@ -251,7 +252,14 @@ export default function WorkflowViewPage() {
         edges: edges as unknown as any[]
       }
     })
-  }, [workflowId, workflowName, workflowDescription, nodes, edges, updateWorkflow])
+  }, [
+    workflowId,
+    workflowName,
+    workflowDescription,
+    nodes,
+    edges,
+    updateWorkflow
+  ])
 
   if (isLoading) {
     return (

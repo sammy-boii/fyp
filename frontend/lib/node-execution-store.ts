@@ -43,14 +43,14 @@ export const flattenObject = (
         value: `[Array of ${value.length} items]`,
         path: fullPath
       })
-      
+
       // Also add array length as a variable
       result.push({
         key: 'length',
         value: value.length,
         path: `${fullPath}.length`
       })
-      
+
       // Add properties from array items (up to maxArrayItems)
       const itemsToProcess = Math.min(value.length, maxArrayItems)
       for (let i = 0; i < itemsToProcess; i++) {
@@ -67,7 +67,7 @@ export const flattenObject = (
           })
         }
       }
-      
+
       // If there are more items, add a hint
       if (value.length > maxArrayItems) {
         result.push({

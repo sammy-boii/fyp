@@ -8,7 +8,8 @@ import {
   applyNodeChanges,
   Edge,
   ConnectionLineType,
-  addEdge
+  addEdge,
+  Connection
 } from '@xyflow/react'
 
 import { useParams, useRouter } from 'next/navigation'
@@ -203,6 +204,36 @@ export default function WorkflowViewPage() {
     []
   )
 
+  // Validate connection: prevent self-connections and connections to nodes that already have an incoming edge
+  const isValidConnection = useCallback(
+    (connection: Connection) => {
+      // Prevent self-connections
+      if (connection.source === connection.target) {
+        return false
+      }
+
+      // Check if target already has an incoming edge
+      const targetHasIncoming = edges.some(
+        (edge) => edge.target === connection.target
+      )
+      if (targetHasIncoming) {
+        return false
+      }
+
+      return true
+    },
+    [edges]
+  )
+
+  // Handle new connections from manual edge dragging
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      const newEdge = createEdge(connection.source!, connection.target!)
+      setEdges((eds) => addEdge(newEdge, eds))
+    },
+    [setEdges]
+  )
+
   const addNode = (nodeType: ValueOf<typeof NODE_TYPES>) => {
     // Find the last node in the chain
     const lastNode = findLastNode(nodes, edges)
@@ -356,6 +387,8 @@ export default function WorkflowViewPage() {
             <ReactFlow
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              isValidConnection={isValidConnection}
               nodes={nodes}
               edges={edges}
               nodeTypes={nodeTypes}
@@ -365,7 +398,7 @@ export default function WorkflowViewPage() {
               defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
               fitView
               nodesDraggable={true}
-              nodesConnectable={false}
+              nodesConnectable={true}
               elementsSelectable={true}
             >
               <Background gap={40} />

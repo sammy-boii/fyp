@@ -43,6 +43,7 @@ import {
   useDeleteCredential,
   useUpdateCredential
 } from '@/hooks/use-credentials'
+import { CREDENTIALS_OPTIONS } from '@/constants'
 
 export type CredentialRow = {
   id: string
@@ -69,17 +70,6 @@ const statusTone: Record<CredentialRow['status'], string> = {
   revoked: 'bg-destructive/10 text-destructive'
 }
 
-const providerMeta: Record<
-  string,
-  {
-    name: string
-    icon: string
-  }
-> = {
-  google: { name: 'Google', icon: '/google-drive.png' },
-  gmail: { name: 'Gmail', icon: '/gmail.png' }
-}
-
 function maskToken(token: string) {
   if (!token) return '••••••••'
   return `${token.slice(0, 4)}••••${token.slice(-4)}`
@@ -98,15 +88,16 @@ function formatDate(iso: string | null | undefined) {
   }).format(date)
 }
 
-function ProviderIcon({ provider }: { provider: string }) {
-  const base = provider.toLowerCase()
-  const meta = providerMeta[base]
+function ProviderIcon({ provider }: { provider?: string | null }) {
+  const base = provider?.toLowerCase()
+  const meta = CREDENTIALS_OPTIONS.find((option) => option.id === base)
 
+  console.log(base, meta)
   if (meta?.icon) {
     return (
       <div className='relative h-8 w-8 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900'>
         <Image
-          src={gmailIcon}
+          src={meta.icon}
           alt={meta.name}
           fill
           sizes='32px'
@@ -118,7 +109,7 @@ function ProviderIcon({ provider }: { provider: string }) {
 
   return (
     <div className='flex h-8 w-8 items-center justify-center rounded-md bg-muted text-xs font-semibold uppercase'>
-      {provider.slice(0, 2)}
+      {base?.slice(0, 2)}
     </div>
   )
 }
@@ -599,19 +590,20 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
 
 function ProviderCell({ cred }: { cred: CredentialRow }) {
   const base = cred.provider.toLowerCase()
-  const meta = providerMeta[base]
+  const meta = CREDENTIALS_OPTIONS.find((option) => option.id === base)
 
   return (
     <div className='flex items-center gap-3'>
       <div className='flex h-10 w-10 items-center justify-center rounded-md'>
-        <ProviderIcon provider={cred.provider} />
+        <ProviderIcon provider={cred.service} />
       </div>
       <div className='flex flex-col'>
-        <span className='text-sm font-semibold'>
+        <span className='text-sm capitalize font-semibold'>
           {meta?.name || cred.provider}
         </span>
-        <span className='text-xs text-muted-foreground'>
-          {cred.service || 'No linked service'}
+        <span className='text-xs capitalize text-muted-foreground'>
+          {/* mainly for google-drive */}
+          {cred.service ? (cred.service.split('-').join(' ')) : 'N/A'}
         </span>
       </div>
     </div>

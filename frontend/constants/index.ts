@@ -12,3 +12,18 @@ export const NODE_OPTIONS = [
   { id: NODE_TYPES.GMAIL, name: 'Gmail', icon: gmailIcon },
   { id: NODE_TYPES.GOOGLE_DRIVE, name: 'Google Drive', icon: googleDriveIcon }
 ]
+
+export const CREDENTIALS_OPTIONS = [
+  {
+    id: 'gmail',
+    name: 'Gmail',
+    icon: gmailIcon,
+    url: `${BACKEND_URL}/api/gmail/oauth`
+  },
+  {
+    id: 'google-drive',
+    name: 'Google Drive',
+    icon: googleDriveIcon,
+    url: `${BACKEND_URL}/api/google-drive/oauth`
+  }
+]

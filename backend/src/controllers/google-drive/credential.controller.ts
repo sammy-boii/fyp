@@ -34,7 +34,7 @@ export const addOrUpdateCredential = tryCatch(async (c) => {
     where: {
       provider_service_userId: {
         provider: 'google',
-        service: 'drive',
+        service: 'google-drive',
         userId: user.id
       }
     },
@@ -49,7 +49,7 @@ export const addOrUpdateCredential = tryCatch(async (c) => {
     create: {
       userId: user.id,
       provider: 'google',
-      service: 'drive',
+      service: 'google-drive',
       accessToken: encryptedAccessToken,
       refreshToken: encryptedRefreshToken,
       accessTokenExpiresAt,

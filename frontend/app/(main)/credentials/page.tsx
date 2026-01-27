@@ -3,9 +3,6 @@
 import Image from 'next/image'
 import { ChevronRight, Plus, KeyRound } from 'lucide-react'
 
-import googleDriveIcon from '@/public/google-drive.png'
-import gmailIcon from '@/public/gmail.png'
-
 import { Button } from '@/components/ui/button'
 import {
   Sheet,
@@ -27,21 +24,9 @@ import { DataTable } from './data-table'
 import Link from 'next/link'
 import { useGetCredentials } from '@/hooks/use-credentials'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CREDENTIALS_OPTIONS } from '@/constants'
 
-const credentialOptions = [
-  {
-    id: 'gmail',
-    name: 'Gmail',
-    icon: gmailIcon,
-    url: 'http://localhost:5000/api/gmail/oauth'
-  },
-  {
-    id: 'google-drive',
-    name: 'Google Drive',
-    icon: googleDriveIcon,
-    url: 'http://localhost:5000/api/google-drive/oauth'
-  }
-]
+
 
 export default function CredentialsPage() {
   const { data, isLoading, isError } = useGetCredentials()
@@ -147,7 +132,7 @@ export default function CredentialsPage() {
                 </SheetDescription>
               </SheetHeader>
               <div className='grid gap-3 p-4 pt-2'>
-                {credentialOptions.map((option) => (
+                {CREDENTIALS_OPTIONS.map((option) => (
                   <Link
                     key={option.id}
                     href={option.url}

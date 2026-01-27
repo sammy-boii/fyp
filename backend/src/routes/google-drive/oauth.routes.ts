@@ -14,7 +14,7 @@ googleDriveOAuthRoutes.use(
   googleAuth({
     client_id: Bun.env.GOOGLE_CLIENT_ID,
     client_secret: Bun.env.GOOGLE_CLIENT_SECRET,
-    redirect_uri: REDIRECT_URL['GOOGLE-DRIVE'].OAUTH,
+    redirect_uri: REDIRECT_URL.DRIVE.OAUTH,
     scope: SCOPES.GOOGLE_DRIVE,
     access_type: 'offline', // request refresh token
     prompt: 'consent'

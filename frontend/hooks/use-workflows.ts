@@ -132,16 +132,19 @@ export function useExecuteNode() {
       workflowId: string
       nodeId: string
     }) => executeNode(workflowId, nodeId),
-    onSuccess: (data, variables) => {
+    onMutate: async () => {
+      const toastId = toast.loading('Executing node...')
+      return toastId
+    },
+    onSuccess: (data, variables, toastId) => {
+        toast.dismiss(toastId as string)
       if (data.error) {
         throw data.error
       }
       toast.success('Node executed successfully')
-      // Invalidate the workflow query to get the updated node output
       queryClient.invalidateQueries({
         queryKey: ['workflow', variables.workflowId]
       })
-      // Return data to be available in mutateAsync result
       return data
     },
     onError: (err) => {

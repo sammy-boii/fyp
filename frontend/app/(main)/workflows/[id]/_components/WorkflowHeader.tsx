@@ -54,7 +54,7 @@ export function WorkflowHeader({
         <Button
           variant='outline'
           size='sm'
-          className='gap-1.5 px-2 h-8 text-xs'
+          className='gap-1.5 px-2 w-24 h-8 text-xs'
           onClick={onExecute}
           isLoading={isExecuting}
           disabled={isExecuting || !workflowId}
@@ -64,7 +64,7 @@ export function WorkflowHeader({
         </Button>
         <Button
           size='sm'
-          className='gap-1.5 px-2 h-8 text-xs'
+          className='gap-1.5 w-20 px-2 h-8 text-xs'
           onClick={onSave}
           isLoading={isSaving}
           disabled={isSaving || !workflowId}

@@ -206,7 +206,7 @@ export default function WorkflowViewPage() {
 
   // Validate connection: prevent self-connections and connections to nodes that already have an incoming edge
   const isValidConnection = useCallback(
-    (connection: Connection) => {
+    (connection: Connection | Edge) => {
       // Prevent self-connections
       if (connection.source === connection.target) {
         return false
@@ -265,16 +265,27 @@ export default function WorkflowViewPage() {
 
     isExecutingRef.current = true
     try {
+      // Auto-save workflow before executing
+      await updateWorkflow.mutateAsync({
+        id: workflowId,
+        data: {
+          name: workflowName,
+          description: workflowDescription,
+          nodes: nodes as unknown as any[],
+          edges: edges as unknown as any[]
+        }
+      })
+
       await executeWorkflow.mutateAsync(workflowId)
     } finally {
       isExecutingRef.current = false
     }
-  }, [workflowId, executeWorkflow])
+  }, [workflowId, executeWorkflow, updateWorkflow, workflowName, workflowDescription, nodes, edges])
 
-  const handleSaveWorkflow = useCallback(() => {
+  const handleSaveWorkflow = useCallback(async () => {
     if (!workflowId) return
 
-    updateWorkflow.mutate({
+    await updateWorkflow.mutateAsync({
       id: workflowId,
       data: {
         name: workflowName,

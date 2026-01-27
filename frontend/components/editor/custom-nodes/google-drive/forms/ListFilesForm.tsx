@@ -1,0 +1,114 @@
+'use client'
+
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { PlaceholderInput } from '@/components/ui/placeholder-input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { Controller, useFormContext } from 'react-hook-form'
+import {
+  FileText,
+  Image,
+  FileSpreadsheet,
+  Folder,
+  File,
+  Files
+} from 'lucide-react'
+
+const FILE_TYPES = [
+  { value: 'all', label: 'All Files', icon: Files },
+  { value: 'folder', label: 'Folders Only', icon: Folder },
+  { value: 'document', label: 'Documents', icon: FileText },
+  { value: 'spreadsheet', label: 'Spreadsheets', icon: FileSpreadsheet },
+  { value: 'image', label: 'Images', icon: Image },
+  { value: 'pdf', label: 'PDF Files', icon: File }
+]
+
+export function ListFilesForm() {
+  const { control } = useFormContext()
+
+  return (
+    <div className='space-y-4'>
+      {/* Max Results */}
+      <Controller
+        name='maxResults'
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>
+              Number of Files
+            </FieldLabel>
+            <Input
+              type='number'
+              min={1}
+              max={100}
+              placeholder='50'
+              className='h-9 text-sm'
+              {...field}
+              onChange={(e) => field.onChange(parseInt(e.target.value) || 50)}
+              aria-invalid={fieldState.invalid}
+            />
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      {/* File Type Filter */}
+      <Controller
+        name='fileType'
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>File Type</FieldLabel>
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className='h-9 text-sm'>
+                <SelectValue placeholder='All Files' />
+              </SelectTrigger>
+              <SelectContent>
+                {FILE_TYPES.map((type) => {
+                  const Icon = type.icon
+                  return (
+                    <SelectItem key={type.value} value={type.value}>
+                      <div className='flex items-center gap-2'>
+                        <Icon className='h-4 w-4 text-muted-foreground' />
+                        {type.label}
+                      </div>
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      {/* Folder ID */}
+      <Controller
+        name='folderId'
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>
+              Folder ID
+              <span className='text-muted-foreground ml-1'>(optional)</span>
+            </FieldLabel>
+            <PlaceholderInput
+              type='text'
+              placeholder='Leave empty to list from root'
+              className='h-9 text-sm'
+              {...field}
+              aria-invalid={fieldState.invalid}
+            />
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+    </div>
+  )
+}

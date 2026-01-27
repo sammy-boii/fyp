@@ -1,4 +1,4 @@
-import { BACKEND_BASE_URL } from '.'
+import { BACKEND_BASE_URL } from ".";
 
 export const REDIRECT_URL = {
   GMAIL: {

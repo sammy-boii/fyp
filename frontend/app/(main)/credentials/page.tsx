@@ -39,7 +39,7 @@ const credentialOptions = [
     id: 'google-drive',
     name: 'Google Drive',
     icon: googleDriveIcon,
-    url: 'http://localhost:5000/api/gmail/oauth'
+    url: 'http://localhost:5000/api/google-drive/oauth'
   }
 ]
 

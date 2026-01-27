@@ -1,102 +1,50 @@
-import { NodeAction } from '@/types/node.types'
-import { Download, List, Upload } from 'lucide-react'
+'use client'
 
-import z from 'zod'
+import { NodeAction } from '@/types/node.types'
+import { FolderPlus, FolderMinus, List, Trash2 } from 'lucide-react'
+import { CreateFolderForm } from './forms/CreateFolderForm'
+import { DeleteFolderForm } from './forms/DeleteFolderForm'
+import { ListFilesForm } from './forms/ListFilesForm'
+import { DeleteFileForm } from './forms/DeleteFileForm'
+import {
+  createFolderFormSchema,
+  deleteFolderFormSchema,
+  listFilesFormSchema,
+  deleteFileFormSchema
+} from '@/schema/nodes/google-drive.schema'
+import { NODE_ACTION_ID } from '@shared/constants'
 
 export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
   {
-    configForm: <div />,
-    configFormSchema: z.object({}),
-    id: 'upload_file',
-    label: 'Upload File',
-    description: 'Upload a file to Google Drive',
-    icon: Upload,
-    fields: [
-      {
-        id: 'file_path',
-        name: 'file_path',
-        type: 'text',
-        label: 'File Path',
-        placeholder: '/path/to/file.pdf',
-        required: true
-      },
-      {
-        id: 'folder_id',
-        name: 'folder_id',
-        type: 'text',
-        label: 'Folder ID',
-        placeholder: 'Optional folder ID'
-      },
-      {
-        id: 'file_name',
-        name: 'file_name',
-        type: 'text',
-        label: 'File Name',
-        placeholder: 'Custom file name (optional)'
-      }
-    ]
+    id: NODE_ACTION_ID.CREATE_FOLDER,
+    label: 'Create Folder',
+    description: 'Create a new folder in Google Drive',
+    icon: FolderPlus,
+    configForm: <CreateFolderForm />,
+    configFormSchema: createFolderFormSchema
   },
   {
-    configForm: <div />,
-    configFormSchema: z.object({}),
-    id: 'download_file',
-    label: 'Download File',
-    description: 'Download a file from Google Drive',
-    icon: Download,
-    fields: [
-      {
-        id: 'file_id',
-        name: 'file_id',
-        type: 'text',
-        label: 'File ID',
-        placeholder: 'Google Drive file ID',
-        required: true
-      },
-      {
-        id: 'download_path',
-        name: 'download_path',
-        type: 'text',
-        label: 'Download Path',
-        placeholder: '/path/to/download/location',
-        required: true
-      }
-    ]
-  },
-  {
-    configForm: <div />,
-    configFormSchema: z.object({}),
-    id: 'list_files',
+    id: NODE_ACTION_ID.LIST_FILES,
     label: 'List Files',
-    description: 'List files in Google Drive',
+    description: 'List files and folders in Google Drive',
     icon: List,
-    fields: [
-      {
-        id: 'folder_id',
-        name: 'folder_id',
-        type: 'text',
-        label: 'Folder ID',
-        placeholder: 'Optional folder ID to list files from'
-      },
-      {
-        id: 'max_results',
-        name: 'max_results',
-        type: 'number',
-        label: 'Max Results',
-        defaultValue: 50
-      },
-      {
-        id: 'file_type',
-        name: 'file_type',
-        type: 'select',
-        label: 'File Type',
-        options: [
-          { value: 'all', label: 'All Files' },
-          { value: 'pdf', label: 'PDF' },
-          { value: 'image', label: 'Images' },
-          { value: 'document', label: 'Documents' }
-        ],
-        defaultValue: 'all'
-      }
-    ]
+    configForm: <ListFilesForm />,
+    configFormSchema: listFilesFormSchema
+  },
+  {
+    id: NODE_ACTION_ID.DELETE_FILE,
+    label: 'Delete File',
+    description: 'Delete a file from Google Drive',
+    icon: Trash2,
+    configForm: <DeleteFileForm />,
+    configFormSchema: deleteFileFormSchema
+  },
+  {
+    id: NODE_ACTION_ID.DELETE_FOLDER,
+    label: 'Delete Folder',
+    description: 'Delete a folder from Google Drive',
+    icon: FolderMinus,
+    configForm: <DeleteFolderForm />,
+    configFormSchema: deleteFolderFormSchema
   }
 ]

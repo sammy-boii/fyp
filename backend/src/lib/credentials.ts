@@ -167,3 +167,21 @@ async function validateAndRefreshToken(
   const decryptedAccessToken = decryptToken(credential.accessToken)
   return { token: decryptedAccessToken, credential }
 }
+
+/**
+ * Get a valid decrypted access token for Google Drive by credentialId, refreshing if expired
+ */
+export async function getValidGoogleDriveAccessTokenByCredentialId(
+  credentialId: string
+): Promise<{ token: string; credential: any }> {
+  const credential = await prisma.oAuthCredential.findUnique({
+    where: { id: credentialId }
+  })
+
+  if (!credential) {
+    throw new Error('Google Drive credential not found')
+  }
+
+  return await validateAndRefreshToken(credential)
+}
+

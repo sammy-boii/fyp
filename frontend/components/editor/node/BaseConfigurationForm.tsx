@@ -16,30 +16,22 @@ import { Controller, useForm, FormProvider } from 'react-hook-form'
 import z from 'zod'
 import { useGetCredentials } from '@/hooks/use-credentials'
 import Image from 'next/image'
-import gmailIcon from '@/public/gmail.png'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-
-const providerMeta: Record<
-  string,
-  {
-    name: string
-    icon: string
-  }
-> = {
-  google: { name: 'Google', icon: '/google-drive.png' },
-  gmail: { name: 'Gmail', icon: '/gmail.png' }
-}
+import { CREDENTIALS_OPTIONS } from '@/constants'
 
 function ProviderIcon({ provider }: { provider: string }) {
   const base = provider.toLowerCase()
-  const meta = providerMeta[base]
+
+  const meta = CREDENTIALS_OPTIONS.find((option) => option.id === base)
+
+  console.log(meta, base)
 
   if (meta?.icon) {
     return (
       <div className='relative h-6 w-6 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900'>
         <Image
-          src={gmailIcon}
+          src={meta.icon}
           alt={meta.name}
           fill
           sizes='24px'
@@ -179,9 +171,9 @@ export const BaseConfigurationForm = ({
                             ) : (
                               credentials.map((cred: any) => {
                                 const meta =
-                                  providerMeta[
-                                    cred.provider?.toLowerCase() || ''
-                                  ]
+                                  CREDENTIALS_OPTIONS.find(
+                                    (option) => option.id === cred.provider
+                                  )
                                 return (
                                   <SelectItem
                                     key={cred.id}
@@ -190,15 +182,15 @@ export const BaseConfigurationForm = ({
                                   >
                                     <div className='flex items-center gap-3'>
                                       <ProviderIcon
-                                        provider={cred.provider || ''}
+                                        provider={cred.service || ''}
                                       />
                                       <div className='flex flex-col items-start gap-0.5'>
-                                        <span className='text-sm font-medium'>
-                                          {meta?.name || cred.provider}
+                                        <span className='text-sm capitalize font-medium'>
+                                          {cred.provider}
                                         </span>
                                         {cred.service && (
                                           <span className='text-xs text-muted-foreground capitalize'>
-                                            {cred.service}
+                                            {cred.service ? cred.service.split('-').join(' ') : 'N/A'}
                                           </span>
                                         )}
                                       </div>

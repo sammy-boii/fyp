@@ -116,6 +116,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -123,10 +124,13 @@
 
 /* Executing node animation - Pulsating primary border */
 @keyframes pulse-border {
-  0%, 100% {
+
+  0%,
+  100% {
     border-color: oklch(0.835 0.239 147.17);
     box-shadow: 0 0 0 0 oklch(0.835 0.239 147.17 / 0.4);
   }
+
   50% {
     border-color: oklch(0.835 0.239 147.17);
     box-shadow: 0 0 0 4px oklch(0.835 0.239 147.17 / 0);

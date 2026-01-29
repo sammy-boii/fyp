@@ -152,7 +152,16 @@ export const BaseConfigurationForm = ({
                             className='py-6 cursor-pointer w-full border-muted-foreground/20 bg-background hover:border-muted-foreground/40'
                             aria-invalid={fieldState.invalid}
                           >
-                            <SelectValue placeholder='Select credential' />
+                            {isLoadingCredentials ? (
+                              <div className='flex items-center gap-2'>
+                                <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />
+                                <span className='text-muted-foreground'>
+                                  Loading credentials...
+                                </span>
+                              </div>
+                            ) : (
+                              <SelectValue placeholder='Select credential' />
+                            )}
                           </SelectTrigger>
                           <SelectContent className='max-h-[300px]'>
                             {isLoadingCredentials ? (
@@ -170,10 +179,9 @@ export const BaseConfigurationForm = ({
                               </SelectItem>
                             ) : (
                               credentials.map((cred: any) => {
-                                const meta =
-                                  CREDENTIALS_OPTIONS.find(
-                                    (option) => option.id === cred.provider
-                                  )
+                                const meta = CREDENTIALS_OPTIONS.find(
+                                  (option) => option.id === cred.provider
+                                )
                                 return (
                                   <SelectItem
                                     key={cred.id}
@@ -190,7 +198,11 @@ export const BaseConfigurationForm = ({
                                         </span>
                                         {cred.service && (
                                           <span className='text-xs text-muted-foreground capitalize'>
-                                            {cred.service ? cred.service.split('-').join(' ') : 'N/A'}
+                                            {cred.service
+                                              ? cred.service
+                                                  .split('-')
+                                                  .join(' ')
+                                              : 'N/A'}
                                           </span>
                                         )}
                                       </div>

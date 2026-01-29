@@ -25,7 +25,8 @@ export const executeCreateFolder = async (
     }
 
     // Get valid Google Drive access token
-    const { token } = await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
+    const { token } =
+      await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
 
     // Build folder metadata
     const folderMetadata: Record<string, any> = {
@@ -76,6 +77,144 @@ export const executeCreateFolder = async (
 }
 
 /**
+ * Create a file in Google Drive
+ */
+export const executeCreateFile = async (
+  config: any
+): Promise<TNodeExecutionResult> => {
+  console.log(
+    '[executeCreateFile] Starting with config:',
+    JSON.stringify(config, null, 2)
+  )
+
+  try {
+    const {
+      name,
+      content = '',
+      mimeType = 'text/plain',
+      parentFolderId,
+      credentialId
+    } = config
+
+    if (!credentialId) {
+      return { success: false, error: 'Missing credential ID' }
+    }
+
+    if (!name) {
+      return { success: false, error: 'File name is required' }
+    }
+
+    // Get valid Google Drive access token
+    const { token } =
+      await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
+
+    // Build file metadata
+    const fileMetadata: Record<string, any> = {
+      name,
+      mimeType
+    }
+
+    // Add parent folder if specified
+    if (parentFolderId) {
+      fileMetadata.parents = [parentFolderId]
+    }
+
+    // For Google Docs types, use metadata-only creation then update content
+    // For regular files, use multipart upload
+    const isGoogleDocsType = mimeType.startsWith('application/vnd.google-apps.')
+
+    if (isGoogleDocsType) {
+      // Create Google Docs file (metadata only)
+      const createResponse = await fetch(API_ROUTES.GOOGLE_DRIVE.CREATE_FILE, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(fileMetadata)
+      })
+
+      if (!createResponse.ok) {
+        const err = await createResponse.json()
+        console.error('[executeCreateFile] Drive API Error:', err)
+        return {
+          success: false,
+          error: err?.error?.message || 'Failed to create file'
+        }
+      }
+
+      const result = await createResponse.json()
+      console.log('[executeCreateFile] Success:', result.id)
+
+      return {
+        success: true,
+        data: {
+          fileId: result.id,
+          name: result.name,
+          mimeType: result.mimeType,
+          webViewLink: result.webViewLink,
+          message: 'File created successfully'
+        }
+      }
+    } else {
+      // Use multipart upload for regular files with content
+      const boundary = '-------314159265358979323846'
+      const delimiter = '\r\n--' + boundary + '\r\n'
+      const closeDelimiter = '\r\n--' + boundary + '--'
+
+      const multipartBody =
+        delimiter +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(fileMetadata) +
+        delimiter +
+        'Content-Type: ' +
+        mimeType +
+        '\r\n\r\n' +
+        content +
+        closeDelimiter
+
+      const uploadUrl =
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
+
+      const createResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/related; boundary=' + boundary
+        },
+        body: multipartBody
+      })
+
+      if (!createResponse.ok) {
+        const err = await createResponse.json()
+        console.error('[executeCreateFile] Drive API Error:', err)
+        return {
+          success: false,
+          error: err?.error?.message || 'Failed to create file'
+        }
+      }
+
+      const result = await createResponse.json()
+      console.log('[executeCreateFile] Success:', result.id)
+
+      return {
+        success: true,
+        data: {
+          fileId: result.id,
+          name: result.name,
+          mimeType: result.mimeType,
+          webViewLink: result.webViewLink,
+          message: 'File created successfully'
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error('[executeCreateFile] Exception:', error)
+    return { success: false, error: error.message || 'Failed to create file' }
+  }
+}
+
+/**
  * Delete a folder from Google Drive
  */
 export const executeDeleteFolder = async (
@@ -98,15 +237,19 @@ export const executeDeleteFolder = async (
     }
 
     // Get valid Google Drive access token
-    const { token } = await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
+    const { token } =
+      await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
 
     // Delete folder via Drive API
-    const response = await fetch(API_ROUTES.GOOGLE_DRIVE.DELETE_FILE(folderId), {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`
+    const response = await fetch(
+      API_ROUTES.GOOGLE_DRIVE.DELETE_FILE(folderId),
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       }
-    })
+    )
 
     if (!response.ok) {
       const err = await response.json()
@@ -151,16 +294,20 @@ export const executeListFiles = async (
     }
 
     // Get valid Google Drive access token
-    const { token } = await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
+    const { token } =
+      await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
 
     // Build query parameters
     const params = new URLSearchParams()
     params.set('pageSize', String(maxResults))
-    params.set('fields', 'files(id,name,mimeType,size,createdTime,modifiedTime,webViewLink,iconLink)')
+    params.set(
+      'fields',
+      'files(id,name,mimeType,size,createdTime,modifiedTime,webViewLink,iconLink)'
+    )
 
     // Build query string for filtering
     const queryParts: string[] = []
-    
+
     // Filter by folder
     if (folderId) {
       queryParts.push(`'${folderId}' in parents`)
@@ -254,7 +401,8 @@ export const executeDeleteFile = async (
     }
 
     // Get valid Google Drive access token
-    const { token } = await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
+    const { token } =
+      await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
 
     // Delete file via Drive API
     const response = await fetch(API_ROUTES.GOOGLE_DRIVE.DELETE_FILE(fileId), {

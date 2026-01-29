@@ -5,6 +5,21 @@ export const createFolderFormSchema = z.object({
   parentFolderId: z.string().optional()
 })
 
+export const createFileFormSchema = z.object({
+  name: z.string().min(1, 'File name is required'),
+  content: z.string().optional(),
+  mimeType: z
+    .enum([
+      'text/plain',
+      'application/vnd.google-apps.document',
+      'application/vnd.google-apps.spreadsheet',
+      'text/html',
+      'text/csv'
+    ])
+    .default('text/plain'),
+  parentFolderId: z.string().optional()
+})
+
 export const deleteFolderFormSchema = z.object({
   folderId: z.string().min(1, 'Folder ID is required')
 })
@@ -16,7 +31,9 @@ export const listFilesFormSchema = z.object({
     .min(1, 'Must fetch at least 1 file')
     .max(100, 'Maximum 100 files')
     .default(50),
-  fileType: z.enum(['all', 'pdf', 'image', 'document', 'spreadsheet', 'folder']).default('all')
+  fileType: z
+    .enum(['all', 'pdf', 'image', 'document', 'spreadsheet', 'folder'])
+    .default('all')
 })
 
 export const deleteFileFormSchema = z.object({

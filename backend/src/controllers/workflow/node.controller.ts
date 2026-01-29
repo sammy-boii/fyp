@@ -39,7 +39,7 @@ export const executeSingleNode = async (c: Context) => {
     const node = nodes.find((n) => n.id === nodeId)
 
     if (!node) {
-      throw new AppError('Node with that ID not found in the workflow', 404)
+      throw new AppError('Node with that ID not found in the workflow. Make sure the workflow is saved.', 404)
     }
 
     if (!node.data.actionId || !node.data.config) {

@@ -1,7 +1,10 @@
 'use client'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+import {
+  PlaceholderInput,
+  PlaceholderTextarea
+} from '@/components/ui/placeholder-input'
 import {
   Select,
   SelectContent,
@@ -10,47 +13,45 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Controller, useFormContext } from 'react-hook-form'
-import {
-  FileText,
-  Image,
-  FileSpreadsheet,
-  Folder,
-  File,
-  Files
-} from 'lucide-react'
+import { FileText, FileSpreadsheet, File, Code } from 'lucide-react'
 import { DriveItemPicker } from './DriveItemPicker'
 
 const FILE_TYPES = [
-  { value: 'all', label: 'All Files', icon: Files },
-  { value: 'folder', label: 'Folders Only', icon: Folder },
-  { value: 'document', label: 'Documents', icon: FileText },
-  { value: 'spreadsheet', label: 'Spreadsheets', icon: FileSpreadsheet },
-  { value: 'image', label: 'Images', icon: Image },
-  { value: 'pdf', label: 'PDF Files', icon: File }
+  { value: 'text/plain', label: 'Plain Text (.txt)', icon: File },
+  {
+    value: 'application/vnd.google-apps.document',
+    label: 'Google Doc',
+    icon: FileText
+  },
+  {
+    value: 'application/vnd.google-apps.spreadsheet',
+    label: 'Google Sheet',
+    icon: FileSpreadsheet
+  },
+  { value: 'text/html', label: 'HTML File', icon: Code },
+  { value: 'text/csv', label: 'CSV File', icon: FileSpreadsheet }
 ]
 
-export function ListFilesForm() {
-  const { control } = useFormContext()
+export function CreateFileForm() {
+  const { control, watch } = useFormContext()
+  const mimeType = watch('mimeType')
+
+  // Google Docs types don't support content on creation
+  const isGoogleDocsType = mimeType?.startsWith('application/vnd.google-apps.')
 
   return (
     <div className='space-y-4'>
-      {/* Max Results */}
       <Controller
-        name='maxResults'
+        name='name'
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel className='text-xs font-medium'>
-              Number of Files
-            </FieldLabel>
-            <Input
-              type='number'
-              min={1}
-              max={100}
-              placeholder='50'
+            <FieldLabel className='text-xs font-medium'>File Name</FieldLabel>
+            <PlaceholderInput
+              type='text'
+              placeholder='my-file.txt'
               className='h-9 text-sm'
               {...field}
-              onChange={(e) => field.onChange(parseInt(e.target.value) || 50)}
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />
@@ -58,16 +59,15 @@ export function ListFilesForm() {
         )}
       />
 
-      {/* File Type Filter */}
       <Controller
-        name='fileType'
+        name='mimeType'
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel className='text-xs font-medium'>File Type</FieldLabel>
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger className='h-9 text-sm'>
-                <SelectValue placeholder='All Files' />
+                <SelectValue placeholder='Select file type' />
               </SelectTrigger>
               <SelectContent>
                 {FILE_TYPES.map((type) => {
@@ -88,21 +88,50 @@ export function ListFilesForm() {
         )}
       />
 
-      {/* Folder ID */}
+      {!isGoogleDocsType && (
+        <Controller
+          name='content'
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel className='text-xs font-medium'>
+                File Content
+                <span className='text-muted-foreground ml-1'>(optional)</span>
+              </FieldLabel>
+              <PlaceholderTextarea
+                placeholder='Enter the file content...'
+                rows={5}
+                className='resize-none text-sm'
+                {...field}
+                aria-invalid={fieldState.invalid}
+              />
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+      )}
+
+      {isGoogleDocsType && (
+        <p className='text-xs text-muted-foreground'>
+          Note: Google Docs/Sheets are created empty. You can edit the content
+          in Google Drive after creation.
+        </p>
+      )}
+
       <Controller
-        name='folderId'
+        name='parentFolderId'
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel className='text-xs font-medium'>
-              Folder
+              Parent Folder
               <span className='text-muted-foreground ml-1'>(optional)</span>
             </FieldLabel>
             <DriveItemPicker
               value={field.value || ''}
               onChange={field.onChange}
               type='folders'
-              placeholder='Select folder or leave for root'
+              placeholder='Select parent folder or leave for root'
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />

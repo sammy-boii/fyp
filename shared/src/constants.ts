@@ -4,6 +4,7 @@ export const NODE_ACTION_ID = {
   READ_EMAIL: 'read_email',
   // Google Drive actions
   CREATE_FOLDER: 'create_folder',
+  CREATE_FILE: 'create_file',
   DELETE_FOLDER: 'delete_folder',
   LIST_FILES: 'list_files',
   DELETE_FILE: 'delete_file'

@@ -1,13 +1,15 @@
 'use client'
 
 import { NodeAction } from '@/types/node.types'
-import { FolderPlus, FolderMinus, List, Trash2 } from 'lucide-react'
+import { FolderPlus, FolderMinus, List, Trash2, FilePlus } from 'lucide-react'
 import { CreateFolderForm } from './forms/CreateFolderForm'
+import { CreateFileForm } from './forms/CreateFileForm'
 import { DeleteFolderForm } from './forms/DeleteFolderForm'
 import { ListFilesForm } from './forms/ListFilesForm'
 import { DeleteFileForm } from './forms/DeleteFileForm'
 import {
   createFolderFormSchema,
+  createFileFormSchema,
   deleteFolderFormSchema,
   listFilesFormSchema,
   deleteFileFormSchema
@@ -22,6 +24,14 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
     icon: FolderPlus,
     configForm: <CreateFolderForm />,
     configFormSchema: createFolderFormSchema
+  },
+  {
+    id: NODE_ACTION_ID.CREATE_FILE,
+    label: 'Create File',
+    description: 'Create a new file in Google Drive',
+    icon: FilePlus,
+    configForm: <CreateFileForm />,
+    configFormSchema: createFileFormSchema
   },
   {
     id: NODE_ACTION_ID.LIST_FILES,

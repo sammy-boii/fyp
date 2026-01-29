@@ -1,8 +1,8 @@
 'use client'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { PlaceholderInput } from '@/components/ui/placeholder-input'
 import { Controller, useFormContext } from 'react-hook-form'
+import { DriveItemPicker } from './DriveItemPicker'
 
 export function DeleteFileForm() {
   const { control } = useFormContext()
@@ -14,17 +14,17 @@ export function DeleteFileForm() {
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel className='text-xs font-medium'>File ID</FieldLabel>
-            <PlaceholderInput
-              type='text'
-              placeholder='Enter the Google Drive file ID'
-              className='h-9 text-sm'
-              {...field}
+            <FieldLabel className='text-xs font-medium'>File</FieldLabel>
+            <DriveItemPicker
+              value={field.value || ''}
+              onChange={field.onChange}
+              type='files'
+              placeholder='Select file to delete'
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />
             <p className='text-xs text-muted-foreground mt-1'>
-              The file ID can be found in the file's URL or from a List Files action
+              Select the file you want to delete
             </p>
           </Field>
         )}

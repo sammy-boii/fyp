@@ -3,6 +3,7 @@
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { PlaceholderInput } from '@/components/ui/placeholder-input'
 import { Controller, useFormContext } from 'react-hook-form'
+import { DriveItemPicker } from './DriveItemPicker'
 
 export function CreateFolderForm() {
   const { control } = useFormContext()
@@ -33,14 +34,14 @@ export function CreateFolderForm() {
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel className='text-xs font-medium'>
-              Parent Folder ID
+              Parent Folder
               <span className='text-muted-foreground ml-1'>(optional)</span>
             </FieldLabel>
-            <PlaceholderInput
-              type='text'
-              placeholder='Leave empty for root folder'
-              className='h-9 text-sm'
-              {...field}
+            <DriveItemPicker
+              value={field.value || ''}
+              onChange={field.onChange}
+              type='folders'
+              placeholder='Select parent folder or leave for root'
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />

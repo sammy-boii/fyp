@@ -3,6 +3,7 @@ import { TNodeExecutionResult, TWorkflowNode } from '../types/workflow.types'
 import { executeReadEmail, executeSendEmail } from './gmail-executor'
 import {
   executeCreateFolder,
+  executeCreateFile,
   executeDeleteFolder,
   executeListFiles,
   executeDeleteFile
@@ -32,6 +33,10 @@ export const executeNodeLogic = async (
     // Google Drive actions
     case NODE_ACTION_ID.CREATE_FOLDER:
       result = await executeCreateFolder(config)
+      break
+
+    case NODE_ACTION_ID.CREATE_FILE:
+      result = await executeCreateFile(config)
       break
 
     case NODE_ACTION_ID.DELETE_FOLDER:

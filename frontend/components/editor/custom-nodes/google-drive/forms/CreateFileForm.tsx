@@ -13,8 +13,20 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Controller, useFormContext } from 'react-hook-form'
-import { FileSpreadsheet, File, Code, Image, FileType } from 'lucide-react'
+import {
+  FileSpreadsheet,
+  File,
+  Code,
+  Image,
+  FileType,
+  Info
+} from 'lucide-react'
 import { DriveItemPicker } from './DriveItemPicker'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 
 const FILE_TYPES = [
   {
@@ -147,12 +159,23 @@ export function CreateFileForm() {
           control={control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel className='text-xs font-medium'>
-                Image Data (Base64)
+              <FieldLabel className='text-xs font-medium flex items-center gap-1'>
+                Image Data
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className='h-3.5 w-3.5 text-muted-foreground cursor-help' />
+                  </TooltipTrigger>
+                  <TooltipContent side='top' className='max-w-[250px]'>
+                    <p>
+                      Only accepts base64 data. Use Get File Content to get
+                      base64 data.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
               </FieldLabel>
               <PlaceholderInput
                 type='text'
-                placeholder='Enter image data'
+                placeholder='{{node_id.data}} or paste base64 data'
                 className='h-9 text-sm font-mono'
                 {...field}
                 aria-invalid={fieldState.invalid}
@@ -163,7 +186,7 @@ export function CreateFileForm() {
         />
       )}
 
-      {/* Text content for PDF (will be converted to PDF on backend) */}
+      {/* PDF content - accepts base64 or plain text */}
       {category === 'pdf' && (
         <Controller
           name='content'
@@ -174,12 +197,27 @@ export function CreateFileForm() {
                 PDF Content
               </FieldLabel>
               <PlaceholderTextarea
-                placeholder='Enter text content for PDF...'
+                placeholder='{{node_id.base64}} or enter plain text...'
                 rows={5}
-                className='resize-none text-sm'
+                className='resize-none text-sm font-mono'
                 {...field}
                 aria-invalid={fieldState.invalid}
               />
+              <div className='text-xs text-muted-foreground mt-1.5 space-y-1'>
+                <p>
+                  <span className='font-medium text-foreground'>
+                    Copy existing PDF:
+                  </span>{' '}
+                  Use Get File Content with Binary format, then pass the base64
+                  data here.
+                </p>
+                <p>
+                  <span className='font-medium text-foreground'>
+                    Create new PDF:
+                  </span>{' '}
+                  Enter plain text and it will be converted to a PDF.
+                </p>
+              </div>
               <FieldError errors={[fieldState.error]} />
             </Field>
           )}

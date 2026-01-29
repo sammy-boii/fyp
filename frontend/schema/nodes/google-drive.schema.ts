@@ -45,5 +45,6 @@ export const deleteFileFormSchema = z.object({
 })
 
 export const getFileContentFormSchema = z.object({
-  fileId: z.string().min(1, 'File ID is required')
+  fileId: z.string().min(1, 'File ID is required'),
+  outputFormat: z.enum(['auto', 'binary']).default('auto')
 })

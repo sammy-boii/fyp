@@ -143,32 +143,47 @@ export const executeCreateFile = async (
 
       multipartBody = metadataPart + mediaPart + closeDelimiter
     } else if (mimeType === 'application/pdf') {
-      // PDF files - generate PDF from text content
+      // PDF files - check if content is base64 (binary upload) or plain text (generate PDF)
       if (!content) {
         return { success: false, error: 'PDF content is required' }
       }
 
-      // Use PDFKit to generate PDF from text
-      const PDFDocument = (await import('pdfkit')).default
-      const doc = new PDFDocument({ margin: 50 })
+      let base64Data: string
 
-      // Collect PDF chunks
-      const chunks: Buffer[] = []
-      doc.on('data', (chunk: Buffer) => chunks.push(chunk))
+      // Check if content looks like base64 (from Get File Content binary mode)
+      const isBase64 =
+        content.startsWith('data:application/pdf;base64,') ||
+        /^[A-Za-z0-9+/=]+$/.test(content.replace(/\s/g, '').slice(0, 100))
 
-      // Add text content with word wrapping
-      doc.fontSize(12).text(content, {
-        align: 'left',
-        lineGap: 4
-      })
+      if (content.startsWith('data:application/pdf;base64,')) {
+        // Data URL format - extract base64 part
+        base64Data = content.split(',')[1]
+      } else if (isBase64 && content.length > 500 && !content.includes(' ')) {
+        // Raw base64 data (no spaces, long string)
+        base64Data = content
+      } else {
+        // Plain text - generate PDF using PDFKit
+        const PDFDocument = (await import('pdfkit')).default
+        const doc = new PDFDocument({ margin: 50 })
 
-      doc.end()
+        // Collect PDF chunks
+        const chunks: Buffer[] = []
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk))
 
-      // Wait for PDF generation to complete
-      await new Promise<void>((resolve) => doc.on('end', resolve))
+        // Add text content with word wrapping
+        doc.fontSize(12).text(content, {
+          align: 'left',
+          lineGap: 4
+        })
 
-      const pdfBuffer = Buffer.concat(chunks)
-      const base64Data = pdfBuffer.toString('base64')
+        doc.end()
+
+        // Wait for PDF generation to complete
+        await new Promise<void>((resolve) => doc.on('end', resolve))
+
+        const pdfBuffer = Buffer.concat(chunks)
+        base64Data = pdfBuffer.toString('base64')
+      }
 
       const metadataPart =
         delimiter +
@@ -441,13 +456,14 @@ export const executeDeleteFile = async (
 
 /**
  * Get file content from Google Drive
- * Supports: text files, Google Docs, Google Sheets, PDFs
+ * Supports: text files, Google Docs, Google Sheets, PDFs, images
+ * outputFormat: 'auto' (default) or 'binary' (raw base64)
  */
 export const executeGetFileContent = async (
   config: any
 ): Promise<TNodeExecutionResult> => {
   try {
-    const { fileId, credentialId } = config
+    const { fileId, credentialId, outputFormat = 'auto' } = config
 
     if (!credentialId) {
       return { success: false, error: 'Missing credential ID' }
@@ -479,6 +495,71 @@ export const executeGetFileContent = async (
     const metadata = await metadataResponse.json()
     const { mimeType, name } = metadata
 
+    // Binary mode: return raw base64 for any file type
+    if (outputFormat === 'binary') {
+      // For Google Workspace files, we need to export them first
+      let downloadUrl: string
+      let effectiveMimeType = mimeType
+
+      if (mimeType === 'application/vnd.google-apps.document') {
+        // Export Google Docs as PDF to preserve formatting
+        downloadUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(
+          fileId,
+          'application/pdf'
+        )
+        effectiveMimeType = 'application/pdf'
+      } else if (mimeType === 'application/vnd.google-apps.spreadsheet') {
+        // Export Google Sheets as PDF
+        downloadUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(
+          fileId,
+          'application/pdf'
+        )
+        effectiveMimeType = 'application/pdf'
+      } else if (mimeType === 'application/vnd.google-apps.presentation') {
+        // Export Google Slides as PDF
+        downloadUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(
+          fileId,
+          'application/pdf'
+        )
+        effectiveMimeType = 'application/pdf'
+      } else {
+        // Regular files - download directly
+        downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
+      }
+
+      const response = await fetch(downloadUrl, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        return {
+          success: false,
+          error: err?.error?.message || 'Failed to download file'
+        }
+      }
+
+      const arrayBuffer = await response.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      const base64 = buffer.toString('base64')
+      const dataUrl = `data:${effectiveMimeType};base64,${base64}`
+
+      return {
+        success: true,
+        data: {
+          fileId,
+          name,
+          mimeType: effectiveMimeType,
+          originalMimeType: mimeType,
+          content: dataUrl,
+          base64,
+          contentLength: buffer.length,
+          outputFormat: 'binary'
+        }
+      }
+    }
+
+    // Auto mode: process based on file type
     let content: string = ''
 
     // Handle different file types
@@ -593,10 +674,10 @@ export const executeGetFileContent = async (
       }
       content = await response.text()
     } else {
-      // Unsupported file type
+      // Unsupported file type in auto mode - suggest using binary mode
       return {
         success: false,
-        error: `Unsupported file type: ${mimeType}. Supported types: text files, Google Docs, Google Sheets, PDFs, images`
+        error: `Unsupported file type for auto mode: ${mimeType}. Use "Binary (Base64)" output format to get raw file data.`
       }
     }
 
@@ -607,7 +688,8 @@ export const executeGetFileContent = async (
         name,
         mimeType,
         content,
-        contentLength: content.length
+        contentLength: content.length,
+        outputFormat: 'auto'
       }
     }
   } catch (error: any) {

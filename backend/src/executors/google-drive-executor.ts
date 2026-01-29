@@ -507,6 +507,37 @@ export const executeGetFileContent = async (
           error: 'Failed to parse PDF content: ' + pdfError.message
         }
       }
+    } else if (mimeType.startsWith('image/')) {
+      // Image files - download and return as base64
+      const downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
+      const response = await fetch(downloadUrl, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!response.ok) {
+        const err = await response.json()
+        return {
+          success: false,
+          error: err?.error?.message || 'Failed to download image'
+        }
+      }
+
+      const arrayBuffer = await response.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      const base64 = buffer.toString('base64')
+      const dataUrl = `data:${mimeType};base64,${base64}`
+
+      return {
+        success: true,
+        data: {
+          fileId,
+          name,
+          mimeType,
+          content: dataUrl,
+          base64,
+          contentLength: buffer.length,
+          isImage: true
+        }
+      }
     } else if (
       mimeType.startsWith('text/') ||
       mimeType === 'application/json' ||
@@ -530,7 +561,7 @@ export const executeGetFileContent = async (
       // Unsupported file type
       return {
         success: false,
-        error: `Unsupported file type: ${mimeType}. Supported types: text files, Google Docs, Google Sheets, PDFs`
+        error: `Unsupported file type: ${mimeType}. Supported types: text files, Google Docs, Google Sheets, PDFs, images`
       }
     }
 

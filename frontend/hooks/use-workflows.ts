@@ -66,14 +66,14 @@ export function useUpdateWorkflow() {
         queryKey: ['workflows']
       })
       toast.dismiss(toastId as string)
-      toast.success('Workflow updated successfully')
+      toast.success('Workflow saved successfully')
       queryClient.invalidateQueries({
         queryKey: ['workflow', variables.id]
       })
     },
-    onError: (err, variables, toastId) => {
+    onError: (err, _variables, toastId) => {
       toast.dismiss(toastId as string)
-      toast.error(err.message || 'Failed to update workflow')
+      toast.error(err.message || 'Failed to save workflow')
     }
   })
 }
@@ -137,9 +137,10 @@ export function useExecuteNode() {
       return toastId
     },
     onSuccess: (data, variables, toastId) => {
-        toast.dismiss(toastId as string)
-      if (data.error) {
-        throw data.error
+      toast.dismiss(toastId as string)
+      if (data.data?.error) {
+        toast.error('Node execution failed: ' + data.data.error || '')
+        return data
       }
       toast.success('Node executed successfully')
       queryClient.invalidateQueries({
@@ -147,7 +148,7 @@ export function useExecuteNode() {
       })
       return data
     },
-    onError: (err) => {
+    onError: (err: any) => {
       toast.error(err.message || 'Failed to execute node')
     }
   })

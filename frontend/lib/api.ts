@@ -6,7 +6,7 @@ const BACKEND_URL =
 
 export const api: KyInstance = ky.create({
   prefixUrl: BACKEND_URL,
-  timeout: 300000, // 5 minutes for long-running workflows
+  timeout: false, // Disable timeout for long-running workflows
   retry: {
     limit: 0,
     methods: ['get', 'put', 'head', 'delete', 'options', 'trace'],
@@ -24,19 +24,15 @@ export const api: KyInstance = ky.create({
     ],
     afterResponse: [
       async (_req, _options, res) => {
-        try {
-          if (!res.ok) {
-            const contentType = res.headers.get('content-type')
-            if (contentType?.includes('application/json')) {
-            }
+        if (!res.ok) {
+          const contentType = res.headers.get('content-type')
+          if (contentType?.includes('application/json')) {
             const errorData = await res.clone().json()
-            throw new Error(errorData.error)
+            throw new Error(errorData.error || 'Request failed')
           } else {
             const errorMsg = await res.clone().text()
-            throw new Error(errorMsg)
+            throw new Error(errorMsg || 'Request failed')
           }
-        } catch (err) {
-          console.log('[ERROR]: ', err)
         }
       }
     ]

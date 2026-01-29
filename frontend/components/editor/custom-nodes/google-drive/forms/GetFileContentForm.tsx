@@ -23,8 +23,23 @@ export function GetFileContentForm() {
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />
-            <p className='text-xs text-muted-foreground mt-1'>
-              Supports: Text files, Google Docs, Google Sheets, PDFs
+            <p className='text-xs text-muted-foreground mt-1.5 flex flex-wrap gap-1'>
+              <span className='text-muted-foreground/70'>Supports:</span>
+              <span className='px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium'>
+                Text
+              </span>
+              <span className='px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium'>
+                Google Docs
+              </span>
+              <span className='px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium'>
+                Sheets
+              </span>
+              <span className='px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium'>
+                PDFs
+              </span>
+              <span className='px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium'>
+                Images
+              </span>
             </p>
           </Field>
         )}

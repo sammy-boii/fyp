@@ -109,7 +109,7 @@ const WorkflowExecutionTab = ({
       }
     })
 
-    return Array.from(groups.values()).reverse()
+    return Array.from(groups.values())
   }, [executionLogs])
 
   // Convert execution group logs to timeline items

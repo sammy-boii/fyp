@@ -202,6 +202,114 @@ export const executeCreateFile = async (
 }
 
 /**
+ * Upload a binary file to Google Drive from base64 data
+ */
+export const executeUploadFile = async (
+  config: any
+): Promise<TNodeExecutionResult> => {
+  try {
+    const { name, data, mimeType, parentFolderId, credentialId } = config
+
+    if (!credentialId) {
+      return { success: false, error: 'Missing credential ID' }
+    }
+
+    if (!name) {
+      return { success: false, error: 'File name is required' }
+    }
+
+    if (!data) {
+      return { success: false, error: 'File data (base64) is required' }
+    }
+
+    if (!mimeType) {
+      return { success: false, error: 'MIME type is required' }
+    }
+
+    // Get valid Google Drive access token
+    const { token } =
+      await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
+
+    // Build file metadata
+    const fileMetadata: Record<string, any> = {
+      name,
+      mimeType
+    }
+
+    // Add parent folder if specified
+    if (parentFolderId) {
+      fileMetadata.parents = [parentFolderId]
+    }
+
+    // Handle both raw base64 and data URL format
+    let base64Data = data
+    if (data.includes(',')) {
+      // It's a data URL, extract the base64 part
+      base64Data = data.split(',')[1]
+    }
+
+    // Use multipart upload
+    const boundary = '-------314159265358979323846'
+    const delimiter = '\r\n--' + boundary + '\r\n'
+    const closeDelimiter = '\r\n--' + boundary + '--'
+
+    // Build multipart body with binary data
+    const metadataPart =
+      delimiter +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      JSON.stringify(fileMetadata)
+
+    const mediaPart =
+      delimiter +
+      'Content-Type: ' +
+      mimeType +
+      '\r\n' +
+      'Content-Transfer-Encoding: base64\r\n\r\n' +
+      base64Data
+
+    const multipartBody = metadataPart + mediaPart + closeDelimiter
+
+    const uploadUrl =
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,webViewLink,size'
+
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/related; boundary=' + boundary
+      },
+      body: multipartBody
+    })
+
+    if (!response.ok) {
+      const err = await response.json()
+      console.error('[executeUploadFile] Drive API Error:', err)
+      return {
+        success: false,
+        error: err?.error?.message || 'Failed to upload file'
+      }
+    }
+
+    const result = await response.json()
+
+    return {
+      success: true,
+      data: {
+        fileId: result.id,
+        name: result.name,
+        mimeType: result.mimeType,
+        size: result.size,
+        webViewLink: result.webViewLink,
+        message: 'File uploaded successfully'
+      }
+    }
+  } catch (error: any) {
+    console.error('[executeUploadFile] Exception:', error)
+    return { success: false, error: error.message || 'Failed to upload file' }
+  }
+}
+
+/**
  * Delete a folder from Google Drive
  */
 export const executeDeleteFolder = async (

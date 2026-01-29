@@ -43,3 +43,10 @@ export const deleteFileFormSchema = z.object({
 export const getFileContentFormSchema = z.object({
   fileId: z.string().min(1, 'File ID is required')
 })
+
+export const uploadFileFormSchema = z.object({
+  name: z.string().min(1, 'File name is required'),
+  data: z.string().min(1, 'File data (base64) is required'),
+  mimeType: z.string().min(1, 'MIME type is required'),
+  parentFolderId: z.string().optional()
+})

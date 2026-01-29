@@ -9,5 +9,6 @@ export const NODE_ACTION_ID = {
   DELETE_FOLDER: 'delete_folder',
   LIST_FILES: 'list_files',
   DELETE_FILE: 'delete_file',
-  GET_FILE_CONTENT: 'get_file_content'
+  GET_FILE_CONTENT: 'get_file_content',
+  UPLOAD_FILE: 'upload_file'
 } as const

@@ -313,8 +313,17 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
                 <h3 className='font-semibold text-sm text-foreground truncate'>
                   {node.label}
                 </h3>
-                <p className='text-xs text-muted-foreground capitalize font-medium'>
-                  Action
+                <p className='text-xs text-muted-foreground font-medium truncate'>
+                  {data.actionId
+                    ? data.actionId
+                        .split('_')
+                        .map(
+                          (word) =>
+                            word.charAt(0).toUpperCase() +
+                            word.slice(1).toLowerCase()
+                        )
+                        .join(' ')
+                    : 'Select Action'}
                 </p>
               </div>
             </div>

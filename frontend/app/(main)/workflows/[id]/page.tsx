@@ -70,6 +70,39 @@ export default function WorkflowViewPage() {
   const [isExecuting, setIsExecuting] = useState(false)
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const hasInitialized = useRef(false)
+  const initialStateRef = useRef<{
+    nodesHash: string
+    edgesHash: string
+    name: string
+    description: string
+  } | null>(null)
+
+  // Helper to extract comparable node data (excludes transient properties)
+  const getNodesHash = useCallback((nodes: Node[]) => {
+    return JSON.stringify(
+      nodes.map((n) => ({
+        id: n.id,
+        type: n.type,
+        position: n.position,
+        data: {
+          type: n.data.type,
+          actionId: n.data.actionId,
+          config: n.data.config
+        }
+      }))
+    )
+  }, [])
+
+  // Helper to extract comparable edge data
+  const getEdgesHash = useCallback((edges: Edge[]) => {
+    return JSON.stringify(
+      edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target
+      }))
+    )
+  }, [])
 
   // WebSocket for live execution updates
   const { isConnected, executionLogs, currentExecution, clearLogs } =
@@ -192,6 +225,30 @@ export default function WorkflowViewPage() {
       setWorkflowName(workflow.name || '')
       setWorkflowDescription(workflow.description || '')
       hasInitialized.current = true
+      // Store initial state hashes for change detection
+      initialStateRef.current = {
+        nodesHash: JSON.stringify(
+          formattedNodes.map((n) => ({
+            id: n.id,
+            type: n.type,
+            position: n.position,
+            data: {
+              type: n.data.type,
+              actionId: n.data.actionId,
+              config: n.data.config
+            }
+          }))
+        ),
+        edgesHash: JSON.stringify(
+          formattedEdges.map((e) => ({
+            id: e.id,
+            source: e.source,
+            target: e.target
+          }))
+        ),
+        name: workflow.name || '',
+        description: workflow.description || ''
+      }
     }
   }, [data])
 
@@ -264,16 +321,36 @@ export default function WorkflowViewPage() {
 
     setIsExecuting(true)
     try {
-      // Auto-save workflow before executing
-      await updateWorkflow.mutateAsync({
-        id: workflowId,
-        data: {
+      // Check if workflow has changed before auto-saving
+      const currentNodesHash = getNodesHash(nodes)
+      const currentEdgesHash = getEdgesHash(edges)
+      const hasChanges =
+        !initialStateRef.current ||
+        currentNodesHash !== initialStateRef.current.nodesHash ||
+        currentEdgesHash !== initialStateRef.current.edgesHash ||
+        workflowName !== initialStateRef.current.name ||
+        workflowDescription !== initialStateRef.current.description
+
+      console.log(hasChanges)
+      if (hasChanges) {
+        // Auto-save workflow before executing
+        await updateWorkflow.mutateAsync({
+          id: workflowId,
+          data: {
+            name: workflowName,
+            description: workflowDescription,
+            nodes: nodes as unknown as any[],
+            edges: edges as unknown as any[]
+          }
+        })
+        // Update initial state after save
+        initialStateRef.current = {
+          nodesHash: currentNodesHash,
+          edgesHash: currentEdgesHash,
           name: workflowName,
-          description: workflowDescription,
-          nodes: nodes as unknown as any[],
-          edges: edges as unknown as any[]
+          description: workflowDescription
         }
-      })
+      }
 
       await executeWorkflow.mutateAsync(workflowId)
     } finally {
@@ -287,7 +364,9 @@ export default function WorkflowViewPage() {
     workflowDescription,
     nodes,
     edges,
-    isExecuting
+    isExecuting,
+    getNodesHash,
+    getEdgesHash
   ])
 
   const handleSaveWorkflow = useCallback(async () => {

@@ -7,7 +7,8 @@ import {
   List,
   Trash2,
   FilePlus,
-  FileText
+  FileText,
+  Upload
 } from 'lucide-react'
 import { CreateFolderForm } from './forms/CreateFolderForm'
 import { CreateFileForm } from './forms/CreateFileForm'
@@ -15,13 +16,15 @@ import { DeleteFolderForm } from './forms/DeleteFolderForm'
 import { ListFilesForm } from './forms/ListFilesForm'
 import { DeleteFileForm } from './forms/DeleteFileForm'
 import { GetFileContentForm } from './forms/GetFileContentForm'
+import { UploadFileForm } from './forms/UploadFileForm'
 import {
   createFolderFormSchema,
   createFileFormSchema,
   deleteFolderFormSchema,
   listFilesFormSchema,
   deleteFileFormSchema,
-  getFileContentFormSchema
+  getFileContentFormSchema,
+  uploadFileFormSchema
 } from '@/schema/nodes/google-drive.schema'
 import { NODE_ACTION_ID } from '@shared/constants'
 
@@ -45,7 +48,7 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
   {
     id: NODE_ACTION_ID.GET_FILE_CONTENT,
     label: 'Get File Content',
-    description: 'Read content from a file (text, docs, sheets, PDFs)',
+    description: 'Read content from a file (text, docs, sheets, PDFs, images)',
     icon: FileText,
     configForm: <GetFileContentForm />,
     configFormSchema: getFileContentFormSchema
@@ -73,5 +76,13 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
     icon: FolderMinus,
     configForm: <DeleteFolderForm />,
     configFormSchema: deleteFolderFormSchema
+  },
+  {
+    id: NODE_ACTION_ID.UPLOAD_FILE,
+    label: 'Upload File',
+    description: 'Upload binary file (images, PDFs, etc.) from base64 data',
+    icon: Upload,
+    configForm: <UploadFileForm />,
+    configFormSchema: uploadFileFormSchema
   }
 ]

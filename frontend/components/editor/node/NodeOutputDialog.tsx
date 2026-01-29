@@ -269,15 +269,24 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
         </div>
 
         {/* Tip */}
-        <div className='p-3 rounded-lg bg-muted/30 border border-dashed border-border/50'>
-          <p className='text-[11px] text-muted-foreground leading-relaxed'>
-            <span className='font-medium text-foreground/70'>Tip:</span> Click
-            any field to copy its placeholder. Use{' '}
-            <code className='font-mono text-[10px] px-1 py-0.5 rounded bg-muted'>
-              {'{{nodeId.path}}'}
-            </code>{' '}
-            in subsequent nodes.
-          </p>
+        <div className='flex items-center justify-end gap-1.5 text-muted-foreground'>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className='flex items-center gap-1 text-[10px] hover:text-foreground transition-colors'>
+                <Info className='h-3 w-3' />
+                <span>How to use</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side='bottom' className='max-w-64'>
+              <p className='text-xs'>
+                Click any field to copy its placeholder. Use{' '}
+                <code className='font-mono text-[10px] px-1 py-0.5 rounded bg-muted'>
+                  {'{{nodeId.path}}'}
+                </code>{' '}
+                in subsequent nodes.
+              </p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </ScrollArea>

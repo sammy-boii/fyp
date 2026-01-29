@@ -398,11 +398,21 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
         })}
 
         {/* Tip */}
-        <div className='p-3 rounded-lg bg-muted/30 border border-dashed border-border/50'>
-          <p className='text-[11px] text-muted-foreground leading-relaxed'>
-            <span className='font-medium text-foreground/70'>Tip:</span> Click
-            or drag any field to use its placeholder in your configuration.
-          </p>
+        <div className='flex items-center justify-end gap-1.5 text-muted-foreground'>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className='flex items-center gap-1 text-[10px] hover:text-foreground transition-colors'>
+                <Info className='h-3 w-3' />
+                <span>How to use</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side='bottom' className='max-w-64'>
+              <p className='text-xs'>
+                Click or drag any field to use its placeholder in your
+                configuration.
+              </p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </ScrollArea>

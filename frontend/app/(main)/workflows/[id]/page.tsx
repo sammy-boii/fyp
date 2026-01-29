@@ -331,7 +331,6 @@ export default function WorkflowViewPage() {
         workflowName !== initialStateRef.current.name ||
         workflowDescription !== initialStateRef.current.description
 
-      console.log(hasChanges)
       if (hasChanges) {
         // Auto-save workflow before executing
         await updateWorkflow.mutateAsync({

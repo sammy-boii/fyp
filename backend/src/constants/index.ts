@@ -30,8 +30,15 @@ export const API_ROUTES = {
   GOOGLE_DRIVE: {
     LIST_FILES: GOOGLE_DRIVE_API_BASE_URL + '/files',
     CREATE_FILE: GOOGLE_DRIVE_API_BASE_URL + '/files',
-    GET_FILE: (fileId: string) => GOOGLE_DRIVE_API_BASE_URL + `/files/${fileId}`,
-    DELETE_FILE: (fileId: string) => GOOGLE_DRIVE_API_BASE_URL + `/files/${fileId}`
+    GET_FILE: (fileId: string) =>
+      GOOGLE_DRIVE_API_BASE_URL + `/files/${fileId}`,
+    GET_FILE_CONTENT: (fileId: string) =>
+      GOOGLE_DRIVE_API_BASE_URL + `/files/${fileId}?alt=media`,
+    EXPORT_FILE: (fileId: string, mimeType: string) =>
+      GOOGLE_DRIVE_API_BASE_URL +
+      `/files/${fileId}/export?mimeType=${encodeURIComponent(mimeType)}`,
+    DELETE_FILE: (fileId: string) =>
+      GOOGLE_DRIVE_API_BASE_URL + `/files/${fileId}`
   },
   OAUTH: {
     REFRESH_TOKEN: GOOGLE_OAUTH_BASE_URL + '/token'

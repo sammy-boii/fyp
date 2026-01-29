@@ -319,7 +319,8 @@ export const executeListFiles = async (
       document: "mimeType = 'application/vnd.google-apps.document'",
       spreadsheet: "mimeType = 'application/vnd.google-apps.spreadsheet'",
       pdf: "mimeType = 'application/pdf'",
-      image: "mimeType contains 'image/'"
+      image:
+        "(mimeType = 'image/jpeg' or mimeType = 'image/png' or mimeType = 'image/gif' or mimeType = 'image/webp' or mimeType = 'image/svg+xml' or mimeType = 'image/bmp')"
     }
 
     if (fileType !== 'all' && mimeTypeFilters[fileType]) {
@@ -433,5 +434,164 @@ export const executeDeleteFile = async (
   } catch (error: any) {
     console.error('[executeDeleteFile] Exception:', error)
     return { success: false, error: error.message || 'Failed to delete file' }
+  }
+}
+
+/**
+ * Get file content from Google Drive
+ * Supports: text files, Google Docs, Google Sheets, PDFs
+ */
+export const executeGetFileContent = async (
+  config: any
+): Promise<TNodeExecutionResult> => {
+  console.log(
+    '[executeGetFileContent] Starting with config:',
+    JSON.stringify(config, null, 2)
+  )
+
+  try {
+    const { fileId, credentialId } = config
+
+    if (!credentialId) {
+      return { success: false, error: 'Missing credential ID' }
+    }
+
+    if (!fileId) {
+      return { success: false, error: 'File ID is required' }
+    }
+
+    // Get valid Google Drive access token
+    const { token } =
+      await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
+
+    // First, get file metadata to determine the type
+    const metadataUrl = `${API_ROUTES.GOOGLE_DRIVE.GET_FILE(fileId)}?fields=id,name,mimeType,size`
+    const metadataResponse = await fetch(metadataUrl, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    if (!metadataResponse.ok) {
+      const err = await metadataResponse.json()
+      console.error('[executeGetFileContent] Metadata Error:', err)
+      return {
+        success: false,
+        error: err?.error?.message || 'Failed to get file metadata'
+      }
+    }
+
+    const metadata = await metadataResponse.json()
+    const { mimeType, name } = metadata
+    console.log(`[executeGetFileContent] File type: ${mimeType}`)
+
+    let content: string = ''
+
+    // Handle different file types
+    if (mimeType === 'application/vnd.google-apps.document') {
+      // Google Docs - export as plain text
+      const exportUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(
+        fileId,
+        'text/plain'
+      )
+      const response = await fetch(exportUrl, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!response.ok) {
+        const err = await response.json()
+        return {
+          success: false,
+          error: err?.error?.message || 'Failed to export Google Doc'
+        }
+      }
+      content = await response.text()
+    } else if (mimeType === 'application/vnd.google-apps.spreadsheet') {
+      // Google Sheets - export as CSV
+      const exportUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(fileId, 'text/csv')
+      const response = await fetch(exportUrl, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!response.ok) {
+        const err = await response.json()
+        return {
+          success: false,
+          error: err?.error?.message || 'Failed to export Google Sheet'
+        }
+      }
+      content = await response.text()
+    } else if (mimeType === 'application/pdf') {
+      // PDF - download and parse using pdfjs-dist
+      const downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
+      const response = await fetch(downloadUrl, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!response.ok) {
+        const err = await response.json()
+        return {
+          success: false,
+          error: err?.error?.message || 'Failed to download PDF'
+        }
+      }
+
+      const arrayBuffer = await response.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+
+      try {
+        // Dynamic import to avoid ESM issues
+        const pdfParse = (await import('pdf-parse-fork')).default
+        const pdfData = await pdfParse(buffer)
+        content = pdfData.text
+      } catch (pdfError: any) {
+        console.error('[executeGetFileContent] PDF parse error:', pdfError)
+        return {
+          success: false,
+          error: 'Failed to parse PDF content: ' + pdfError.message
+        }
+      }
+    } else if (
+      mimeType.startsWith('text/') ||
+      mimeType === 'application/json' ||
+      mimeType === 'application/xml' ||
+      mimeType === 'application/javascript'
+    ) {
+      // Text-based files - download directly
+      const downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
+      const response = await fetch(downloadUrl, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!response.ok) {
+        const err = await response.json()
+        return {
+          success: false,
+          error: err?.error?.message || 'Failed to download file'
+        }
+      }
+      content = await response.text()
+    } else {
+      // Unsupported file type
+      return {
+        success: false,
+        error: `Unsupported file type: ${mimeType}. Supported types: text files, Google Docs, Google Sheets, PDFs`
+      }
+    }
+
+    console.log(
+      `[executeGetFileContent] Success, content length: ${content.length}`
+    )
+
+    return {
+      success: true,
+      data: {
+        fileId,
+        name,
+        mimeType,
+        content,
+        contentLength: content.length
+      }
+    }
+  } catch (error: any) {
+    console.error('[executeGetFileContent] Exception:', error)
+    return {
+      success: false,
+      error: error.message || 'Failed to get file content'
+    }
   }
 }

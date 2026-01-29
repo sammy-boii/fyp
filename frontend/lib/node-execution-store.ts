@@ -69,14 +69,7 @@ export const flattenObject = (
         }
       }
 
-      // If there are more items, add a hint
-      if (value.length > maxArrayItems) {
-        result.push({
-          key: 'more',
-          value: `... ${value.length - maxArrayItems} more items available`,
-          path: `${fullPath}[${maxArrayItems}]` // Placeholder for continuation
-        })
-      }
+      // All items are shown - no limit
     } else {
       result.push({ key, value, path: fullPath })
     }

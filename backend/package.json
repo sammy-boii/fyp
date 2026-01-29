@@ -9,6 +9,7 @@
     "arctic": "^3.7.0",
     "hono": "^4.9.7",
     "jsonwebtoken": "^9.0.2",
+    "pdf-parse-fork": "^1.2.0",
     "shared": "workspace:*"
   },
   "devDependencies": {

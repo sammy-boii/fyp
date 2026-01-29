@@ -79,11 +79,10 @@ const parseArrayField = (
   if (value.length > 0) {
     const firstItem = value[0]
 
-    // For arrays of objects, show the structure of items
+    // For arrays of objects, show all items
     if (typeof firstItem === 'object' && firstItem !== null) {
-      // Add individual array items (show first 3)
-      const itemsToShow = Math.min(value.length, 3)
-      for (let i = 0; i < itemsToShow; i++) {
+      // Add all array items
+      for (let i = 0; i < value.length; i++) {
         const itemPath = `${path}[${i}]`
         const itemChildren = parseObjectToFields(value[i], itemPath)
 
@@ -97,23 +96,9 @@ const parseArrayField = (
           children: itemChildren
         })
       }
-
-      // If there are more items, indicate it
-      if (value.length > 3) {
-        children.push({
-          key: 'more',
-          label: `... and ${value.length - 3} more items`,
-          value: null,
-          path: '',
-          type: 'null',
-          isExpandable: false,
-          description: 'Use array index notation to access more items'
-        })
-      }
     } else {
-      // For arrays of primitives, show first few values
-      const itemsToShow = Math.min(value.length, 5)
-      for (let i = 0; i < itemsToShow; i++) {
+      // For arrays of primitives, show all values
+      for (let i = 0; i < value.length; i++) {
         children.push({
           key: `[${i}]`,
           label: `Item ${i + 1}`,

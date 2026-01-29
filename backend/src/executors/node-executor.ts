@@ -6,7 +6,8 @@ import {
   executeCreateFile,
   executeDeleteFolder,
   executeListFiles,
-  executeDeleteFile
+  executeDeleteFile,
+  executeGetFileContent
 } from './google-drive-executor'
 
 export const executeNodeLogic = async (
@@ -49,6 +50,10 @@ export const executeNodeLogic = async (
 
     case NODE_ACTION_ID.DELETE_FILE:
       result = await executeDeleteFile(config)
+      break
+
+    case NODE_ACTION_ID.GET_FILE_CONTENT:
+      result = await executeGetFileContent(config)
       break
 
     default:

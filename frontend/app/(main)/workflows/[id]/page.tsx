@@ -67,9 +67,9 @@ export default function WorkflowViewPage() {
   const [workflowName, setWorkflowName] = useState('')
   const [workflowDescription, setWorkflowDescription] = useState('')
   const [, setExecutingNodeId] = useState<string | null>(null)
+  const [isExecuting, setIsExecuting] = useState(false)
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const hasInitialized = useRef(false)
-  const isExecutingRef = useRef(false)
 
   // WebSocket for live execution updates
   const { isConnected, executionLogs, currentExecution, clearLogs } =
@@ -259,11 +259,10 @@ export default function WorkflowViewPage() {
   }
 
   const handleExecuteWorkflow = useCallback(async () => {
-    // Use ref to prevent double execution
-    if (!workflowId || executeWorkflow.isPending || isExecutingRef.current)
-      return
+    // Prevent double execution
+    if (!workflowId || executeWorkflow.isPending || isExecuting) return
 
-    isExecutingRef.current = true
+    setIsExecuting(true)
     try {
       // Auto-save workflow before executing
       await updateWorkflow.mutateAsync({
@@ -278,9 +277,18 @@ export default function WorkflowViewPage() {
 
       await executeWorkflow.mutateAsync(workflowId)
     } finally {
-      isExecutingRef.current = false
+      setIsExecuting(false)
     }
-  }, [workflowId, executeWorkflow, updateWorkflow, workflowName, workflowDescription, nodes, edges])
+  }, [
+    workflowId,
+    executeWorkflow,
+    updateWorkflow,
+    workflowName,
+    workflowDescription,
+    nodes,
+    edges,
+    isExecuting
+  ])
 
   const handleSaveWorkflow = useCallback(async () => {
     if (!workflowId) return
@@ -354,7 +362,7 @@ export default function WorkflowViewPage() {
         isSaving={updateWorkflow.isPending}
         workflowId={workflowId}
         onExecute={handleExecuteWorkflow}
-        isExecuting={executeWorkflow.isPending || isExecutingRef.current}
+        isExecuting={executeWorkflow.isPending || isExecuting}
       />
 
       {/* Edit Workflow Dialog */}

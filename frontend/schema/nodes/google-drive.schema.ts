@@ -39,3 +39,7 @@ export const listFilesFormSchema = z.object({
 export const deleteFileFormSchema = z.object({
   fileId: z.string().min(1, 'File ID is required')
 })
+
+export const getFileContentFormSchema = z.object({
+  fileId: z.string().min(1, 'File ID is required')
+})

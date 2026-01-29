@@ -96,7 +96,7 @@ export function ListFilesForm() {
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel className='text-xs font-medium'>
               Folder
-              <span className='text-muted-foreground ml-1'>(optional)</span>
+              <span className='text-muted-foreground ml-0.5'>(optional)</span>
             </FieldLabel>
             <DriveItemPicker
               value={field.value || ''}

@@ -13,31 +13,53 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Controller, useFormContext } from 'react-hook-form'
-import { FileText, FileSpreadsheet, File, Code } from 'lucide-react'
+import { FileSpreadsheet, File, Code, Image, FileType } from 'lucide-react'
 import { DriveItemPicker } from './DriveItemPicker'
 
 const FILE_TYPES = [
-  { value: 'text/plain', label: 'Plain Text (.txt)', icon: File },
   {
-    value: 'application/vnd.google-apps.document',
-    label: 'Google Doc',
-    icon: FileText
+    value: 'text/plain',
+    label: 'Plain Text',
+    icon: File,
+    category: 'text'
   },
   {
-    value: 'application/vnd.google-apps.spreadsheet',
-    label: 'Google Sheet',
-    icon: FileSpreadsheet
+    value: 'text/html',
+    label: 'HTML File',
+    icon: Code,
+    category: 'text'
   },
-  { value: 'text/html', label: 'HTML File', icon: Code },
-  { value: 'text/csv', label: 'CSV File', icon: FileSpreadsheet }
+  {
+    value: 'text/csv',
+    label: 'CSV File',
+    icon: FileSpreadsheet,
+    category: 'text'
+  },
+  { value: 'image/png', label: 'PNG Image', icon: Image, category: 'image' },
+  { value: 'image/jpeg', label: 'JPEG Image', icon: Image, category: 'image' },
+  { value: 'image/gif', label: 'GIF Image', icon: Image, category: 'image' },
+  { value: 'image/webp', label: 'WebP Image', icon: Image, category: 'image' },
+  {
+    value: 'image/svg+xml',
+    label: 'SVG Image',
+    icon: Image,
+    category: 'image'
+  },
+  {
+    value: 'application/pdf',
+    label: 'PDF Document',
+    icon: FileType,
+    category: 'pdf'
+  }
 ]
 
 export function CreateFileForm() {
   const { control, watch } = useFormContext()
   const mimeType = watch('mimeType')
 
-  // Google Docs types don't support content on creation
-  const isGoogleDocsType = mimeType?.startsWith('application/vnd.google-apps.')
+  // Determine what type of content input to show
+  const selectedType = FILE_TYPES.find((t) => t.value === mimeType)
+  const category = selectedType?.category || 'text'
 
   return (
     <div className='space-y-4'>
@@ -49,7 +71,13 @@ export function CreateFileForm() {
             <FieldLabel className='text-xs font-medium'>File Name</FieldLabel>
             <PlaceholderInput
               type='text'
-              placeholder='my-file.txt'
+              placeholder={
+                category === 'image'
+                  ? 'image.png'
+                  : category === 'pdf'
+                    ? 'document.pdf'
+                    : 'Enter file name'
+              }
               className='h-9 text-sm'
               {...field}
               aria-invalid={fieldState.invalid}
@@ -88,18 +116,19 @@ export function CreateFileForm() {
         )}
       />
 
-      {!isGoogleDocsType && (
+      {/* Text content for text-based files */}
+      {category === 'text' && (
         <Controller
           name='content'
           control={control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel className='text-xs font-medium'>
-                File Content
-                <span className='text-muted-foreground ml-1'>(optional)</span>
+                Content
+                <span className='text-muted-foreground ml-0.5'>(optional)</span>
               </FieldLabel>
               <PlaceholderTextarea
-                placeholder='Enter the file content...'
+                placeholder='Enter file content...'
                 rows={5}
                 className='resize-none text-sm'
                 {...field}
@@ -111,11 +140,50 @@ export function CreateFileForm() {
         />
       )}
 
-      {isGoogleDocsType && (
-        <p className='text-xs text-muted-foreground'>
-          Note: Google Docs/Sheets are created empty. You can edit the content
-          in Google Drive after creation.
-        </p>
+      {/* Base64 input for images */}
+      {category === 'image' && (
+        <Controller
+          name='content'
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel className='text-xs font-medium'>
+                Image Data (Base64)
+              </FieldLabel>
+              <PlaceholderInput
+                type='text'
+                placeholder='Enter image data'
+                className='h-9 text-sm font-mono'
+                {...field}
+                aria-invalid={fieldState.invalid}
+              />
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+      )}
+
+      {/* Text content for PDF (will be converted to PDF on backend) */}
+      {category === 'pdf' && (
+        <Controller
+          name='content'
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel className='text-xs font-medium'>
+                PDF Content
+              </FieldLabel>
+              <PlaceholderTextarea
+                placeholder='Enter text content for PDF...'
+                rows={5}
+                className='resize-none text-sm'
+                {...field}
+                aria-invalid={fieldState.invalid}
+              />
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
       )}
 
       <Controller
@@ -125,13 +193,13 @@ export function CreateFileForm() {
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel className='text-xs font-medium'>
               Parent Folder
-              <span className='text-muted-foreground ml-1'>(optional)</span>
+              <span className='text-muted-foreground ml-0.5'>(optional)</span>
             </FieldLabel>
             <DriveItemPicker
               value={field.value || ''}
               onChange={field.onChange}
               type='folders'
-              placeholder='Select parent folder or leave for root'
+              placeholder='Root folder'
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />

@@ -7,8 +7,7 @@ import {
   List,
   Trash2,
   FilePlus,
-  FileText,
-  Upload
+  FileText
 } from 'lucide-react'
 import { CreateFolderForm } from './forms/CreateFolderForm'
 import { CreateFileForm } from './forms/CreateFileForm'
@@ -16,15 +15,13 @@ import { DeleteFolderForm } from './forms/DeleteFolderForm'
 import { ListFilesForm } from './forms/ListFilesForm'
 import { DeleteFileForm } from './forms/DeleteFileForm'
 import { GetFileContentForm } from './forms/GetFileContentForm'
-import { UploadFileForm } from './forms/UploadFileForm'
 import {
   createFolderFormSchema,
   createFileFormSchema,
   deleteFolderFormSchema,
   listFilesFormSchema,
   deleteFileFormSchema,
-  getFileContentFormSchema,
-  uploadFileFormSchema
+  getFileContentFormSchema
 } from '@/schema/nodes/google-drive.schema'
 import { NODE_ACTION_ID } from '@shared/constants'
 
@@ -40,7 +37,7 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
   {
     id: NODE_ACTION_ID.CREATE_FILE,
     label: 'Create File',
-    description: 'Create a new file in Google Drive',
+    description: 'Create text, images, or PDF files in Google Drive',
     icon: FilePlus,
     configForm: <CreateFileForm />,
     configFormSchema: createFileFormSchema
@@ -48,7 +45,7 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
   {
     id: NODE_ACTION_ID.GET_FILE_CONTENT,
     label: 'Get File Content',
-    description: 'Read content from a file (text, docs, sheets, PDFs, images)',
+    description: 'Read content from a file (docs, sheets, PDFs, images)',
     icon: FileText,
     configForm: <GetFileContentForm />,
     configFormSchema: getFileContentFormSchema
@@ -76,13 +73,5 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
     icon: FolderMinus,
     configForm: <DeleteFolderForm />,
     configFormSchema: deleteFolderFormSchema
-  },
-  {
-    id: NODE_ACTION_ID.UPLOAD_FILE,
-    label: 'Upload File',
-    description: 'Upload binary file (images, PDFs, etc.) from base64 data',
-    icon: Upload,
-    configForm: <UploadFileForm />,
-    configFormSchema: uploadFileFormSchema
   }
 ]

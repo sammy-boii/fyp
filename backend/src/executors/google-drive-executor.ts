@@ -72,6 +72,7 @@ export const executeCreateFolder = async (
 
 /**
  * Create a file in Google Drive
+ * Supports: text files, HTML, CSV, images (base64), and PDFs (text to PDF)
  */
 export const executeCreateFile = async (
   config: any
@@ -108,49 +109,82 @@ export const executeCreateFile = async (
       fileMetadata.parents = [parentFolderId]
     }
 
-    // For Google Docs types, use metadata-only creation then update content
-    // For regular files, use multipart upload
-    const isGoogleDocsType = mimeType.startsWith('application/vnd.google-apps.')
+    const boundary = '-------314159265358979323846'
+    const delimiter = '\r\n--' + boundary + '\r\n'
+    const closeDelimiter = '\r\n--' + boundary + '--'
 
-    if (isGoogleDocsType) {
-      // Create Google Docs file (metadata only)
-      const createResponse = await fetch(API_ROUTES.GOOGLE_DRIVE.CREATE_FILE, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(fileMetadata)
+    let multipartBody: string
+
+    // Handle different file types
+    if (mimeType.startsWith('image/')) {
+      // Image files - content is base64 data
+      if (!content) {
+        return { success: false, error: 'Image data (base64) is required' }
+      }
+
+      // Handle both raw base64 and data URL format
+      let base64Data = content
+      if (content.includes(',')) {
+        base64Data = content.split(',')[1]
+      }
+
+      const metadataPart =
+        delimiter +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(fileMetadata)
+
+      const mediaPart =
+        delimiter +
+        'Content-Type: ' +
+        mimeType +
+        '\r\n' +
+        'Content-Transfer-Encoding: base64\r\n\r\n' +
+        base64Data
+
+      multipartBody = metadataPart + mediaPart + closeDelimiter
+    } else if (mimeType === 'application/pdf') {
+      // PDF files - generate PDF from text content
+      if (!content) {
+        return { success: false, error: 'PDF content is required' }
+      }
+
+      // Use PDFKit to generate PDF from text
+      const PDFDocument = (await import('pdfkit')).default
+      const doc = new PDFDocument({ margin: 50 })
+
+      // Collect PDF chunks
+      const chunks: Buffer[] = []
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk))
+
+      // Add text content with word wrapping
+      doc.fontSize(12).text(content, {
+        align: 'left',
+        lineGap: 4
       })
 
-      if (!createResponse.ok) {
-        const err = await createResponse.json()
-        console.error('[executeCreateFile] Drive API Error:', err)
-        return {
-          success: false,
-          error: err?.error?.message || 'Failed to create file'
-        }
-      }
+      doc.end()
 
-      const result = await createResponse.json()
+      // Wait for PDF generation to complete
+      await new Promise<void>((resolve) => doc.on('end', resolve))
 
-      return {
-        success: true,
-        data: {
-          fileId: result.id,
-          name: result.name,
-          mimeType: result.mimeType,
-          webViewLink: result.webViewLink,
-          message: 'File created successfully'
-        }
-      }
+      const pdfBuffer = Buffer.concat(chunks)
+      const base64Data = pdfBuffer.toString('base64')
+
+      const metadataPart =
+        delimiter +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(fileMetadata)
+
+      const mediaPart =
+        delimiter +
+        'Content-Type: application/pdf\r\n' +
+        'Content-Transfer-Encoding: base64\r\n\r\n' +
+        base64Data
+
+      multipartBody = metadataPart + mediaPart + closeDelimiter
     } else {
-      // Use multipart upload for regular files with content
-      const boundary = '-------314159265358979323846'
-      const delimiter = '\r\n--' + boundary + '\r\n'
-      const closeDelimiter = '\r\n--' + boundary + '--'
-
-      const multipartBody =
+      // Text-based files (txt, html, csv)
+      multipartBody =
         delimiter +
         'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
         JSON.stringify(fileMetadata) +
@@ -160,119 +194,12 @@ export const executeCreateFile = async (
         '\r\n\r\n' +
         content +
         closeDelimiter
-
-      const uploadUrl =
-        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
-
-      const createResponse = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/related; boundary=' + boundary
-        },
-        body: multipartBody
-      })
-
-      if (!createResponse.ok) {
-        const err = await createResponse.json()
-        console.error('[executeCreateFile] Drive API Error:', err)
-        return {
-          success: false,
-          error: err?.error?.message || 'Failed to create file'
-        }
-      }
-
-      const result = await createResponse.json()
-
-      return {
-        success: true,
-        data: {
-          fileId: result.id,
-          name: result.name,
-          mimeType: result.mimeType,
-          webViewLink: result.webViewLink,
-          message: 'File created successfully'
-        }
-      }
     }
-  } catch (error: any) {
-    console.error('[executeCreateFile] Exception:', error)
-    return { success: false, error: error.message || 'Failed to create file' }
-  }
-}
-
-/**
- * Upload a binary file to Google Drive from base64 data
- */
-export const executeUploadFile = async (
-  config: any
-): Promise<TNodeExecutionResult> => {
-  try {
-    const { name, data, mimeType, parentFolderId, credentialId } = config
-
-    if (!credentialId) {
-      return { success: false, error: 'Missing credential ID' }
-    }
-
-    if (!name) {
-      return { success: false, error: 'File name is required' }
-    }
-
-    if (!data) {
-      return { success: false, error: 'File data (base64) is required' }
-    }
-
-    if (!mimeType) {
-      return { success: false, error: 'MIME type is required' }
-    }
-
-    // Get valid Google Drive access token
-    const { token } =
-      await getValidGoogleDriveAccessTokenByCredentialId(credentialId)
-
-    // Build file metadata
-    const fileMetadata: Record<string, any> = {
-      name,
-      mimeType
-    }
-
-    // Add parent folder if specified
-    if (parentFolderId) {
-      fileMetadata.parents = [parentFolderId]
-    }
-
-    // Handle both raw base64 and data URL format
-    let base64Data = data
-    if (data.includes(',')) {
-      // It's a data URL, extract the base64 part
-      base64Data = data.split(',')[1]
-    }
-
-    // Use multipart upload
-    const boundary = '-------314159265358979323846'
-    const delimiter = '\r\n--' + boundary + '\r\n'
-    const closeDelimiter = '\r\n--' + boundary + '--'
-
-    // Build multipart body with binary data
-    const metadataPart =
-      delimiter +
-      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-      JSON.stringify(fileMetadata)
-
-    const mediaPart =
-      delimiter +
-      'Content-Type: ' +
-      mimeType +
-      '\r\n' +
-      'Content-Transfer-Encoding: base64\r\n\r\n' +
-      base64Data
-
-    const multipartBody = metadataPart + mediaPart + closeDelimiter
 
     const uploadUrl =
       'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,webViewLink,size'
 
-    const response = await fetch(uploadUrl, {
+    const createResponse = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -281,16 +208,16 @@ export const executeUploadFile = async (
       body: multipartBody
     })
 
-    if (!response.ok) {
-      const err = await response.json()
-      console.error('[executeUploadFile] Drive API Error:', err)
+    if (!createResponse.ok) {
+      const err = await createResponse.json()
+      console.error('[executeCreateFile] Drive API Error:', err)
       return {
         success: false,
-        error: err?.error?.message || 'Failed to upload file'
+        error: err?.error?.message || 'Failed to create file'
       }
     }
 
-    const result = await response.json()
+    const result = await createResponse.json()
 
     return {
       success: true,
@@ -300,12 +227,12 @@ export const executeUploadFile = async (
         mimeType: result.mimeType,
         size: result.size,
         webViewLink: result.webViewLink,
-        message: 'File uploaded successfully'
+        message: 'File created successfully'
       }
     }
   } catch (error: any) {
-    console.error('[executeUploadFile] Exception:', error)
-    return { success: false, error: error.message || 'Failed to upload file' }
+    console.error('[executeCreateFile] Exception:', error)
+    return { success: false, error: error.message || 'Failed to create file' }
   }
 }
 

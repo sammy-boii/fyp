@@ -89,7 +89,7 @@ export const NodeActionsSheet = ({
 
       {/* Action Selection Sheet - Controlled via state */}
       <Sheet open={openActionsSheet} onOpenChange={setOpenActionsSheet}>
-        <SheetContent className='p-2'>
+        <SheetContent className='p-2 flex flex-col'>
           <SheetHeader>
             <div>
               <h3 className='text-lg font-medium mb-1'>Select Action</h3>
@@ -99,7 +99,7 @@ export const NodeActionsSheet = ({
             </div>
           </SheetHeader>
 
-          <div className='space-y-3 px-2'>
+          <div className='space-y-3 px-2 overflow-y-auto flex-1'>
             {node.actions.map((action) => {
               const Icon = action.icon
               return (

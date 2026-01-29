@@ -40,7 +40,7 @@ export function UploadFileForm() {
             <FieldLabel className='text-xs font-medium'>File Name</FieldLabel>
             <PlaceholderInput
               type='text'
-              placeholder='{{node1.name}} or my-image.png'
+              placeholder='Enter file name'
               className='h-9 text-sm'
               {...field}
               aria-invalid={fieldState.invalid}
@@ -58,7 +58,7 @@ export function UploadFileForm() {
             <FieldLabel className='text-xs font-medium'>File Data</FieldLabel>
             <PlaceholderInput
               type='text'
-              placeholder='{{node1.base64}}'
+              placeholder="Enter file's base64 data"
               className='h-9 text-sm font-mono'
               {...field}
               aria-invalid={fieldState.invalid}

@@ -9,7 +9,9 @@ import {
   Edge,
   ConnectionLineType,
   addEdge,
-  Connection
+  Connection,
+  useReactFlow,
+  ReactFlowProvider
 } from '@xyflow/react'
 
 import { useParams, useRouter } from 'next/navigation'
@@ -51,9 +53,18 @@ import WorkflowExecutionTab from './_components/WorkflowExecutionTab'
 import { useWorkflowWebSocket } from '@/hooks/use-workflow-websocket'
 
 export default function WorkflowViewPage() {
+  return (
+    <ReactFlowProvider>
+      <WorkflowViewPageInner />
+    </ReactFlowProvider>
+  )
+}
+
+function WorkflowViewPageInner() {
   const params = useParams()
   const router = useRouter()
   const workflowId = params?.id ? String(params.id) : null
+  const reactFlowInstance = useReactFlow()
 
   const { data, isLoading, isError, error } = useGetWorkflow(workflowId)
   const updateWorkflow = useUpdateWorkflow()
@@ -295,10 +306,28 @@ export default function WorkflowViewPage() {
     // Find the last node in the chain
     const lastNode = findLastNode(nodes, edges)
 
-    // Calculate position for the new node
-    const newPosition = calculateNewNodePosition(nodes, edges, {
-      fromNode: lastNode
-    })
+    let newPosition
+
+    if (lastNode) {
+      // If there's a last node, position to the right of it
+      newPosition = calculateNewNodePosition(nodes, edges, {
+        fromNode: lastNode
+      })
+    } else {
+      // If no nodes exist, position at viewport center
+      const { getViewport } = reactFlowInstance
+      const viewport = getViewport()
+      const wrapperBounds = reactFlowWrapper.current?.getBoundingClientRect()
+
+      if (wrapperBounds) {
+        // Calculate center of visible viewport
+        const centerX = (wrapperBounds.width / 2 - viewport.x) / viewport.zoom
+        const centerY = (wrapperBounds.height / 2 - viewport.y) / viewport.zoom
+        newPosition = { x: centerX - 96, y: centerY - 50 } // Offset for node size
+      } else {
+        newPosition = calculateNewNodePosition(nodes, edges, {})
+      }
+    }
 
     // Create the new node using utility function
     const newNode = createNode(nodeType, newPosition)

@@ -6,11 +6,6 @@ import { TNodeExecutionResult } from '../types/workflow.types'
 export const executeSendEmail = async (
   config: any
 ): Promise<TNodeExecutionResult> => {
-  console.log(
-    '[executeSendEmail] Starting with config:',
-    JSON.stringify(config, null, 2)
-  )
-
   try {
     const { to, subject, body, credentialId } = config
 
@@ -61,7 +56,6 @@ export const executeSendEmail = async (
     }
 
     const result = await sendRes.json()
-    console.log('[executeSendEmail] Success:', result.id)
 
     return {
       success: true,
@@ -81,11 +75,6 @@ export const executeSendEmail = async (
 export const executeReadEmail = async (
   config: any
 ): Promise<TNodeExecutionResult> => {
-  console.log(
-    '[executeReadEmail] Starting with config:',
-    JSON.stringify(config, null, 2)
-  )
-
   try {
     const {
       credentialId,
@@ -142,9 +131,6 @@ export const executeReadEmail = async (
     }
 
     const messageList = await messageListRes.json()
-    console.log(
-      `[executeReadEmail] Found ${messageList?.messages?.length || 0} messages`
-    )
 
     if (!messageList?.messages?.length) {
       return { success: true, data: { emails: [], count: 0 } }
@@ -181,8 +167,6 @@ export const executeReadEmail = async (
         }
       })
     )
-
-    console.log('[executeReadEmail] Successfully processed messages')
 
     return {
       success: true,

@@ -42,10 +42,10 @@ Bun.serve({
     return app.fetch(req, server)
   },
   websocket: websocketHandler,
-  port: PORT
+  port: PORT,
+  idleTimeout: 255 // Max 255 seconds (~4 mins) for long-running workflows
 })
 
-console.log(`Server running at PORT ${PORT}`)
 console.log(
-  `WebSocket available at ws://localhost:${PORT}/ws/workflow/:workflowId`
+  `Server running at PORT ${PORT} & WS at ws://localhost:${PORT}/ws/workflow/:workflowId`
 )

@@ -17,8 +17,6 @@ export const executeNodeLogic = async (
 ): Promise<TNodeExecutionResult> => {
   const { actionId } = node.data
 
-  console.log(`[executeNode] Node ${node.id} | Action: ${actionId}`)
-
   let result: TNodeExecutionResult
 
   switch (actionId) {

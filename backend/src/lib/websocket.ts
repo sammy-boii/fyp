@@ -35,7 +35,6 @@ export type ExecutionEvent = {
 export const websocketHandler = {
   open(ws: ServerWebSocket<{ workflowId: string }>) {
     const workflowId = ws.data.workflowId
-    console.log(`[WebSocket] Client connected for workflow: ${workflowId}`)
 
     if (!connections.has(workflowId)) {
       connections.set(workflowId, new Set())
@@ -45,7 +44,6 @@ export const websocketHandler = {
 
   close(ws: ServerWebSocket<{ workflowId: string }>) {
     const workflowId = ws.data.workflowId
-    console.log(`[WebSocket] Client disconnected from workflow: ${workflowId}`)
 
     const workflowConnections = connections.get(workflowId)
     if (workflowConnections) {
@@ -77,9 +75,6 @@ export function broadcastExecutionEvent(event: ExecutionEvent) {
   const workflowConnections = connections.get(event.workflowId)
 
   if (!workflowConnections || workflowConnections.size === 0) {
-    console.log(
-      `[WebSocket] No connections for workflow ${event.workflowId}, event not broadcasted`
-    )
     return
   }
 
@@ -92,10 +87,6 @@ export function broadcastExecutionEvent(event: ExecutionEvent) {
       console.error(`[WebSocket] Failed to send message:`, e)
     }
   })
-
-  console.log(
-    `[WebSocket] Broadcasted ${event.type} to ${workflowConnections.size} clients`
-  )
 }
 
 // Helper to emit workflow start event

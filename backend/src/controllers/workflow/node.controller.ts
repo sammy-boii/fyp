@@ -39,27 +39,24 @@ export const executeSingleNode = async (c: Context) => {
     const node = nodes.find((n) => n.id === nodeId)
 
     if (!node) {
-      throw new AppError('Node with that ID not found in the workflow. Make sure the workflow is saved.', 404)
+      throw new AppError(
+        'Node with that ID not found in the workflow. Make sure the workflow is saved.',
+        404
+      )
     }
 
     if (!node.data.actionId || !node.data.config) {
       throw new AppError('Node not configured', 400)
     }
 
-    console.log(`\n=== Executing Node: ${node.id} ===`)
-
     // Build node outputs map from predecessor nodes
     const nodeOutputsMap = buildNodeOutputsMap(nodeId, nodes, edges)
-    console.log(
-      `[executeSingleNode] Found ${nodeOutputsMap.size} predecessor outputs`
-    )
 
     // Replace placeholders in the config with actual values
     const resolvedConfig = replacePlaceholdersInConfig(
       node.data.config,
       nodeOutputsMap
     )
-    console.log('[executeSingleNode] Resolved config:', resolvedConfig)
 
     const startTime = Date.now()
 
@@ -67,8 +64,6 @@ export const executeSingleNode = async (c: Context) => {
     const result = await executeNodeLogic(node, resolvedConfig)
 
     const duration = Date.now() - startTime
-
-    console.log(`\n=== Node Execution Complete (${duration}ms) ===\n`)
 
     // Save the output back to the workflow node data
     if (result.success && result.data) {
@@ -89,8 +84,6 @@ export const executeSingleNode = async (c: Context) => {
         where: { id: workflowId },
         data: { nodes: updatedNodes as any }
       })
-
-      console.log(`[executeSingleNode] Saved output to node ${nodeId}`)
     }
 
     return c.json({

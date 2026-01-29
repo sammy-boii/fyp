@@ -84,19 +84,14 @@ export const replacePlaceholdersInString = (
 
     const nodeOutput = nodeOutputs.get(nodeId)
     if (!nodeOutput) {
-      console.log(`[placeholder] Node output not found for: ${nodeId}`)
       return fullMatch
     }
 
     const value = getValueByPath(nodeOutput, path)
     if (value === undefined) {
-      console.log(`[placeholder] Path not found: ${path} in node ${nodeId}`)
       return fullMatch
     }
 
-    console.log(
-      `[placeholder] Replaced {{${trimmedContent}}} with: ${typeof value === 'object' ? JSON.stringify(value) : value}`
-    )
     return typeof value === 'object' ? JSON.stringify(value) : String(value)
   })
 }

@@ -41,11 +41,6 @@ const executeNode = async (
     ? replacePlaceholdersInConfig(config, nodeOutputs)
     : config
 
-  console.log(
-    `[Workflow] Executing node ${node.id} with resolved config:`,
-    JSON.stringify(resolvedConfig, null, 2)
-  )
-
   const nodeExecution = await prisma.nodeExecution.create({
     data: {
       executionId,
@@ -157,10 +152,6 @@ export const runWorkflow = tryCatch(async (c: Context) => {
   const nodes = workflow.nodes as TWorkflowNode[]
   const edges = workflow.edges as TWorkflowEdge[]
 
-  console.log(`\n=== Executing Workflow: ${workflow.name} (${workflow.id}) ===`)
-  console.log(`Total nodes: ${nodes.length}, Total edges: ${edges.length}\n`)
-
-  // Create workflow execution record
   const execution = await prisma.workflowExecution.create({
     data: {
       workflowId: workflow.id,
@@ -180,7 +171,6 @@ export const runWorkflow = tryCatch(async (c: Context) => {
   try {
     // Build execution order
     const executionOrder = buildExecutionOrder(nodes, edges)
-    console.log('Execution order:', executionOrder)
 
     // Execute nodes in order, passing outputs between nodes
     let currentNodeIndex = 0
@@ -246,10 +236,6 @@ export const runWorkflow = tryCatch(async (c: Context) => {
       // Store the output for use by subsequent nodes
       if (result.data) {
         nodeOutputs.set(nodeId, result.data)
-        console.log(
-          `[Workflow] Stored output for node ${nodeId}:`,
-          JSON.stringify(result.data, null, 2)
-        )
       }
 
       // Emit node complete event
@@ -275,8 +261,6 @@ export const runWorkflow = tryCatch(async (c: Context) => {
 
     // Emit workflow complete event
     emitWorkflowComplete(workflowId, execution.id, duration)
-
-    console.log(`\n=== Workflow Execution Complete (${duration}ms) ===\n`)
 
     return {
       ...execution,

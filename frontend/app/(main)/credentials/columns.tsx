@@ -92,7 +92,6 @@ function ProviderIcon({ provider }: { provider?: string | null }) {
   const base = provider?.toLowerCase()
   const meta = CREDENTIALS_OPTIONS.find((option) => option.id === base)
 
-  console.log(base, meta)
   if (meta?.icon) {
     return (
       <div className='relative h-8 w-8 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900'>
@@ -129,8 +128,8 @@ export const columns: ColumnDef<CredentialRow>[] = [
         status === 'active'
           ? CheckCircle2
           : status === 'expires-soon'
-          ? Clock3
-          : ShieldAlert
+            ? Clock3
+            : ShieldAlert
       return (
         <Badge className={statusTone[status]} variant='outline'>
           <Icon className='h-4 w-4' />
@@ -274,8 +273,8 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                       cred.status === 'active'
                         ? CheckCircle2
                         : cred.status === 'expires-soon'
-                        ? Clock3
-                        : ShieldAlert
+                          ? Clock3
+                          : ShieldAlert
                     return (
                       <>
                         <Icon className='h-4 w-4' />
@@ -603,7 +602,7 @@ function ProviderCell({ cred }: { cred: CredentialRow }) {
         </span>
         <span className='text-xs capitalize text-muted-foreground'>
           {/* mainly for google-drive */}
-          {cred.service ? (cred.service.split('-').join(' ')) : 'N/A'}
+          {cred.service ? cred.service.split('-').join(' ') : 'N/A'}
         </span>
       </div>
     </div>

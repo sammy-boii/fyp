@@ -25,8 +25,6 @@ function ProviderIcon({ provider }: { provider: string }) {
 
   const meta = CREDENTIALS_OPTIONS.find((option) => option.id === base)
 
-  console.log(meta, base)
-
   if (meta?.icon) {
     return (
       <div className='relative h-6 w-6 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900'>

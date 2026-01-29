@@ -31,6 +31,7 @@ export async function tryCatch<T>(
       error: null
     }
   } catch (err) {
+    console.log('ERR::', err)
     if (err instanceof ZodError) {
       const issue = err.issues[0]
 

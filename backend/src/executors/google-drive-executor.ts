@@ -8,11 +8,6 @@ import { TNodeExecutionResult } from '../types/workflow.types'
 export const executeCreateFolder = async (
   config: any
 ): Promise<TNodeExecutionResult> => {
-  console.log(
-    '[executeCreateFolder] Starting with config:',
-    JSON.stringify(config, null, 2)
-  )
-
   try {
     const { name, parentFolderId, credentialId } = config
 
@@ -59,7 +54,6 @@ export const executeCreateFolder = async (
     }
 
     const result = await response.json()
-    console.log('[executeCreateFolder] Success:', result.id)
 
     return {
       success: true,
@@ -82,11 +76,6 @@ export const executeCreateFolder = async (
 export const executeCreateFile = async (
   config: any
 ): Promise<TNodeExecutionResult> => {
-  console.log(
-    '[executeCreateFile] Starting with config:',
-    JSON.stringify(config, null, 2)
-  )
-
   try {
     const {
       name,
@@ -144,7 +133,6 @@ export const executeCreateFile = async (
       }
 
       const result = await createResponse.json()
-      console.log('[executeCreateFile] Success:', result.id)
 
       return {
         success: true,
@@ -195,7 +183,6 @@ export const executeCreateFile = async (
       }
 
       const result = await createResponse.json()
-      console.log('[executeCreateFile] Success:', result.id)
 
       return {
         success: true,
@@ -220,11 +207,6 @@ export const executeCreateFile = async (
 export const executeDeleteFolder = async (
   config: any
 ): Promise<TNodeExecutionResult> => {
-  console.log(
-    '[executeDeleteFolder] Starting with config:',
-    JSON.stringify(config, null, 2)
-  )
-
   try {
     const { folderId, credentialId } = config
 
@@ -260,8 +242,6 @@ export const executeDeleteFolder = async (
       }
     }
 
-    console.log('[executeDeleteFolder] Success:', folderId)
-
     return {
       success: true,
       data: {
@@ -281,11 +261,6 @@ export const executeDeleteFolder = async (
 export const executeListFiles = async (
   config: any
 ): Promise<TNodeExecutionResult> => {
-  console.log(
-    '[executeListFiles] Starting with config:',
-    JSON.stringify(config, null, 2)
-  )
-
   try {
     const { folderId, maxResults = 50, fileType = 'all', credentialId } = config
 
@@ -351,7 +326,6 @@ export const executeListFiles = async (
     }
 
     const result = await response.json()
-    console.log(`[executeListFiles] Found ${result?.files?.length || 0} files`)
 
     const files = (result.files || []).map((file: any) => ({
       id: file.id,
@@ -385,11 +359,6 @@ export const executeListFiles = async (
 export const executeDeleteFile = async (
   config: any
 ): Promise<TNodeExecutionResult> => {
-  console.log(
-    '[executeDeleteFile] Starting with config:',
-    JSON.stringify(config, null, 2)
-  )
-
   try {
     const { fileId, credentialId } = config
 
@@ -422,8 +391,6 @@ export const executeDeleteFile = async (
       }
     }
 
-    console.log('[executeDeleteFile] Success:', fileId)
-
     return {
       success: true,
       data: {
@@ -444,11 +411,6 @@ export const executeDeleteFile = async (
 export const executeGetFileContent = async (
   config: any
 ): Promise<TNodeExecutionResult> => {
-  console.log(
-    '[executeGetFileContent] Starting with config:',
-    JSON.stringify(config, null, 2)
-  )
-
   try {
     const { fileId, credentialId } = config
 
@@ -481,7 +443,6 @@ export const executeGetFileContent = async (
 
     const metadata = await metadataResponse.json()
     const { mimeType, name } = metadata
-    console.log(`[executeGetFileContent] File type: ${mimeType}`)
 
     let content: string = ''
 
@@ -572,10 +533,6 @@ export const executeGetFileContent = async (
         error: `Unsupported file type: ${mimeType}. Supported types: text files, Google Docs, Google Sheets, PDFs`
       }
     }
-
-    console.log(
-      `[executeGetFileContent] Success, content length: ${content.length}`
-    )
 
     return {
       success: true,

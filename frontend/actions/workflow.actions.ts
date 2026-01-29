@@ -169,6 +169,7 @@ export async function executeWorkflow(id: string) {
     const result = await api
       .get(`api/workflow/run/${id}`)
       .json<ApiResponse<WorkflowExecution>>()
+
     console.log('RESULT', result)
 
     return result
@@ -199,7 +200,6 @@ export async function executeNode(workflowId: string, nodeId: string) {
       .get(`api/workflow/execute/${workflowId}/${nodeId}`)
       .json<NodeExecutionResult>()
 
-    console.log('RESULT', result)
     return result
   })
 }

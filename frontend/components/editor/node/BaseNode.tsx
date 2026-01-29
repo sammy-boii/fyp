@@ -128,35 +128,20 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
 
   const handleExecuteNode = useCallback(async () => {
     if (!workflowId) {
-      console.log('[ExecuteNode] No workflowId')
       return
     }
 
     if (!data.actionId || !data.config) {
-      console.log('[ExecuteNode] Missing actionId or config:', {
-        actionId: data.actionId,
-        config: data.config
-      })
       return
     }
-
-    console.log('[ExecuteNode] Starting execution:', {
-      workflowId,
-      nodeId: id,
-      actionId: data.actionId,
-      config: data.config
-    })
 
     const result = await executeNodeMutation.mutateAsync({
       workflowId,
       nodeId: id
     })
 
-    console.log('[ExecuteNode] Execution result:', result)
-
     // Store the output in the node's data (persisted with workflow)
     if (result?.data?.output) {
-      console.log('[ExecuteNode] Updating node with output:', result.data.output)
       setNodes((nds) =>
         nds.map((n) =>
           n.id === id
@@ -172,11 +157,6 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
         )
       )
     } else {
-      console.log('[ExecuteNode] No output in result:', {
-        result,
-        hasData: !!result?.data,
-        hasOutput: !!result?.data?.output
-      })
     }
   }, [
     workflowId,

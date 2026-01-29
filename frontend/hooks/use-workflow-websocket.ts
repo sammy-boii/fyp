@@ -128,13 +128,11 @@ export function useWorkflowWebSocket(
     }
 
     const wsUrl = `${WS_BASE_URL}/ws/workflow/${workflowId}`
-    console.log(`[WebSocket] Connecting to ${wsUrl}`)
 
     const ws = new WebSocket(wsUrl)
     wsRef.current = ws
 
     ws.onopen = () => {
-      console.log('[WebSocket] Connected')
       setIsConnected(true)
       isConnectingRef.current = false
 
@@ -152,8 +150,6 @@ export function useWorkflowWebSocket(
 
         // Ignore pong messages
         if ((data as any).type === 'pong') return
-
-        console.log('[WebSocket] Received event:', data.type, data)
 
         // Add to logs with unique ID
         const logEntry: ExecutionLog = {
@@ -245,7 +241,6 @@ export function useWorkflowWebSocket(
     }
 
     ws.onclose = () => {
-      console.log('[WebSocket] Disconnected')
       setIsConnected(false)
       isConnectingRef.current = false
 

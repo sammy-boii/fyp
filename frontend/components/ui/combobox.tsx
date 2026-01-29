@@ -113,7 +113,7 @@ function ComboboxContent({
         align={align}
         alignOffset={alignOffset}
         anchor={anchor}
-        className={cn('z-[99999] pointer-events-auto', positionerClassName)}
+        className={cn('z-9999 pointer-events-auto', positionerClassName)}
       >
         <ComboboxPrimitive.Popup
           data-slot='combobox-content'

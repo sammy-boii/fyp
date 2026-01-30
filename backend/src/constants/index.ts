@@ -11,7 +11,9 @@ export const FRONTEND_BASE_URL =
     : `http://localhost:3000`
 
 export const GMAIL_API_BASE_URL = 'https://gmail.googleapis.com/gmail/v1'
+
 export const GOOGLE_OAUTH_BASE_URL = 'https://oauth2.googleapis.com'
+
 export const GOOGLE_DRIVE_API_BASE_URL = 'https://www.googleapis.com/drive/v3'
 
 export const API_ROUTES = {
@@ -27,6 +29,7 @@ export const API_ROUTES = {
 
     SEND_MESSAGE: GMAIL_API_BASE_URL + `/users/me/messages/send`
   },
+
   GOOGLE_DRIVE: {
     LIST_FILES: GOOGLE_DRIVE_API_BASE_URL + '/files',
     CREATE_FILE: GOOGLE_DRIVE_API_BASE_URL + '/files',
@@ -40,6 +43,7 @@ export const API_ROUTES = {
     DELETE_FILE: (fileId: string) =>
       GOOGLE_DRIVE_API_BASE_URL + `/files/${fileId}`
   },
+
   OAUTH: {
     REFRESH_TOKEN: GOOGLE_OAUTH_BASE_URL + '/token'
   }

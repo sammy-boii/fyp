@@ -32,7 +32,6 @@ import {
 import Image from 'next/image'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import gmailIcon from '@/public/gmail.png'
 import {
   Tooltip,
   TooltipContent,
@@ -139,7 +138,7 @@ export const columns: ColumnDef<CredentialRow>[] = [
     }
   },
   {
-    accessorKey: 'accessTokenExpiresAt',
+    accessorKey: 'refreshTokenExpiresAt',
     header: 'Expires',
     cell: ({ getValue }) => {
       const expiresAt = getValue() as string
@@ -368,7 +367,7 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                   Access Token Expiry
                 </Label>
                 <div className='rounded-md bg-muted/20 px-3 py-2 text-sm text-muted-foreground'>
-                  {formatDate(cred.accessTokenExpiresAt)}
+                  {formatDate(cred.refreshTokenExpiresAt)}
                 </div>
               </div>
 

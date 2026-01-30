@@ -1,21 +1,18 @@
 import { Hono } from 'hono'
-import { prisma } from '@shared/db/prisma'
-import { encryptToken } from '../../lib/crypto'
 import { authMiddleware } from '../../middleware/auth.middleware'
 
 export const discordRoutes = new Hono()
 
-// Route to add a Discord bot token
-discordRoutes.post('/bot-token', authMiddleware, async (c) => {
+// Route to get bot info (verify the shared bot is configured)
+discordRoutes.get('/bot-info', authMiddleware, async (c) => {
   try {
-    const user = c.get('user')
-    const { botToken, notes } = await c.req.json()
+    const botToken = Bun.env.DISCORD_BOT_TOKEN
 
     if (!botToken) {
-      return c.json({ error: 'Bot token is required' }, 400)
+      return c.json({ error: 'Discord bot not configured on server' }, 500)
     }
 
-    // Validate the bot token by making a test request
+    // Fetch bot info from Discord
     const response = await fetch('https://discord.com/api/v10/users/@me', {
       headers: {
         Authorization: `Bot ${botToken}`
@@ -23,68 +20,34 @@ discordRoutes.post('/bot-token', authMiddleware, async (c) => {
     })
 
     if (!response.ok) {
-      return c.json({ error: 'Invalid bot token' }, 400)
+      return c.json({ error: 'Failed to fetch bot info' }, 500)
     }
 
     const botUser = await response.json()
 
-    // Encrypt and store the bot token
-    const encryptedToken = encryptToken(botToken)
-
-    // Check if credential already exists
-    const existingCredential = await prisma.oAuthCredential.findFirst({
-      where: {
-        userId: user.id,
-        provider: 'discord',
-        service: 'bot'
-      }
-    })
-
-    let credential
-    if (existingCredential) {
-      // Update existing credential
-      credential = await prisma.oAuthCredential.update({
-        where: { id: existingCredential.id },
-        data: {
-          accessToken: encryptedToken,
-          notes: notes || `Bot: ${botUser.username}`,
-          accessTokenExpiresAt: null // Bot tokens don't expire
-        }
-      })
-    } else {
-      // Create new credential
-      credential = await prisma.oAuthCredential.create({
-        data: {
-          userId: user.id,
-          provider: 'discord',
-          service: 'bot',
-          accessToken: encryptedToken,
-          notes: notes || `Bot: ${botUser.username}`,
-          accessTokenExpiresAt: null // Bot tokens don't expire
-        }
-      })
-    }
-
     return c.json({
       success: true,
       data: {
-        id: credential.id,
-        provider: credential.provider,
-        service: credential.service,
+        botId: botUser.id,
         botUsername: botUser.username,
-        botId: botUser.id
+        discriminator: botUser.discriminator
       }
     })
   } catch (error: any) {
-    console.error('Error saving Discord bot token:', error)
-    return c.json({ error: error.message || 'Failed to save bot token' }, 500)
+    console.error('Error fetching Discord bot info:', error)
+    return c.json({ error: error.message || 'Failed to fetch bot info' }, 500)
   }
 })
 
-// OAuth route placeholder for future OAuth implementation
-discordRoutes.get('/oauth', (c) => {
+// Route to get invite URL
+discordRoutes.get('/invite-url', (c) => {
+  const clientId = Bun.env.DISCORD_CLIENT_ID || '1466759269763514513'
+  const inviteUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&permissions=8&integration_type=0&scope=bot`
+
   return c.json({
-    message:
-      'Discord OAuth not implemented. Please use /api/discord/bot-token to add a bot token directly.'
+    success: true,
+    data: {
+      inviteUrl
+    }
   })
 })

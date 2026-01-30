@@ -1,7 +1,15 @@
 'use client'
 
 import Image from 'next/image'
-import { ChevronRight, Plus, KeyRound } from 'lucide-react'
+import { useState } from 'react'
+import {
+  ChevronRight,
+  Plus,
+  KeyRound,
+  Loader2,
+  ExternalLink,
+  Bot
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -13,6 +21,14 @@ import {
   SheetTrigger
 } from '@/components/ui/sheet'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import {
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -22,14 +38,35 @@ import {
 import { columns, CredentialRow } from './columns'
 import { DataTable } from './data-table'
 import Link from 'next/link'
-import { useGetCredentials } from '@/hooks/use-credentials'
+import {
+  useGetCredentials,
+  useAddDiscordBotToken
+} from '@/hooks/use-credentials'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CREDENTIALS_OPTIONS } from '@/constants'
+import { toast } from 'sonner'
 
-
+const DISCORD_BOT_INVITE_URL =
+  'https://discord.com/oauth2/authorize?client_id=1466759269763514513&permissions=8&integration_type=0&scope=bot'
 
 export default function CredentialsPage() {
   const { data, isLoading, isError } = useGetCredentials()
+  const addDiscordConnection = useAddDiscordBotToken()
+
+  const [discordDialogOpen, setDiscordDialogOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  const handleConnectDiscord = async () => {
+    const result = await addDiscordConnection.mutateAsync({})
+
+    if (result.error) {
+      toast.error(result.error.message || 'Failed to connect Discord')
+    } else {
+      toast.success('Discord connected successfully!')
+      setDiscordDialogOpen(false)
+      setSheetOpen(false)
+    }
+  }
 
   const apiCredentials = data?.data ?? []
 
@@ -46,8 +83,11 @@ export default function CredentialsPage() {
       // Derive status: prioritize refresh token, fall back to access token
       let status: CredentialRow['status'] = 'active'
 
-      // First check if refresh token exists
-      if (cred.refreshToken) {
+      // Discord bot tokens never expire
+      if (cred.provider === 'discord') {
+        status = 'active'
+      } else if (cred.refreshToken) {
+        // First check if refresh token exists
         // If refresh token exists but expiry is null, it never expires
         if (refreshTokenExpiresAt === null) {
           status = 'active'
@@ -114,7 +154,7 @@ export default function CredentialsPage() {
               </p>
             </div>
           </div>
-          <Sheet>
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button className='gap-2'>
                 <Plus className='h-4 w-4' />
@@ -132,37 +172,137 @@ export default function CredentialsPage() {
                 </SheetDescription>
               </SheetHeader>
               <div className='grid gap-3 p-4 pt-2'>
-                {CREDENTIALS_OPTIONS.map((option) => (
-                  <Link
-                    key={option.id}
-                    href={option.url}
-                    className='flex cursor-pointer w-full items-center justify-between rounded-lg border bg-card p-3 text-left transition hover:bg-muted'
-                  >
-                    <div className='flex items-center gap-3'>
-                      <span className='relative h-12 w-12 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900'>
-                        <Image
-                          src={option.icon}
-                          alt={option.name}
-                          fill
-                          sizes='48px'
-                          className='object-contain p-2'
-                        />
-                      </span>
-                      <div className='flex flex-col'>
-                        <span className='text-sm font-semibold'>
-                          {option.name}
+                {CREDENTIALS_OPTIONS.map((option) => {
+                  // Handle different credential types
+                  if (option.type === 'bot-invite') {
+                    return (
+                      <button
+                        key={option.id}
+                        onClick={() => setDiscordDialogOpen(true)}
+                        className='flex cursor-pointer w-full items-center justify-between rounded-lg border bg-card p-3 text-left transition hover:bg-muted'
+                      >
+                        <div className='flex items-center gap-3'>
+                          <span className='relative h-12 w-12 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900'>
+                            <Image
+                              src={option.icon}
+                              alt={option.name}
+                              fill
+                              sizes='48px'
+                              className='object-contain p-2'
+                            />
+                          </span>
+                          <div className='flex flex-col'>
+                            <span className='text-sm font-semibold'>
+                              {option.name}
+                            </span>
+                            <span className='text-xs text-muted-foreground'>
+                              {option.description ||
+                                'Connect and manage secure access'}
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronRight className='h-4 w-4 text-muted-foreground' />
+                      </button>
+                    )
+                  }
+
+                  // OAuth providers
+                  return (
+                    <Link
+                      key={option.id}
+                      href={option.url}
+                      className='flex cursor-pointer w-full items-center justify-between rounded-lg border bg-card p-3 text-left transition hover:bg-muted'
+                    >
+                      <div className='flex items-center gap-3'>
+                        <span className='relative h-12 w-12 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900'>
+                          <Image
+                            src={option.icon}
+                            alt={option.name}
+                            fill
+                            sizes='48px'
+                            className='object-contain p-2'
+                          />
                         </span>
-                        <span className='text-xs text-muted-foreground'>
-                          Connect and manage secure access
-                        </span>
+                        <div className='flex flex-col'>
+                          <span className='text-sm font-semibold'>
+                            {option.name}
+                          </span>
+                          <span className='text-xs text-muted-foreground'>
+                            Connect and manage secure access
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <ChevronRight className='h-4 w-4 text-muted-foreground group-hover:text-accent-foreground' />
-                  </Link>
-                ))}
+                      <ChevronRight className='h-4 w-4 text-muted-foreground group-hover:text-accent-foreground' />
+                    </Link>
+                  )
+                })}
               </div>
             </SheetContent>
           </Sheet>
+
+          {/* Discord Bot Connection Dialog */}
+          <Dialog open={discordDialogOpen} onOpenChange={setDiscordDialogOpen}>
+            <DialogContent className='sm:max-w-md'>
+              <DialogHeader>
+                <DialogTitle className='flex items-center gap-2'>
+                  <Bot className='h-5 w-5' />
+                  Connect Discord
+                </DialogTitle>
+                <DialogDescription>
+                  Add our bot to your Discord server to enable workflow
+                  automations.
+                </DialogDescription>
+              </DialogHeader>
+              <div className='space-y-4 py-4'>
+                <div className='rounded-lg border bg-muted/50 p-4'>
+                  <h4 className='mb-2 text-sm font-medium'>
+                    Step 1: Invite the bot
+                  </h4>
+                  <p className='mb-3 text-xs text-muted-foreground'>
+                    Click the button below to add the bot to your Discord
+                    server. You&apos;ll need &quot;Manage Server&quot;
+                    permissions.
+                  </p>
+                  <Button asChild variant='outline' className='w-full'>
+                    <a
+                      href={DISCORD_BOT_INVITE_URL}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                    >
+                      <ExternalLink className='mr-2 h-4 w-4' />
+                      Invite Bot to Server
+                    </a>
+                  </Button>
+                </div>
+                <div className='rounded-lg border bg-muted/50 p-4'>
+                  <h4 className='mb-2 text-sm font-medium'>
+                    Step 2: Confirm connection
+                  </h4>
+                  <p className='text-xs text-muted-foreground'>
+                    After adding the bot to your server, click below to save the
+                    connection.
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant='outline'
+                  onClick={() => setDiscordDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConnectDiscord}
+                  disabled={addDiscordConnection.isPending}
+                >
+                  {addDiscordConnection.isPending && (
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  )}
+                  I&apos;ve Added the Bot
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </header>
 
         {isLoading ? (

@@ -27,8 +27,8 @@ export function SendDMForm() {
             />
             <FieldError errors={[fieldState.error]} />
             <p className='text-xs text-muted-foreground mt-1'>
-              Right-click a user in Discord and select "Copy User ID" (requires
-              Developer Mode enabled)
+              Right-click a user in Discord and select &quot;Copy User ID&quot;
+              (requires Developer Mode enabled)
             </p>
           </Field>
         )}

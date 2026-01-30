@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getCredentials,
   updateCredentials,
-  deleteCredential
+  deleteCredential,
+  addDiscordConnection
 } from '@/actions/credentials.actions'
 
 export function useUpdateCredential() {
@@ -39,5 +40,19 @@ export function useGetCredentials() {
   return useQuery({
     queryKey: ['credentials'],
     queryFn: getCredentials
+  })
+}
+
+export function useAddDiscordBotToken() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ notes }: { notes?: string } = {}) =>
+      addDiscordConnection(notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['credentials']
+      })
+    }
   })
 }

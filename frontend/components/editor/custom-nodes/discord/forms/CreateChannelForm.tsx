@@ -34,7 +34,8 @@ export function CreateChannelForm() {
             />
             <FieldError errors={[fieldState.error]} />
             <p className='text-xs text-muted-foreground mt-1'>
-              Right-click a server in Discord and select "Copy Server ID"
+              Right-click a server in Discord and select &quot;Copy Server
+              ID&quot;
             </p>
           </Field>
         )}

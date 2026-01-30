@@ -83,3 +83,51 @@ export async function deleteCredential(id: string) {
     return { success: true }
   })
 }
+
+export async function addDiscordConnection(notes?: string) {
+  return tryCatch(async () => {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      throw new Error('Not authenticated')
+    }
+
+    // Check if credential already exists
+    const existingCredential = await prisma.oAuthCredential.findFirst({
+      where: {
+        userId: user.id,
+        provider: 'discord',
+        service: 'bot'
+      }
+    })
+
+    let credential
+    if (existingCredential) {
+      // Already connected - just return
+      return {
+        id: existingCredential.id,
+        provider: existingCredential.provider,
+        service: existingCredential.service,
+        alreadyConnected: true
+      }
+    } else {
+      // Create new credential record (no token needed - we use shared bot)
+      credential = await prisma.oAuthCredential.create({
+        data: {
+          userId: user.id,
+          provider: 'discord',
+          service: 'bot',
+          accessToken: 'shared-bot', // Placeholder - actual token is in env var
+          notes: notes || 'Discord Bot Connection',
+          accessTokenExpiresAt: null // Bot tokens don't expire
+        }
+      })
+    }
+
+    return {
+      id: credential.id,
+      provider: credential.provider,
+      service: credential.service
+    }
+  })
+}

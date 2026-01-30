@@ -31,8 +31,8 @@ export function ListChannelsForm() {
             />
             <FieldError errors={[fieldState.error]} />
             <p className='text-xs text-muted-foreground mt-1'>
-              Right-click a server in Discord and select "Copy Server ID"
-              (requires Developer Mode enabled)
+              Right-click a server in Discord and select &quot;Copy Server
+              ID&quot; (requires Developer Mode enabled)
             </p>
           </Field>
         )}

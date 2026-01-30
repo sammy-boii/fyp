@@ -21,18 +21,22 @@ export const CREDENTIALS_OPTIONS = [
     id: 'gmail',
     name: 'Gmail',
     icon: gmailIcon,
-    url: `${BACKEND_URL}/api/gmail/oauth`
+    url: `${BACKEND_URL}/api/gmail/oauth`,
+    type: 'oauth' as const
   },
   {
     id: 'google-drive',
     name: 'Google Drive',
     icon: googleDriveIcon,
-    url: `${BACKEND_URL}/api/google-drive/oauth`
+    url: `${BACKEND_URL}/api/google-drive/oauth`,
+    type: 'oauth' as const
   },
   {
     id: 'discord',
     name: 'Discord',
     icon: discordIcon,
-    url: `${BACKEND_URL}/api/discord/oauth`
+    url: '', // No OAuth URL - uses shared bot
+    type: 'bot-invite' as const,
+    description: 'Add our bot to your server'
   }
 ]

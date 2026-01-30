@@ -80,6 +80,7 @@ function WorkflowViewPageInner() {
   const [workflowDescription, setWorkflowDescription] = useState('')
   const [, setExecutingNodeId] = useState<string | null>(null)
   const [isExecuting, setIsExecuting] = useState(false)
+  const [isExecutingNode, setIsExecutingNode] = useState(false)
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const hasInitialized = useRef(false)
   const initialStateRef = useRef<{
@@ -346,8 +347,14 @@ function WorkflowViewPageInner() {
   }
 
   const handleExecuteWorkflow = useCallback(async () => {
-    // Prevent double execution
-    if (!workflowId || executeWorkflow.isPending || isExecuting) return
+    // Prevent double execution or execution during node execution
+    if (
+      !workflowId ||
+      executeWorkflow.isPending ||
+      isExecuting ||
+      isExecutingNode
+    )
+      return
 
     setIsExecuting(true)
     try {
@@ -394,6 +401,7 @@ function WorkflowViewPageInner() {
     nodes,
     edges,
     isExecuting,
+    isExecutingNode,
     getNodesHash,
     getEdgesHash
   ])
@@ -466,6 +474,9 @@ function WorkflowViewPageInner() {
       initialStateRef={initialStateRef}
       getNodesHash={getNodesHash}
       getEdgesHash={getEdgesHash}
+      isExecutingWorkflow={executeWorkflow.isPending || isExecuting}
+      isExecutingNode={isExecutingNode}
+      setIsExecutingNode={setIsExecutingNode}
     >
       <div className='relative flex flex-col h-screen'>
         {/* Top Bar */}

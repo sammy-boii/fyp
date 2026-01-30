@@ -69,13 +69,12 @@ export function GetFileContentForm() {
             <div className='text-xs text-muted-foreground mt-2 space-y-1.5'>
               <p>
                 <span className='font-medium text-foreground'>Auto:</span>{' '}
-                Returns readable text for documents (Docs, Sheets, PDFs) and
-                base64 for images.
+                Returns raw text for documents (Docs, Sheets, PDFs) and base64
+                for images.
               </p>
               <p>
                 <span className='font-medium text-foreground'>Binary:</span>{' '}
-                Returns raw base64 data preserving exact file contents. Use this
-                to copy files with all formatting intact.
+                Returns raw base64 data preserving exact file contents.
               </p>
             </div>
           </Field>

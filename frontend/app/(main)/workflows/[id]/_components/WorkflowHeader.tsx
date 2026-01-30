@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Save, SquarePen, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useWorkflowEditor } from '../_context/WorkflowEditorContext'
 
 interface WorkflowHeaderProps {
   workflowName: string
@@ -25,6 +26,8 @@ export function WorkflowHeader({
   onExecute,
   isExecuting
 }: WorkflowHeaderProps) {
+  const { isAnyOperationPending } = useWorkflowEditor()
+
   return (
     <div className='w-full h-14 bg-sidebar z-10 flex items-center justify-between px-4'>
       <div className='flex items-center gap-2 min-w-0'>
@@ -57,7 +60,7 @@ export function WorkflowHeader({
           className='gap-1.5 px-2 w-24 h-8 text-xs'
           onClick={onExecute}
           isLoading={isExecuting}
-          disabled={isExecuting || !workflowId}
+          disabled={isAnyOperationPending || !workflowId}
         >
           <Play className='h-3.5 w-3.5' />
           Execute
@@ -67,7 +70,7 @@ export function WorkflowHeader({
           className='gap-1.5 w-20 px-2 h-8 text-xs'
           onClick={onSave}
           isLoading={isSaving}
-          disabled={isSaving || !workflowId}
+          disabled={isAnyOperationPending || !workflowId}
         >
           <Save className='h-3.5 w-3.5' />
           Save

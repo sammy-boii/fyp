@@ -1,12 +1,22 @@
 'use client'
 
-import { createContext, useContext, useCallback, useRef, ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useCallback,
+  useRef,
+  ReactNode
+} from 'react'
 import { Node, Edge, useReactFlow } from '@xyflow/react'
 import { useUpdateWorkflow } from '@/hooks/use-workflows'
 
 type WorkflowEditorContextValue = {
   saveIfChanged: () => Promise<void>
   isSaving: boolean
+  isExecutingWorkflow: boolean
+  isExecutingNode: boolean
+  isAnyOperationPending: boolean
+  setIsExecutingNode: (value: boolean) => void
 }
 
 const WorkflowEditorContext = createContext<WorkflowEditorContextValue | null>(
@@ -36,6 +46,9 @@ type WorkflowEditorProviderProps = {
   } | null>
   getNodesHash: (nodes: Node[]) => string
   getEdgesHash: (edges: Edge[]) => string
+  isExecutingWorkflow: boolean
+  isExecutingNode: boolean
+  setIsExecutingNode: (value: boolean) => void
 }
 
 export function WorkflowEditorProvider({
@@ -45,18 +58,25 @@ export function WorkflowEditorProvider({
   workflowDescription,
   initialStateRef,
   getNodesHash,
-  getEdgesHash
+  getEdgesHash,
+  isExecutingWorkflow,
+  isExecutingNode,
+  setIsExecutingNode
 }: WorkflowEditorProviderProps) {
   const { getNodes, getEdges } = useReactFlow()
   const updateWorkflow = useUpdateWorkflow()
   const isSavingRef = useRef(false)
 
+  const isSaving = updateWorkflow.isPending
+  const isAnyOperationPending =
+    isSaving || isExecutingWorkflow || isExecutingNode
+
   const saveIfChanged = useCallback(async () => {
-    if (isSavingRef.current) return
-    
+    if (isSavingRef.current || isExecutingWorkflow) return
+
     const nodes = getNodes()
     const edges = getEdges()
-    
+
     const currentNodesHash = getNodesHash(nodes)
     const currentEdgesHash = getEdgesHash(edges)
     const hasChanges =
@@ -98,14 +118,19 @@ export function WorkflowEditorProvider({
     getNodesHash,
     getEdgesHash,
     initialStateRef,
-    updateWorkflow
+    updateWorkflow,
+    isExecutingWorkflow
   ])
 
   return (
     <WorkflowEditorContext.Provider
       value={{
         saveIfChanged,
-        isSaving: updateWorkflow.isPending
+        isSaving,
+        isExecutingWorkflow,
+        isExecutingNode,
+        isAnyOperationPending,
+        setIsExecutingNode
       }}
     >
       {children}

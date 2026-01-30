@@ -57,7 +57,8 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const params = useParams()
   const workflowId = params?.id ? String(params.id) : null
   const executeNodeMutation = useExecuteNode()
-  const { saveIfChanged } = useWorkflowEditor()
+  const { saveIfChanged, isAnyOperationPending, setIsExecutingNode } =
+    useWorkflowEditor()
 
   const [sheetOpen, setSheetOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -137,31 +138,41 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
       return
     }
 
-    // Auto-save workflow if there are changes before executing
-    await saveIfChanged()
+    // Don't execute if any other operation is pending
+    if (isAnyOperationPending) {
+      return
+    }
 
-    const result = await executeNodeMutation.mutateAsync({
-      workflowId,
-      nodeId: id
-    })
+    setIsExecutingNode(true)
+    try {
+      // Auto-save workflow if there are changes before executing
+      await saveIfChanged()
 
-    // Store the output in the node's data (persisted with workflow)
-    if (result?.data?.output) {
-      setNodes((nds) =>
-        nds.map((n) =>
-          n.id === id
-            ? {
-                ...n,
-                data: {
-                  ...n.data,
-                  lastOutput: result.data.output,
-                  lastExecutedAt: new Date().toISOString()
+      const result = await executeNodeMutation.mutateAsync({
+        workflowId,
+        nodeId: id
+      })
+
+      // Store the output in the node's data (persisted with workflow)
+      if (result?.data?.output) {
+        setNodes((nds) =>
+          nds.map((n) =>
+            n.id === id
+              ? {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    lastOutput: result.data.output,
+                    lastExecutedAt: new Date().toISOString()
+                  }
                 }
-              }
-            : n
+              : n
+          )
         )
-      )
-    } else {
+      } else {
+      }
+    } finally {
+      setIsExecutingNode(false)
     }
   }, [
     workflowId,
@@ -170,7 +181,9 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     executeNodeMutation,
     id,
     setNodes,
-    saveIfChanged
+    saveIfChanged,
+    isAnyOperationPending,
+    setIsExecutingNode
   ])
 
   const handleConfigure = useCallback(() => {
@@ -387,7 +400,10 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
           className='gap-3'
           onClick={handleExecuteNode}
           disabled={
-            !data.actionId || !data.config || executeNodeMutation.isPending
+            !data.actionId ||
+            !data.config ||
+            executeNodeMutation.isPending ||
+            isAnyOperationPending
           }
         >
           {executeNodeMutation.isPending ? (

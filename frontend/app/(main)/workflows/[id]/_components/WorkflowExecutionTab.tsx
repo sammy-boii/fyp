@@ -109,7 +109,8 @@ const WorkflowExecutionTab = ({
       }
     })
 
-    return Array.from(groups.values())
+    // Reverse to show newest executions first
+    return Array.from(groups.values()).reverse()
   }, [executionLogs])
 
   // Convert execution group logs to timeline items

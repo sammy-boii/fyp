@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/select'
 import { Controller, useFormContext } from 'react-hook-form'
 import { DriveItemPicker } from './DriveItemPicker'
+import { Wand2, Binary } from 'lucide-react'
 
 export function GetFileContentForm() {
   const { control } = useFormContext()
@@ -50,8 +51,18 @@ export function GetFileContentForm() {
                 <SelectValue placeholder='Select output format' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='auto'>Auto</SelectItem>
-                <SelectItem value='binary'>Binary (Base64)</SelectItem>
+                <SelectItem value='auto'>
+                  <div className='flex items-center gap-2'>
+                    <Wand2 className='h-3.5 w-3.5' />
+                    <span>Auto</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value='binary'>
+                  <div className='flex items-center gap-2'>
+                    <Binary className='h-3.5 w-3.5' />
+                    <span>Binary (Base64)</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
             <FieldError errors={[fieldState.error]} />

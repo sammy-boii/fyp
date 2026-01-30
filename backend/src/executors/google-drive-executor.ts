@@ -552,7 +552,6 @@ export const executeGetFileContent = async (
           mimeType: effectiveMimeType,
           originalMimeType: mimeType,
           content: dataUrl,
-          base64,
           contentLength: buffer.length,
           outputFormat: 'binary'
         }
@@ -649,7 +648,6 @@ export const executeGetFileContent = async (
           name,
           mimeType,
           content: dataUrl,
-          base64,
           contentLength: buffer.length,
           isImage: true
         }

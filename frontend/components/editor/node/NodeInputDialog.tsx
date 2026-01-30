@@ -294,6 +294,19 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
               {availableInputs.length > 1 ? 's' : ''} with data
             </p>
           </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className='flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors'>
+                <Info className='h-3.5 w-3.5' />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side='bottom' className='max-w-64'>
+              <p className='text-xs'>
+                Click or drag any field to use its placeholder in your
+                configuration.
+              </p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {availableInputs.map((source) => {
@@ -396,24 +409,6 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
             </Collapsible>
           )
         })}
-
-        {/* Tip */}
-        <div className='flex items-center justify-end gap-1.5 text-muted-foreground'>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button className='flex items-center gap-1 text-[10px] hover:text-foreground transition-colors'>
-                <Info className='h-3 w-3' />
-                <span>How to use</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side='bottom' className='max-w-64'>
-              <p className='text-xs'>
-                Click or drag any field to use its placeholder in your
-                configuration.
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
       </div>
     </ScrollArea>
   )

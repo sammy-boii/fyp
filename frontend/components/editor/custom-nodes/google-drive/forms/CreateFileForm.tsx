@@ -167,15 +167,15 @@ export function CreateFileForm() {
                   </TooltipTrigger>
                   <TooltipContent side='top' className='max-w-[250px]'>
                     <p>
-                      Only accepts base64 data. Use Get File Content to get
-                      base64 data.
+                      Only accepts base64 data. <br />
+                      Get File Content can return base64 data.
                     </p>
                   </TooltipContent>
                 </Tooltip>
               </FieldLabel>
               <PlaceholderInput
                 type='text'
-                placeholder='{{node_id.data}} or paste base64 data'
+                placeholder='Enter image base64 data'
                 className='h-9 text-sm font-mono'
                 {...field}
                 aria-invalid={fieldState.invalid}
@@ -193,8 +193,19 @@ export function CreateFileForm() {
           control={control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel className='text-xs font-medium'>
+              <FieldLabel className='text-xs font-medium gap-1'>
                 PDF Content
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className='h-3.5 w-3.5 text-muted-foreground cursor-help' />
+                  </TooltipTrigger>
+                  <TooltipContent side='top' className='max-w-[250px]'>
+                    <p>
+                      Accepts raw text or base64. <br />
+                      Get File Content can return base64 data.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
               </FieldLabel>
               <PlaceholderTextarea
                 placeholder='{{node_id.base64}} or enter plain text...'
@@ -203,21 +214,7 @@ export function CreateFileForm() {
                 {...field}
                 aria-invalid={fieldState.invalid}
               />
-              <div className='text-xs text-muted-foreground mt-1.5 space-y-1'>
-                <p>
-                  <span className='font-medium text-foreground'>
-                    Copy existing PDF:
-                  </span>{' '}
-                  Use Get File Content with Binary format, then pass the base64
-                  data here.
-                </p>
-                <p>
-                  <span className='font-medium text-foreground'>
-                    Create new PDF:
-                  </span>{' '}
-                  Enter plain text and it will be converted to a PDF.
-                </p>
-              </div>
+
               <FieldError errors={[fieldState.error]} />
             </Field>
           )}

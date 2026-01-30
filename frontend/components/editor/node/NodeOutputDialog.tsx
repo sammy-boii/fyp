@@ -246,35 +246,17 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
             <Database className='h-4 w-4 text-muted-foreground' />
           </div>
           <div className='flex-1 min-w-0'>
-            {parsedOutput.summary && (
-              <p className='text-sm font-medium text-foreground truncate'>
-                {parsedOutput.summary}
-              </p>
-            )}
+            <p className='text-sm font-medium text-foreground truncate'>
+              {parsedOutput.summary || 'Execution Result'}
+            </p>
             <p className='text-[10px] text-muted-foreground'>
               Last executed: {output.executedAt.toLocaleTimeString()}
             </p>
           </div>
-        </div>
-
-        {/* Output fields */}
-        <div className='space-y-0.5 rounded-lg border border-border/50 p-2 bg-card/50'>
-          {parsedOutput.fields.map((field) => (
-            <OutputField
-              key={field.path}
-              field={field}
-              nodeId={output.nodeId}
-            />
-          ))}
-        </div>
-
-        {/* Tip */}
-        <div className='flex items-center justify-end gap-1.5 text-muted-foreground'>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button className='flex items-center gap-1 text-[10px] hover:text-foreground transition-colors'>
-                <Info className='h-3 w-3' />
-                <span>How to use</span>
+              <button className='flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors'>
+                <Info className='h-3.5 w-3.5' />
               </button>
             </TooltipTrigger>
             <TooltipContent side='bottom' className='max-w-64'>
@@ -287,6 +269,17 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
               </p>
             </TooltipContent>
           </Tooltip>
+        </div>
+
+        {/* Output fields */}
+        <div className='space-y-0.5 rounded-lg border border-border/50 p-2 bg-card/50'>
+          {parsedOutput.fields.map((field) => (
+            <OutputField
+              key={field.path}
+              field={field}
+              nodeId={output.nodeId}
+            />
+          ))}
         </div>
       </div>
     </ScrollArea>

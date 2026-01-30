@@ -1,5 +1,6 @@
 import type { Node, Edge, XYPosition } from '@xyflow/react'
 import { NODE_TYPES } from '@/constants'
+import { ValueOf } from '@/types/index.types'
 
 /**
  * Default edge styling constants used throughout the application
@@ -72,7 +73,7 @@ export function createEdge(
  * Creates a new node with the specified type and position
  */
 export function createNode(
-  nodeType: typeof NODE_TYPES.GOOGLE_DRIVE | typeof NODE_TYPES.GMAIL,
+  nodeType: ValueOf<typeof NODE_TYPES>,
   position: XYPosition,
   options?: {
     id?: string

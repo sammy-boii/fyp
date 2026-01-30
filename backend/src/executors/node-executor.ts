@@ -9,6 +9,13 @@ import {
   executeDeleteFile,
   executeGetFileContent
 } from './google-drive-executor'
+import {
+  executeSendChannelMessage,
+  executeSendDM,
+  executeListGuilds,
+  executeListChannels,
+  executeCreateChannel
+} from './discord-executor'
 
 export const executeNodeLogic = async (
   node: TWorkflowNode,
@@ -52,6 +59,27 @@ export const executeNodeLogic = async (
 
     case NODE_ACTION_ID.GET_FILE_CONTENT:
       result = await executeGetFileContent(config)
+      break
+
+    // Discord actions
+    case NODE_ACTION_ID.DISCORD_SEND_CHANNEL_MESSAGE:
+      result = await executeSendChannelMessage(config)
+      break
+
+    case NODE_ACTION_ID.DISCORD_SEND_DM:
+      result = await executeSendDM(config)
+      break
+
+    case NODE_ACTION_ID.DISCORD_LIST_GUILDS:
+      result = await executeListGuilds(config)
+      break
+
+    case NODE_ACTION_ID.DISCORD_LIST_CHANNELS:
+      result = await executeListChannels(config)
+      break
+
+    case NODE_ACTION_ID.DISCORD_CREATE_CHANNEL:
+      result = await executeCreateChannel(config)
       break
 
     default:

@@ -26,7 +26,6 @@ export function useUpdateProfile() {
 export function useGetDashboardStats() {
   return useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: getDashboardStats,
-    staleTime: 1000 * 60 * 5 // 5 minutes
+    queryFn: getDashboardStats
   })
 }

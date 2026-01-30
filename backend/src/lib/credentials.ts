@@ -185,3 +185,27 @@ export async function getValidGoogleDriveAccessTokenByCredentialId(
   return await validateAndRefreshToken(credential)
 }
 
+/**
+ * Get Discord bot token from credential
+ * Discord bot tokens don't expire, so we just need to decrypt and return
+ */
+export async function getDiscordBotToken(
+  credentialId: string
+): Promise<string> {
+  const credential = await prisma.oAuthCredential.findUnique({
+    where: { id: credentialId }
+  })
+
+  if (!credential) {
+    throw new Error('Discord credential not found')
+  }
+
+  if (credential.provider !== 'discord') {
+    throw new Error('Invalid credential type - expected Discord credential')
+  }
+
+  // Discord bot tokens are stored in accessToken field
+  const { decryptToken } = await import('./crypto')
+  const decryptedToken = decryptToken(credential.accessToken)
+  return decryptedToken
+}

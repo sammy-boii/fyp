@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select'
 import { NodeAction } from '@/types/node.types'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Save, Loader2 } from 'lucide-react'
+import { Save, Loader2, Plus } from 'lucide-react'
 import { Controller, useForm, FormProvider } from 'react-hook-form'
 import z from 'zod'
 import { useGetCredentials } from '@/hooks/use-credentials'
@@ -19,6 +19,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { CREDENTIALS_OPTIONS } from '@/constants'
+import Link from 'next/link'
 
 function ProviderIcon({ provider }: { provider: string }) {
   const base = provider.toLowerCase()
@@ -177,9 +178,6 @@ export const BaseConfigurationForm = ({
                               </SelectItem>
                             ) : (
                               credentials.map((cred: any) => {
-                                const meta = CREDENTIALS_OPTIONS.find(
-                                  (option) => option.id === cred.provider
-                                )
                                 return (
                                   <SelectItem
                                     key={cred.id}
@@ -209,6 +207,13 @@ export const BaseConfigurationForm = ({
                                 )
                               })
                             )}
+                            <Separator className='my-1' />
+                            <Link href='/credentials' className='block'>
+                              <div className='flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-sm cursor-pointer transition-colors'>
+                                <Plus className='h-4 w-4' />
+                                <span>Add Credential</span>
+                              </div>
+                            </Link>
                           </SelectContent>
                         </Select>
                         <FieldError errors={[fieldState.error]} />

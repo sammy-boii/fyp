@@ -50,6 +50,7 @@ import {
 } from '@/lib/react-flow-utils'
 import { AddNodeSheetContent } from '@/app/(main)/workflows/[id]/_components/AddNodeSheet'
 import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
+import { ValueOf } from '@/types/index.types'
 
 export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const node = NODE_DEFINITIONS[data.type]
@@ -102,9 +103,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     state.edges.some((e) => e.source === id)
   )
 
-  const addNode = (
-    nodeType: typeof NODE_TYPES.GOOGLE_DRIVE | typeof NODE_TYPES.GMAIL
-  ) => {
+  const addNode = (nodeType: ValueOf<typeof NODE_TYPES>) => {
     const nodes = getNodes()
     const edges = getEdges()
     const currentNode = nodes.find((n) => n.id === id)

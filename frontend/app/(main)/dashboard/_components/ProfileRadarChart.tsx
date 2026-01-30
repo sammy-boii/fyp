@@ -1,6 +1,6 @@
 'use client'
 
-import { TrendingUp } from 'lucide-react'
+import { Activity } from 'lucide-react'
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from 'recharts'
 
 import {
@@ -17,61 +17,95 @@ import {
   ChartTooltip,
   ChartTooltipContent
 } from '@/components/ui/chart'
-
-export const description = 'A radar chart with dots'
-
-const chartData = [
-  { month: 'January', desktop: 186 },
-  { month: 'February', desktop: 305 },
-  { month: 'March', desktop: 237 },
-  { month: 'April', desktop: 273 },
-  { month: 'May', desktop: 209 },
-  { month: 'June', desktop: 214 }
-]
+import { useGetDashboardStats } from '@/hooks/use-user'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useMemo } from 'react'
 
 const chartConfig = {
-  desktop: {
-    label: 'Desktop',
+  count: {
+    label: 'Usage',
     color: 'var(--color-chart-4)'
   }
 } satisfies ChartConfig
 
 export function ProfileRadarChart() {
+  const { data, isLoading } = useGetDashboardStats()
+
+  const chartData = useMemo(() => {
+    if (!data?.data?.actionUsageData) return []
+    return data.data.actionUsageData
+  }, [data])
+
+  const totalActions = useMemo(() => {
+    return chartData.reduce((sum, item) => sum + item.count, 0)
+  }, [chartData])
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className='items-center'>
+          <CardTitle className='flex items-center gap-2'>
+            <Activity className='h-4 w-4 text-muted-foreground' />
+            Action Usage
+          </CardTitle>
+          <CardDescription>Loading action data...</CardDescription>
+        </CardHeader>
+        <CardContent className='pb-0'>
+          <Skeleton className='mx-auto aspect-square max-h-[250px] w-full' />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader className='items-center'>
-        <CardTitle>Radar Chart - Dots</CardTitle>
+        <CardTitle className='flex items-center gap-2'>
+          <Activity className='h-4 w-4 text-muted-foreground' />
+          Action Usage
+        </CardTitle>
         <CardDescription>
-          Showing total visitors for the last 6 months
+          {totalActions > 0
+            ? 'Most used actions in your workflows'
+            : 'No action data available'}
         </CardDescription>
       </CardHeader>
       <CardContent className='pb-0'>
-        <ChartContainer
-          config={chartConfig}
-          className='mx-auto aspect-square max-h-[250px]'
-        >
-          <RadarChart data={chartData}>
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <PolarAngleAxis dataKey='month' />
-            <PolarGrid />
-            <Radar
-              dataKey='desktop'
-              fill='var(--color-desktop)'
-              fillOpacity={0.6}
-              dot={{
-                r: 4,
-                fillOpacity: 1
-              }}
-            />
-          </RadarChart>
-        </ChartContainer>
+        {chartData.length === 0 ? (
+          <div className='flex aspect-square max-h-[250px] items-center justify-center text-muted-foreground'>
+            <p>Run workflows to see action usage</p>
+          </div>
+        ) : (
+          <ChartContainer
+            config={chartConfig}
+            className='mx-auto aspect-square max-h-[280px]'
+          >
+            <RadarChart data={chartData} cx='50%' cy='50%' outerRadius='65%'>
+              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+              <PolarAngleAxis
+                dataKey='action'
+                tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+              />
+              <PolarGrid />
+              <Radar
+                dataKey='count'
+                fill='var(--color-count)'
+                fillOpacity={0.6}
+                dot={{
+                  r: 4,
+                  fillOpacity: 1
+                }}
+              />
+            </RadarChart>
+          </ChartContainer>
+        )}
       </CardContent>
       <CardFooter className='flex-col gap-2 text-sm'>
         <div className='flex items-center gap-2 leading-none font-medium'>
-          Trending up by 5.2% this month <TrendingUp className='h-4 w-4' />
+          {totalActions} total actions executed
         </div>
         <div className='text-muted-foreground flex items-center gap-2 leading-none'>
-          January - June 2024
+          Last 90 days
         </div>
       </CardFooter>
     </Card>

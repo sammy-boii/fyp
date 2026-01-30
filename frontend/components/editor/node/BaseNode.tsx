@@ -49,6 +49,7 @@ import {
   calculateNewNodePosition
 } from '@/lib/react-flow-utils'
 import { AddNodeSheetContent } from '@/app/(main)/workflows/[id]/_components/AddNodeSheet'
+import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 
 export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const node = NODE_DEFINITIONS[data.type]
@@ -56,6 +57,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const params = useParams()
   const workflowId = params?.id ? String(params.id) : null
   const executeNodeMutation = useExecuteNode()
+  const { saveIfChanged } = useWorkflowEditor()
 
   const [sheetOpen, setSheetOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -135,6 +137,9 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
       return
     }
 
+    // Auto-save workflow if there are changes before executing
+    await saveIfChanged()
+
     const result = await executeNodeMutation.mutateAsync({
       workflowId,
       nodeId: id
@@ -164,7 +169,8 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     data.config,
     executeNodeMutation,
     id,
-    setNodes
+    setNodes,
+    saveIfChanged
   ])
 
   const handleConfigure = useCallback(() => {

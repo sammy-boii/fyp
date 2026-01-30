@@ -1,6 +1,6 @@
 'use client'
 
-import { TrendingUp } from 'lucide-react'
+import { CheckCircle2, XCircle } from 'lucide-react'
 
 import {
   Card,
@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/card'
 import { ChartConfig, ChartContainer } from '@/components/ui/chart'
 import * as Recharts from 'recharts'
-
-// to avoid module not found err
+import { useGetDashboardStats } from '@/hooks/use-user'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useMemo } from 'react'
 
 type RechartsComponents = {
   RadialBarChart: React.ComponentType<any>
@@ -26,28 +27,65 @@ type RechartsComponents = {
 const { RadialBarChart, PolarGrid, RadialBar, PolarRadiusAxis, Label } =
   Recharts as unknown as RechartsComponents
 
-export const description = 'A radial chart with a custom shape'
-
-const chartData = [
-  { browser: 'safari', visitors: 1260, fill: 'var(--color-safari)' }
-]
-
 const chartConfig = {
-  visitors: {
-    label: 'Visitors'
+  rate: {
+    label: 'Success Rate'
   },
-  safari: {
-    label: 'Safari',
-    color: 'var(--chart-4)'
+  success: {
+    label: 'Success',
+    color: 'var(--chart-2)'
   }
 } satisfies ChartConfig
 
 export function ProfileRadialChart() {
+  const { data, isLoading } = useGetDashboardStats()
+
+  const successData = useMemo(() => {
+    if (!data?.data?.successRate) {
+      return { rate: 0, total: 0, completed: 0, failed: 0 }
+    }
+    return data.data.successRate
+  }, [data])
+
+  const chartData = useMemo(() => {
+    return [
+      { name: 'success', rate: successData.rate, fill: 'var(--color-success)' }
+    ]
+  }, [successData])
+
+  // Calculate end angle based on success rate (0-100 maps to 0-360)
+  const endAngle = (successData.rate / 100) * 360
+
+  if (isLoading) {
+    return (
+      <Card className='flex flex-col'>
+        <CardHeader className='items-center pb-0'>
+          <CardTitle>Success Rate</CardTitle>
+          <CardDescription>Loading...</CardDescription>
+        </CardHeader>
+        <CardContent className='flex-1 pb-0'>
+          <Skeleton className='mx-auto aspect-square max-h-[250px] w-full' />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className='flex flex-col'>
       <CardHeader className='items-center pb-0'>
-        <CardTitle>Radial Chart - Shape</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardTitle className='flex items-center gap-2'>
+          {successData.rate >= 50 ? (
+            <CheckCircle2 className='h-4 w-4 text-green-500' />
+          ) : (
+            <XCircle className='h-4 w-4 text-red-500' />
+          )}
+          Success Rate
+        </CardTitle>
+        <CardDescription>
+          {successData.total > 0
+            ? 'Workflow execution success rate'
+            : 'No executions yet'}
+        </CardDescription>
       </CardHeader>
       <CardContent className='flex-1 pb-0'>
         <ChartContainer
@@ -56,7 +94,8 @@ export function ProfileRadialChart() {
         >
           <RadialBarChart
             data={chartData}
-            endAngle={100}
+            startAngle={0}
+            endAngle={endAngle}
             innerRadius={80}
             outerRadius={140}
           >
@@ -67,7 +106,7 @@ export function ProfileRadialChart() {
               className='first:fill-muted last:fill-background'
               polarRadius={[86, 74]}
             />
-            <RadialBar dataKey='visitors' background />
+            <RadialBar dataKey='rate' background cornerRadius={10} />
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
                 content={({ viewBox }: { viewBox: any }) => {
@@ -84,14 +123,14 @@ export function ProfileRadialChart() {
                           y={viewBox.cy}
                           className='fill-foreground text-4xl font-bold'
                         >
-                          {chartData[0].visitors.toLocaleString()}
+                          {successData.rate}%
                         </tspan>
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 24}
                           className='fill-muted-foreground'
                         >
-                          Visitors
+                          Success
                         </tspan>
                       </text>
                     )
@@ -103,11 +142,18 @@ export function ProfileRadialChart() {
         </ChartContainer>
       </CardContent>
       <CardFooter className='flex-col gap-2 text-sm'>
-        <div className='flex items-center gap-2 leading-none font-medium'>
-          Trending up by 5.2% this month <TrendingUp className='h-4 w-4' />
+        <div className='flex items-center gap-4 leading-none font-medium'>
+          <span className='flex items-center gap-1 text-green-600'>
+            <CheckCircle2 className='h-3.5 w-3.5' />
+            {successData.completed} completed
+          </span>
+          <span className='flex items-center gap-1 text-red-600'>
+            <XCircle className='h-3.5 w-3.5' />
+            {successData.failed} failed
+          </span>
         </div>
         <div className='text-muted-foreground leading-none'>
-          Showing total visitors for the last 6 months
+          {successData.total} total executions (last 90 days)
         </div>
       </CardFooter>
     </Card>

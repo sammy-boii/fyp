@@ -37,6 +37,8 @@ model Workflow {
   nodes       Json
   edges       Json
 
+  isActive Boolean @default(false)
+
   executions WorkflowExecution[]
 
   schedule String? // cron expression
@@ -46,6 +48,7 @@ model Workflow {
   lastExecutedAt DateTime?
 
   @@index([authorId])
+  @@index([isActive, schedule])
 }
 
 model WorkflowExecution {

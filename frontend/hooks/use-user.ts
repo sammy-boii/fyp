@@ -1,4 +1,8 @@
-import { getProfile, updateProfile } from '@/actions/user.actions'
+import {
+  getDashboardStats,
+  getProfile,
+  updateProfile
+} from '@/actions/user.actions'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 export function useGetProfile() {
@@ -16,5 +20,13 @@ export function useUpdateProfile() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile'] })
     }
+  })
+}
+
+export function useGetDashboardStats() {
+  return useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: getDashboardStats,
+    staleTime: 1000 * 60 * 5 // 5 minutes
   })
 }

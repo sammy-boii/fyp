@@ -51,6 +51,7 @@ import { NODE_TYPES } from '@/constants'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
 import WorkflowExecutionTab from './_components/WorkflowExecutionTab'
 import { useWorkflowWebSocket } from '@/hooks/use-workflow-websocket'
+import { WorkflowEditorProvider } from './_context/WorkflowEditorContext'
 
 export default function WorkflowViewPage() {
   return (
@@ -458,88 +459,97 @@ function WorkflowViewPageInner() {
   }
 
   return (
-    <div className='relative flex flex-col h-screen'>
-      {/* Top Bar */}
-      <WorkflowHeader
-        workflowName={workflowName}
-        workflowDescription={workflowDescription}
-        onBack={() => router.push('/workflows')}
-        onEdit={() => setEditDialogOpen(true)}
-        onSave={handleSaveWorkflow}
-        isSaving={updateWorkflow.isPending}
-        workflowId={workflowId}
-        onExecute={handleExecuteWorkflow}
-        isExecuting={executeWorkflow.isPending || isExecuting}
-      />
+    <WorkflowEditorProvider
+      workflowId={workflowId!}
+      workflowName={workflowName}
+      workflowDescription={workflowDescription}
+      initialStateRef={initialStateRef}
+      getNodesHash={getNodesHash}
+      getEdgesHash={getEdgesHash}
+    >
+      <div className='relative flex flex-col h-screen'>
+        {/* Top Bar */}
+        <WorkflowHeader
+          workflowName={workflowName}
+          workflowDescription={workflowDescription}
+          onBack={() => router.push('/workflows')}
+          onEdit={() => setEditDialogOpen(true)}
+          onSave={handleSaveWorkflow}
+          isSaving={updateWorkflow.isPending}
+          workflowId={workflowId}
+          onExecute={handleExecuteWorkflow}
+          isExecuting={executeWorkflow.isPending || isExecuting}
+        />
 
-      {/* Edit Workflow Dialog */}
-      <EditWorkflowDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        workflowName={workflowName}
-        workflowDescription={workflowDescription}
-        workflowId={workflowId}
-      />
+        {/* Edit Workflow Dialog */}
+        <EditWorkflowDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          workflowName={workflowName}
+          workflowDescription={workflowDescription}
+          workflowId={workflowId}
+        />
 
-      <Tabs defaultValue='editor'>
-        <TabsList className='absolute left-1/2 top-8 -translate-x-1/2 z-10'>
-          <TabsTrigger value='editor'>Editor</TabsTrigger>
-          <TabsTrigger value='executions'>Executions</TabsTrigger>
-        </TabsList>
-        <TabsContent value='editor' className='flex-1'>
-          <div
-            className='w-full h-[90vh] relative flex flex-col'
-            ref={reactFlowWrapper}
-          >
-            {/* Top Right Add Nodes Plus Button */}
-            <div className='absolute right-4 top-6 z-10'>
-              <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant='default'
-                    size='lg'
-                    className='rounded-lg size-10'
-                  >
-                    <Plus className='size-5' />
-                  </Button>
-                </SheetTrigger>
-                <AddNodeSheetContent
-                  onOpenChange={setSheetOpen}
-                  onAddNode={addNode}
-                />
-              </Sheet>
-            </div>
-
-            <ReactFlow
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              isValidConnection={isValidConnection}
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={nodeTypes}
-              edgeTypes={edgeTypes}
-              className='bg-background'
-              connectionLineType={ConnectionLineType.Bezier}
-              defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
-              fitView
-              nodesDraggable={true}
-              nodesConnectable={true}
-              elementsSelectable={true}
+        <Tabs defaultValue='editor'>
+          <TabsList className='absolute left-1/2 top-8 -translate-x-1/2 z-10'>
+            <TabsTrigger value='editor'>Editor</TabsTrigger>
+            <TabsTrigger value='executions'>Executions</TabsTrigger>
+          </TabsList>
+          <TabsContent value='editor' className='flex-1'>
+            <div
+              className='w-full h-[90vh] relative flex flex-col'
+              ref={reactFlowWrapper}
             >
-              <Background gap={40} />
-            </ReactFlow>
-          </div>
-        </TabsContent>
-        <TabsContent value='executions' className='flex-1'>
-          <WorkflowExecutionTab
-            isConnected={isConnected}
-            executionLogs={executionLogs}
-            currentExecution={currentExecution}
-            clearLogs={clearLogs}
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
+              {/* Top Right Add Nodes Plus Button */}
+              <div className='absolute right-4 top-6 z-10'>
+                <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant='default'
+                      size='lg'
+                      className='rounded-lg size-10'
+                    >
+                      <Plus className='size-5' />
+                    </Button>
+                  </SheetTrigger>
+                  <AddNodeSheetContent
+                    onOpenChange={setSheetOpen}
+                    onAddNode={addNode}
+                  />
+                </Sheet>
+              </div>
+
+              <ReactFlow
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                isValidConnection={isValidConnection}
+                nodes={nodes}
+                edges={edges}
+                nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
+                className='bg-background'
+                connectionLineType={ConnectionLineType.Bezier}
+                defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
+                fitView
+                nodesDraggable={true}
+                nodesConnectable={true}
+                elementsSelectable={true}
+              >
+                <Background gap={40} />
+              </ReactFlow>
+            </div>
+          </TabsContent>
+          <TabsContent value='executions' className='flex-1'>
+            <WorkflowExecutionTab
+              isConnected={isConnected}
+              executionLogs={executionLogs}
+              currentExecution={currentExecution}
+              clearLogs={clearLogs}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </WorkflowEditorProvider>
   )
 }

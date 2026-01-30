@@ -133,3 +133,136 @@ export async function resetPassword(data: TResetPasswordForm) {
     })
   })
 }
+
+export async function getDashboardStats() {
+  return tryCatch(async () => {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    // Get date range for the last 90 days
+    const now = new Date()
+    const ninetyDaysAgo = new Date(now)
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+
+    // Fetch all executions for the user's workflows in the last 90 days
+    const executions = await prisma.workflowExecution.findMany({
+      where: {
+        workflow: {
+          authorId: user.id
+        },
+        createdAt: {
+          gte: ninetyDaysAgo
+        }
+      },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        nodeExecutions: {
+          select: {
+            actionId: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    // Group executions by date for area chart
+    const executionsByDate: Record<
+      string,
+      { completed: number; failed: number }
+    > = {}
+
+    // Initialize all dates in range with zeros
+    for (
+      let d = new Date(ninetyDaysAgo);
+      d <= now;
+      d.setDate(d.getDate() + 1)
+    ) {
+      const dateKey = d.toISOString().split('T')[0]
+      executionsByDate[dateKey] = { completed: 0, failed: 0 }
+    }
+
+    // Count action usage for radar chart
+    const actionUsage: Record<string, number> = {}
+
+    // Process executions
+    let totalCompleted = 0
+    let totalFailed = 0
+
+    for (const execution of executions) {
+      const dateKey = execution.createdAt.toISOString().split('T')[0]
+
+      if (execution.status === 'COMPLETED') {
+        executionsByDate[dateKey].completed++
+        totalCompleted++
+      } else if (execution.status === 'FAILED') {
+        executionsByDate[dateKey].failed++
+        totalFailed++
+      }
+
+      // Count action usage
+      for (const nodeExec of execution.nodeExecutions) {
+        const actionId = nodeExec.actionId
+        actionUsage[actionId] = (actionUsage[actionId] || 0) + 1
+      }
+    }
+
+    // Format data for area chart
+    const executionsOverTime = Object.entries(executionsByDate).map(
+      ([date, counts]) => ({
+        date,
+        completed: counts.completed,
+        failed: counts.failed
+      })
+    )
+
+    // Format data for radar chart (top 6 actions)
+    const sortedActions = Object.entries(actionUsage)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+
+    const actionUsageData = sortedActions.map(([actionId, count]) => ({
+      action: formatActionId(actionId),
+      count
+    }))
+
+    // Calculate success rate for radial chart
+    const totalExecutions = totalCompleted + totalFailed
+    const successRate =
+      totalExecutions > 0
+        ? Math.round((totalCompleted / totalExecutions) * 100)
+        : 0
+
+    return {
+      executionsOverTime,
+      actionUsageData,
+      successRate: {
+        rate: successRate,
+        total: totalExecutions,
+        completed: totalCompleted,
+        failed: totalFailed
+      }
+    }
+  })
+}
+
+// Helper to format action IDs into readable labels
+function formatActionId(actionId: string): string {
+  const actionLabels: Record<string, string> = {
+    send_email: 'Send Email',
+    read_email: 'Read Email',
+    create_file: 'Create File',
+    delete_file: 'Delete File',
+    list_files: 'List Files',
+    get_file_content: 'Get Content',
+    create_folder: 'Create Folder',
+    delete_folder: 'Delete Folder'
+  }
+  return actionLabels[actionId] || actionId.replace(/_/g, ' ')
+}

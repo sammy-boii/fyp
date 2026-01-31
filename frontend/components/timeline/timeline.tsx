@@ -127,7 +127,6 @@ const TimelineItem = React.forwardRef<HTMLLIElement, TimelineItemProps>(
       icon,
       iconColor,
       status = 'completed',
-      connectorColor: _connectorColor, // Destructure but don't use - prevents DOM prop warning
       showConnector = true,
       iconsize,
       loading,

@@ -11,7 +11,7 @@ type props = {
 }
 
 export const AnimatedThemeToggler = ({ className }: props) => {
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const buttonRef = useRef<HTMLButtonElement | null>(null)
 

@@ -20,7 +20,7 @@ export type NodeInputSource = {
   nodeId: string
   nodeType: string
   nodeLabel?: string
-  actionId?: string
+  actionId?: TActionID
   variables: NodeVariable[]
   rawOutput?: Record<string, any>
 }
@@ -113,7 +113,7 @@ export const getAvailableInputsFromNodes = (
     id: string
     data: {
       type: string
-      actionId?: string
+      actionId?: TActionID
       lastOutput?: Record<string, any>
     }
   }>

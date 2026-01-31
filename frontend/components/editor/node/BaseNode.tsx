@@ -51,6 +51,7 @@ import {
 import { AddNodeSheetContent } from '@/app/(main)/workflows/[id]/_components/AddNodeSheet'
 import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 import { ValueOf } from '@/types/index.types'
+import { TActionID } from '@shared/constants'
 
 export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   const node = NODE_DEFINITIONS[data.type]
@@ -75,7 +76,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
         id: n.id,
         data: {
           type: n.data.type as string,
-          actionId: n.data.actionId as string | undefined,
+          actionId: n.data.actionId as TActionID | undefined,
           lastOutput: n.data.lastOutput as Record<string, any> | undefined
         }
       }))
@@ -88,7 +89,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     if (currentNode?.data?.lastOutput) {
       return {
         nodeId: id,
-        actionId: (currentNode.data.actionId as string) || '',
+        actionId: (currentNode.data.actionId as TActionID) || '',
         output: currentNode.data.lastOutput as Record<string, any>,
         executedAt: currentNode.data.lastExecutedAt
           ? new Date(currentNode.data.lastExecutedAt as string)
@@ -201,7 +202,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   }, [id, setNodes, setEdges])
 
   const handleSaveConfig = useCallback(
-    (configData: { nodeId: string; actionId: string; config: any }) => {
+    (configData: { nodeId: string; actionId: TActionID; config: any }) => {
       // Update the node data with the configuration
       setNodes((nds) =>
         nds.map((node) =>

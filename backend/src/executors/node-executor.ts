@@ -28,57 +28,57 @@ export const executeNodeLogic = async (
 
   switch (actionId) {
     // Gmail actions
-    case NODE_ACTION_ID.SEND_EMAIL:
+    case NODE_ACTION_ID.GMAIL.SEND_EMAIL:
       result = await executeSendEmail(config)
       break
 
-    case NODE_ACTION_ID.READ_EMAIL:
+    case NODE_ACTION_ID.GMAIL.READ_EMAIL:
       result = await executeReadEmail(config)
       break
 
     // Google Drive actions
-    case NODE_ACTION_ID.CREATE_FOLDER:
+    case NODE_ACTION_ID['GOOGLE-DRIVE'].CREATE_FOLDER:
       result = await executeCreateFolder(config)
       break
 
-    case NODE_ACTION_ID.CREATE_FILE:
+    case NODE_ACTION_ID['GOOGLE-DRIVE'].CREATE_FILE:
       result = await executeCreateFile(config)
       break
 
-    case NODE_ACTION_ID.DELETE_FOLDER:
+    case NODE_ACTION_ID['GOOGLE-DRIVE'].DELETE_FOLDER:
       result = await executeDeleteFolder(config)
       break
 
-    case NODE_ACTION_ID.LIST_FILES:
+    case NODE_ACTION_ID['GOOGLE-DRIVE'].LIST_FILES:
       result = await executeListFiles(config)
       break
 
-    case NODE_ACTION_ID.DELETE_FILE:
+    case NODE_ACTION_ID['GOOGLE-DRIVE'].DELETE_FILE:
       result = await executeDeleteFile(config)
       break
 
-    case NODE_ACTION_ID.GET_FILE_CONTENT:
+    case NODE_ACTION_ID['GOOGLE-DRIVE'].GET_FILE_CONTENT:
       result = await executeGetFileContent(config)
       break
 
     // Discord actions
-    case NODE_ACTION_ID.DISCORD_SEND_CHANNEL_MESSAGE:
+    case NODE_ACTION_ID.DISCORD.SEND_CHANNEL_MESSAGE:
       result = await executeSendChannelMessage(config)
       break
 
-    case NODE_ACTION_ID.DISCORD_SEND_DM:
+    case NODE_ACTION_ID.DISCORD.SEND_DM:
       result = await executeSendDM(config)
       break
 
-    case NODE_ACTION_ID.DISCORD_LIST_GUILDS:
+    case NODE_ACTION_ID.DISCORD.LIST_GUILDS:
       result = await executeListGuilds(config)
       break
 
-    case NODE_ACTION_ID.DISCORD_LIST_CHANNELS:
+    case NODE_ACTION_ID.DISCORD.LIST_CHANNELS:
       result = await executeListChannels(config)
       break
 
-    case NODE_ACTION_ID.DISCORD_CREATE_CHANNEL:
+    case NODE_ACTION_ID.DISCORD.CREATE_CHANNEL:
       result = await executeCreateChannel(config)
       break
 

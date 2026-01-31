@@ -1,9 +1,11 @@
 'use client'
 
+import { TActionID } from '@shared/constants'
+
 // Types for node execution data stored in node.data
 export type NodeOutputData = {
   nodeId: string
-  actionId: string
+  actionId: TActionID
   output: Record<string, any>
   executedAt: Date
 }

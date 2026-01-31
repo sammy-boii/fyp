@@ -1,8 +1,10 @@
+import { TActionID } from '@shared/constants'
+
 export type TWorkflowNode = {
   id: string
   type: string
   data: {
-    actionId: string
+    actionId: TActionID
     config?: Record<string, any>
     [key: string]: any
   }

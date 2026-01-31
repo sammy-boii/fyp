@@ -52,7 +52,7 @@ export const CREDENTIALS_OPTIONS = [
     id: 'bot',
     name: 'Discord',
     icon: discordIcon,
-    url: 'https://discord.com/oauth2/authorize?client_id=1466759269763514513&permissions=0&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A5000%2Fapi%2Fdiscord%2Foauth&integration_type=0&scope=email+bot',
+    url: 'https://discord.com/oauth2/authorize?client_id=1466759269763514513&permissions=8&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A5000%2Fapi%2Fdiscord%2Foauth&integration_type=0&scope=email+bot',
     description: 'Add a bot to a server to manage interactions'
   }
 ]

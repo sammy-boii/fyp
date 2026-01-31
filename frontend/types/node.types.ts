@@ -1,5 +1,4 @@
-import { NODE_ACTION_ID } from './../../shared/src/constants'
-import { BaseNode } from '@/components/editor/node/BaseNode'
+import { TActionID } from '@shared/constants'
 import { NODE_TYPES } from '@/constants'
 import type { Node } from '@xyflow/react'
 import { LucideIcon } from 'lucide-react'
@@ -34,7 +33,7 @@ export type SingleNodeDefinition = {
 
 export type BaseNodeProps = Node<{
   type: ValueOf<typeof NODE_TYPES>
-  actionId: ValueOf<typeof NODE_ACTION_ID>
+  actionId: TActionID
   config?: any
   lastOutput?: Record<string, any>
   lastExecutedAt?: string

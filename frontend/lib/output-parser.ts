@@ -1,6 +1,6 @@
 'use client'
 
-import { NODE_ACTION_ID } from '@shared/constants'
+import { TActionID } from '@shared/constants'
 
 // Types for parsed output data
 export type ParsedOutputField = {
@@ -23,7 +23,7 @@ export type ParsedOutputField = {
 }
 
 export type ParsedOutput = {
-  actionId: string
+  actionId: TActionID
   fields: ParsedOutputField[]
   summary?: string
 }
@@ -165,212 +165,16 @@ const parseObjectToFields = (
 }
 
 /**
- * Parse READ_EMAIL action output
- */
-const parseReadEmailOutput = (output: Record<string, any>): ParsedOutput => {
-  const fields: ParsedOutputField[] = []
-  const rawEmails = output.emails
-  const emails = Array.isArray(rawEmails) ? rawEmails : []
-  const count = output.count || emails.length || 0
-  const query = output.query || ''
-
-  // Add count field
-  fields.push({
-    key: 'count',
-    label: 'Email Count',
-    value: count,
-    path: 'count',
-    type: 'number',
-    isExpandable: false,
-    description: 'Total number of emails returned'
-  })
-
-  // Add query field
-  fields.push({
-    key: 'query',
-    label: 'Search Query',
-    value: query,
-    path: 'query',
-    type: 'string',
-    isExpandable: false,
-    description: 'The search query used to find emails'
-  })
-
-  // Parse emails array with better structure
-  if (emails.length > 0) {
-    const emailsField: ParsedOutputField = {
-      key: 'emails',
-      label: 'Emails',
-      value: emails,
-      path: 'emails',
-      type: 'array',
-      isExpandable: true,
-      arrayLength: emails.length,
-      children: []
-    }
-
-    // Add each email with its fields
-    emails.forEach((email: any, index: number) => {
-      const emailPath = `emails[${index}]`
-      const emailFields: ParsedOutputField[] = [
-        {
-          key: 'id',
-          label: 'Message ID',
-          value: email.id,
-          path: `${emailPath}.id`,
-          type: 'string',
-          isExpandable: false
-        },
-        {
-          key: 'subject',
-          label: 'Subject',
-          value: email.subject,
-          path: `${emailPath}.subject`,
-          type: 'string',
-          isExpandable: false
-        },
-        {
-          key: 'from',
-          label: 'From',
-          value: email.from,
-          path: `${emailPath}.from`,
-          type: 'string',
-          isExpandable: false
-        },
-        {
-          key: 'to',
-          label: 'To',
-          value: email.to,
-          path: `${emailPath}.to`,
-          type: 'string',
-          isExpandable: false
-        },
-        {
-          key: 'date',
-          label: 'Date',
-          value: email.date,
-          path: `${emailPath}.date`,
-          type: 'string',
-          isExpandable: false
-        },
-        {
-          key: 'snippet',
-          label: 'Snippet',
-          value: email.snippet,
-          path: `${emailPath}.snippet`,
-          type: 'string',
-          isExpandable: false
-        },
-        {
-          key: 'body',
-          label: 'Body',
-          value: email.body,
-          path: `${emailPath}.body`,
-          type: 'string',
-          isExpandable: true
-        },
-        {
-          key: 'attachmentCount',
-          label: 'Attachments',
-          value: email.attachmentCount,
-          path: `${emailPath}.attachmentCount`,
-          type: 'number',
-          isExpandable: false
-        }
-      ]
-
-      emailsField.children!.push({
-        key: `[${index}]`,
-        label: email.subject || `Email ${index + 1}`,
-        value: email,
-        path: emailPath,
-        type: 'object',
-        isExpandable: true,
-        children: emailFields
-      })
-    })
-
-    fields.push(emailsField)
-  }
-
-  return {
-    actionId: NODE_ACTION_ID.READ_EMAIL,
-    fields,
-    summary: `Found ${count} email(s)${query !== 'all' ? ` matching "${query}"` : ''}`
-  }
-}
-
-/**
- * Parse SEND_EMAIL action output
- */
-const parseSendEmailOutput = (output: Record<string, any>): ParsedOutput => {
-  const fields: ParsedOutputField[] = []
-
-  fields.push({
-    key: 'messageId',
-    label: 'Message ID',
-    value: output.messageId,
-    path: 'messageId',
-    type: 'string',
-    isExpandable: false,
-    description: 'Unique ID of the sent message'
-  })
-
-  fields.push({
-    key: 'to',
-    label: 'Recipient',
-    value: output.to,
-    path: 'to',
-    type: 'string',
-    isExpandable: false
-  })
-
-  fields.push({
-    key: 'subject',
-    label: 'Subject',
-    value: output.subject,
-    path: 'subject',
-    type: 'string',
-    isExpandable: false
-  })
-
-  if (output.message) {
-    fields.push({
-      key: 'message',
-      label: 'Status Message',
-      value: output.message,
-      path: 'message',
-      type: 'string',
-      isExpandable: false
-    })
-  }
-
-  return {
-    actionId: NODE_ACTION_ID.SEND_EMAIL,
-    fields,
-    summary: `Email sent to ${output.to}`
-  }
-}
-
-/**
  * Main function to parse node output based on action type
  */
 export const parseNodeOutput = (
-  actionId: string | undefined,
+  actionId: TActionID | undefined,
   output: Record<string, any>
 ): ParsedOutput => {
-  switch (actionId) {
-    case NODE_ACTION_ID.READ_EMAIL:
-      return parseReadEmailOutput(output)
-    case NODE_ACTION_ID.SEND_EMAIL:
-      return parseSendEmailOutput(output)
-    default:
-      // Generic parsing for unknown action types
-      return {
-        actionId: actionId || 'unknown',
-        fields: parseObjectToFields(output),
-        summary: undefined
-      }
+  return {
+    actionId: actionId || 'unknown',
+    fields: parseObjectToFields(output),
+    summary: undefined
   }
 }
 
@@ -379,7 +183,7 @@ export const parseNodeOutput = (
  * This is useful for showing what variables can be used in subsequent nodes
  */
 export const getAvailablePlaceholders = (
-  actionId: string | undefined,
+  actionId: TActionID | undefined,
   output: Record<string, any>
 ): Array<{ path: string; label: string; type: string }> => {
   const placeholders: Array<{ path: string; label: string; type: string }> = []

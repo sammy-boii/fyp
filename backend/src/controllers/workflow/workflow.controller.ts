@@ -8,10 +8,7 @@ import {
   TWorkflowEdge,
   TNodeExecutionResult
 } from '@/src/types/workflow.types'
-import {
-  executeReadEmail,
-  executeSendEmail
-} from '@/src/executors/gmail-executor'
+
 import {
   NodeExecutionStatus,
   TriggerType,
@@ -19,6 +16,7 @@ import {
 } from '@shared/prisma/generated/prisma/enums'
 import { executeNodeLogic } from '@/src/executors/node-executor'
 import { replacePlaceholdersInConfig } from '@/src/lib/placeholder'
+
 import {
   emitWorkflowStart,
   emitNodeStart,

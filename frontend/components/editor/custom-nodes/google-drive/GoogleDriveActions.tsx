@@ -27,7 +27,7 @@ import { NODE_ACTION_ID } from '@shared/constants'
 
 export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
   {
-    id: NODE_ACTION_ID.CREATE_FOLDER,
+    id: NODE_ACTION_ID['GOOGLE-DRIVE'].CREATE_FOLDER,
     label: 'Create Folder',
     description: 'Create a new folder in Google Drive',
     icon: FolderPlus,
@@ -35,7 +35,7 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
     configFormSchema: createFolderFormSchema
   },
   {
-    id: NODE_ACTION_ID.CREATE_FILE,
+    id: NODE_ACTION_ID['GOOGLE-DRIVE'].CREATE_FILE,
     label: 'Create File',
     description: 'Create text, images, or PDF files in Google Drive',
     icon: FilePlus,
@@ -43,7 +43,7 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
     configFormSchema: createFileFormSchema
   },
   {
-    id: NODE_ACTION_ID.GET_FILE_CONTENT,
+    id: NODE_ACTION_ID['GOOGLE-DRIVE'].GET_FILE_CONTENT,
     label: 'Get File Content',
     description: 'Read content from a file (docs, sheets, PDFs, images)',
     icon: FileText,
@@ -51,7 +51,7 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
     configFormSchema: getFileContentFormSchema
   },
   {
-    id: NODE_ACTION_ID.LIST_FILES,
+    id: NODE_ACTION_ID['GOOGLE-DRIVE'].LIST_FILES,
     label: 'List Files',
     description: 'List files and folders in Google Drive',
     icon: List,
@@ -59,7 +59,7 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
     configFormSchema: listFilesFormSchema
   },
   {
-    id: NODE_ACTION_ID.DELETE_FILE,
+    id: NODE_ACTION_ID['GOOGLE-DRIVE'].DELETE_FILE,
     label: 'Delete File',
     description: 'Delete a file from Google Drive',
     icon: Trash2,
@@ -67,7 +67,7 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
     configFormSchema: deleteFileFormSchema
   },
   {
-    id: NODE_ACTION_ID.DELETE_FOLDER,
+    id: NODE_ACTION_ID['GOOGLE-DRIVE'].DELETE_FOLDER,
     label: 'Delete Folder',
     description: 'Delete a folder from Google Drive',
     icon: FolderMinus,

@@ -18,7 +18,7 @@ import { NODE_ACTION_ID } from '@shared/constants'
 
 export const DISCORD_ACTIONS: NodeAction[] = [
   {
-    id: NODE_ACTION_ID.DISCORD_SEND_CHANNEL_MESSAGE,
+    id: NODE_ACTION_ID.DISCORD.SEND_CHANNEL_MESSAGE,
     label: 'Send Channel Message',
     description: 'Send a message to a Discord channel',
     icon: Hash,
@@ -26,7 +26,7 @@ export const DISCORD_ACTIONS: NodeAction[] = [
     configFormSchema: sendChannelMessageFormSchema
   },
   {
-    id: NODE_ACTION_ID.DISCORD_SEND_DM,
+    id: NODE_ACTION_ID.DISCORD.SEND_DM,
     label: 'Send Direct Message',
     description: 'Send a direct message to a user',
     icon: AtSign,
@@ -34,7 +34,7 @@ export const DISCORD_ACTIONS: NodeAction[] = [
     configFormSchema: sendDMFormSchema
   },
   {
-    id: NODE_ACTION_ID.DISCORD_LIST_GUILDS,
+    id: NODE_ACTION_ID.DISCORD.LIST_GUILDS,
     label: 'List Servers',
     description: 'List all servers the bot is in',
     icon: Users,
@@ -42,7 +42,7 @@ export const DISCORD_ACTIONS: NodeAction[] = [
     configFormSchema: listGuildsFormSchema
   },
   {
-    id: NODE_ACTION_ID.DISCORD_LIST_CHANNELS,
+    id: NODE_ACTION_ID.DISCORD.LIST_CHANNELS,
     label: 'List Channels',
     description: 'List all channels in a server',
     icon: MessageSquare,
@@ -50,7 +50,7 @@ export const DISCORD_ACTIONS: NodeAction[] = [
     configFormSchema: listChannelsFormSchema
   },
   {
-    id: NODE_ACTION_ID.DISCORD_CREATE_CHANNEL,
+    id: NODE_ACTION_ID.DISCORD.CREATE_CHANNEL,
     label: 'Create Channel',
     description: 'Create a new channel in a server',
     icon: Hash,

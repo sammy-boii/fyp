@@ -12,7 +12,7 @@ import { NODE_ACTION_ID } from '@shared/constants'
 
 export const GMAIL_ACTIONS: NodeAction[] = [
   {
-    id: NODE_ACTION_ID.SEND_EMAIL,
+    id: NODE_ACTION_ID.GMAIL.SEND_EMAIL,
     label: 'Send Email',
     description: 'Send an email through Gmail',
     icon: Mail,
@@ -20,7 +20,7 @@ export const GMAIL_ACTIONS: NodeAction[] = [
     configFormSchema: sendEmailFormSchema
   },
   {
-    id: NODE_ACTION_ID.READ_EMAIL,
+    id: NODE_ACTION_ID.GMAIL.READ_EMAIL,
     label: 'Read Emails',
     description: 'Read emails from Gmail inbox',
     icon: Search,

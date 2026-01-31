@@ -1,3 +1,4 @@
+import { TActionID } from '@shared/constants'
 import type { ServerWebSocket } from 'bun'
 
 // Store active WebSocket connections by workflowId
@@ -112,7 +113,7 @@ export function emitNodeStart(
   executionId: string,
   nodeId: string,
   nodeName: string,
-  actionId: string,
+  actionId: TActionID,
   progress: { current: number; total: number }
 ) {
   broadcastExecutionEvent({

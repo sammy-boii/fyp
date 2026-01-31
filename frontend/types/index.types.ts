@@ -1,4 +1,5 @@
 export type ValueOf<T> = T[keyof T]
+import { TActionID } from '@shared/constants'
 import { ReactNode } from 'react'
 
 // Node execution result from the API
@@ -8,7 +9,7 @@ export type NodeExecutionResult = {
   node: {
     id: string
     type: string
-    actionId: string
+    actionId: TActionID
     duration: number
   }
   output?: Record<string, any>

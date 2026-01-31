@@ -12,6 +12,7 @@ import {
   resetPasswordSchema,
   updateProfileSchema
 } from '@/schema/user.schema'
+import { TActionID } from '@shared/constants'
 
 export async function getProfile() {
   return tryCatch(async () => {
@@ -189,7 +190,7 @@ export async function getDashboardStats() {
     }
 
     // Count action usage for radar chart
-    const actionUsage: Record<string, number> = {}
+    const actionUsage: Partial<Record<TActionID, number>> = {}
 
     // Process executions
     let totalCompleted = 0
@@ -208,7 +209,7 @@ export async function getDashboardStats() {
 
       // Count action usage
       for (const nodeExec of execution.nodeExecutions) {
-        const actionId = nodeExec.actionId
+        const actionId = nodeExec.actionId as TActionID
         actionUsage[actionId] = (actionUsage[actionId] || 0) + 1
       }
     }
@@ -228,7 +229,7 @@ export async function getDashboardStats() {
       .slice(0, 6)
 
     const actionUsageData = sortedActions.map(([actionId, count]) => ({
-      action: formatActionId(actionId),
+      action: formatActionId(actionId as TActionID),
       count
     }))
 
@@ -252,17 +253,6 @@ export async function getDashboardStats() {
   })
 }
 
-// Helper to format action IDs into readable labels
-function formatActionId(actionId: string): string {
-  const actionLabels: Record<string, string> = {
-    send_email: 'Send Email',
-    read_email: 'Read Email',
-    create_file: 'Create File',
-    delete_file: 'Delete File',
-    list_files: 'List Files',
-    get_file_content: 'Get Content',
-    create_folder: 'Create Folder',
-    delete_folder: 'Delete Folder'
-  }
-  return actionLabels[actionId] || actionId.replace(/_/g, ' ')
+function formatActionId(actionId: TActionID) {
+  return actionId.replace(/_/g, ' ')
 }

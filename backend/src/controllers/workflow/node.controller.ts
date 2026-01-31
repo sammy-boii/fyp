@@ -101,7 +101,6 @@ export const executeSingleNode = async (c: Context) => {
       error: result.error
     })
   } catch (error: any) {
-    console.error('Error executing node:', error)
     return c.json(
       {
         success: false,

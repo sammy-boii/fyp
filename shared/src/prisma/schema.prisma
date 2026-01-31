@@ -83,7 +83,6 @@ model NodeExecution {
   nodeType   String
   actionId   String
   config     Json
-  inputData  Json?
   outputData Json?
   error      String?
 

@@ -1,4 +1,3 @@
-import { NODE_ACTION_ID } from '@shared/constants'
 import { Context } from 'hono'
 import { AppError } from '@/src/types'
 import { tryCatch } from '@/src/lib/utils'
@@ -28,11 +27,16 @@ import {
 
 const executeNode = async (
   node: TWorkflowNode,
-  inputData: any,
   executionId: string,
   nodeOutputs: Map<string, Record<string, any>>
 ): Promise<TNodeExecutionResult> => {
   const { actionId, config } = node.data
+
+  console.log(actionId, 'AA')
+
+  if (!actionId || actionId === 'unknown') {
+    throw new AppError('Node action not configured', 400)
+  }
 
   // Replace placeholders in config with actual values from previous node outputs
   const resolvedConfig = config
@@ -46,7 +50,6 @@ const executeNode = async (
       nodeType: node.type,
       actionId: actionId,
       config: resolvedConfig || {},
-      inputData: inputData || null,
       status: NodeExecutionStatus.RUNNING,
       startedAt: new Date()
     }
@@ -54,8 +57,7 @@ const executeNode = async (
 
   const result: TNodeExecutionResult = await executeNodeLogic(
     node,
-    resolvedConfig,
-    inputData
+    resolvedConfig
   )
 
   await prisma.nodeExecution.update({
@@ -193,7 +195,7 @@ export const runWorkflow = tryCatch(async (c: Context) => {
       )
 
       // Execute node with accumulated outputs from previous nodes
-      const result = await executeNode(node, null, execution.id, nodeOutputs)
+      const result = await executeNode(node, execution.id, nodeOutputs)
 
       if (!result.success) {
         // Emit node error event
@@ -286,9 +288,6 @@ export const runWorkflow = tryCatch(async (c: Context) => {
       // Emit workflow error event
       emitWorkflowError(workflowId, execution.id, error.message, duration)
     }
-
-    console.error(`\n=== Workflow Execution Failed ===`)
-    console.error(error)
 
     throw new AppError(
       `Workflow execution failed: ${error.message}`,

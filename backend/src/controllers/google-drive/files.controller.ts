@@ -72,7 +72,6 @@ export const listDriveItems = tryCatch(async (c) => {
 
   if (!response.ok) {
     const err = await response.json()
-    console.error('[listDriveItems] Drive API Error:', err)
     throw new AppError(err?.error?.message || 'Failed to list files', 500)
   }
 

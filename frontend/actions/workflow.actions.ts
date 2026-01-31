@@ -170,8 +170,6 @@ export async function executeWorkflow(id: string) {
       .get(`api/workflow/run/${id}`)
       .json<ApiResponse<WorkflowExecution>>()
 
-    console.log('RESULT', result)
-
     return result
   })
 }

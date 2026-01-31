@@ -91,7 +91,6 @@ export async function refreshGoogleAccessToken(
 
     return updatedCredential
   } catch (error) {
-    console.error('Error refreshing Google access token:', error)
     throw error
   }
 }

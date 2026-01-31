@@ -65,9 +65,7 @@ export async function extractGmailMessageContent(
               data: base64Data
             })
           }
-        } catch (err) {
-          console.error(`Failed to fetch attachment ${part.filename}`, err)
-        }
+        } catch (err) {}
       }
 
       // Recurse into nested parts

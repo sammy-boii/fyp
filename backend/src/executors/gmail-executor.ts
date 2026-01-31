@@ -48,7 +48,6 @@ export const executeSendEmail = async (
 
     if (!sendRes.ok) {
       const err = await sendRes.json()
-      console.error('[executeSendEmail] Gmail API Error:', err)
       return {
         success: false,
         error: err?.error?.message || 'Failed to send email'
@@ -67,7 +66,6 @@ export const executeSendEmail = async (
       }
     }
   } catch (error: any) {
-    console.error('[executeSendEmail] Exception:', error)
     return { success: false, error: error.message || 'Failed to send email' }
   }
 }
@@ -123,7 +121,6 @@ export const executeReadEmail = async (
 
     if (!messageListRes.ok) {
       const err = await messageListRes.json()
-      console.error('[executeReadEmail] List messages failed:', err)
       return {
         success: false,
         error: err?.error?.message || 'Failed to fetch emails'
@@ -177,7 +174,6 @@ export const executeReadEmail = async (
       }
     }
   } catch (error: any) {
-    console.error('[executeReadEmail] Exception:', error)
     return { success: false, error: error.message || 'Failed to read emails' }
   }
 }

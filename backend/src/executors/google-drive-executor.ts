@@ -46,7 +46,6 @@ export const executeCreateFolder = async (
 
     if (!response.ok) {
       const err = await response.json()
-      console.error('[executeCreateFolder] Drive API Error:', err)
       return {
         success: false,
         error: err?.error?.message || 'Failed to create folder'
@@ -65,7 +64,6 @@ export const executeCreateFolder = async (
       }
     }
   } catch (error: any) {
-    console.error('[executeCreateFolder] Exception:', error)
     return { success: false, error: error.message || 'Failed to create folder' }
   }
 }
@@ -225,7 +223,6 @@ export const executeCreateFile = async (
 
     if (!createResponse.ok) {
       const err = await createResponse.json()
-      console.error('[executeCreateFile] Drive API Error:', err)
       return {
         success: false,
         error: err?.error?.message || 'Failed to create file'
@@ -246,7 +243,6 @@ export const executeCreateFile = async (
       }
     }
   } catch (error: any) {
-    console.error('[executeCreateFile] Exception:', error)
     return { success: false, error: error.message || 'Failed to create file' }
   }
 }
@@ -285,7 +281,6 @@ export const executeDeleteFolder = async (
 
     if (!response.ok) {
       const err = await response.json()
-      console.error('[executeDeleteFolder] Drive API Error:', err)
       return {
         success: false,
         error: err?.error?.message || 'Failed to delete folder'
@@ -300,7 +295,6 @@ export const executeDeleteFolder = async (
       }
     }
   } catch (error: any) {
-    console.error('[executeDeleteFolder] Exception:', error)
     return { success: false, error: error.message || 'Failed to delete folder' }
   }
 }
@@ -368,7 +362,6 @@ export const executeListFiles = async (
 
     if (!response.ok) {
       const err = await response.json()
-      console.error('[executeListFiles] Drive API Error:', err)
       return {
         success: false,
         error: err?.error?.message || 'Failed to list files'
@@ -398,7 +391,6 @@ export const executeListFiles = async (
       }
     }
   } catch (error: any) {
-    console.error('[executeListFiles] Exception:', error)
     return { success: false, error: error.message || 'Failed to list files' }
   }
 }
@@ -434,7 +426,6 @@ export const executeDeleteFile = async (
 
     if (!response.ok) {
       const err = await response.json()
-      console.error('[executeDeleteFile] Drive API Error:', err)
       return {
         success: false,
         error: err?.error?.message || 'Failed to delete file'
@@ -449,7 +440,6 @@ export const executeDeleteFile = async (
       }
     }
   } catch (error: any) {
-    console.error('[executeDeleteFile] Exception:', error)
     return { success: false, error: error.message || 'Failed to delete file' }
   }
 }
@@ -485,7 +475,6 @@ export const executeGetFileContent = async (
 
     if (!metadataResponse.ok) {
       const err = await metadataResponse.json()
-      console.error('[executeGetFileContent] Metadata Error:', err)
       return {
         success: false,
         error: err?.error?.message || 'Failed to get file metadata'
@@ -616,7 +605,6 @@ export const executeGetFileContent = async (
         const pdfData = await pdfParse(buffer)
         content = pdfData.text
       } catch (pdfError: any) {
-        console.error('[executeGetFileContent] PDF parse error:', pdfError)
         return {
           success: false,
           error: 'Failed to parse PDF content: ' + pdfError.message
@@ -691,7 +679,6 @@ export const executeGetFileContent = async (
       }
     }
   } catch (error: any) {
-    console.error('[executeGetFileContent] Exception:', error)
     return {
       success: false,
       error: error.message || 'Failed to get file content'

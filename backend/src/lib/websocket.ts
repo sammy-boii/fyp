@@ -84,9 +84,7 @@ export function broadcastExecutionEvent(event: ExecutionEvent) {
   workflowConnections.forEach((ws) => {
     try {
       ws.send(message)
-    } catch (e) {
-      console.error(`[WebSocket] Failed to send message:`, e)
-    }
+    } catch (e) {}
   })
 }
 

@@ -19,8 +19,7 @@ import {
 
 export const executeNodeLogic = async (
   node: TWorkflowNode,
-  config: any,
-  inputData: any = null
+  config: any
 ): Promise<TNodeExecutionResult> => {
   const { actionId } = node.data
 

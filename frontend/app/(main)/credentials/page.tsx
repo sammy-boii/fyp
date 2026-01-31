@@ -138,6 +138,13 @@ export default function CredentialsPage() {
               </SheetHeader>
               <div className='grid gap-3 p-4 pt-2'>
                 {CREDENTIALS_OPTIONS.map((option) => {
+                  // append userID in URL for discord
+                  let url
+                  const userID = apiCredentials[0]?.userId
+                  if (option.id === 'bot' && userID) {
+                    url = new URL(option.url)
+                    url.searchParams.set('state', userID)
+                  }
                   return (
                     <Link
                       key={option.id}

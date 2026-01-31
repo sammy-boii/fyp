@@ -139,16 +139,16 @@ export default function CredentialsPage() {
               <div className='grid gap-3 p-4 pt-2'>
                 {CREDENTIALS_OPTIONS.map((option) => {
                   // append userID in URL for discord
-                  let url
+                  let newURL
                   const userID = apiCredentials[0]?.userId
                   if (option.id === 'bot' && userID) {
-                    url = new URL(option.url)
-                    url.searchParams.set('state', userID)
+                    newURL = new URL(option.url)
+                    newURL.searchParams.set('state', userID)
                   }
                   return (
                     <Link
                       key={option.id}
-                      href={option.url}
+                      href={newURL ?? option.url}
                       className='flex cursor-pointer w-full items-center justify-between rounded-lg border bg-card p-3 text-left transition hover:bg-muted'
                     >
                       <div className='flex items-center gap-3'>

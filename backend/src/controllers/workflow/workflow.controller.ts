@@ -32,8 +32,6 @@ const executeNode = async (
 ): Promise<TNodeExecutionResult> => {
   const { actionId, config } = node.data
 
-  console.log(actionId, 'AA')
-
   if (!actionId || actionId === 'unknown') {
     throw new AppError('Node action not configured', 400)
   }

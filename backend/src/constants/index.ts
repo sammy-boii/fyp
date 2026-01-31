@@ -10,11 +10,13 @@ export const FRONTEND_BASE_URL =
     ? `http://localhost:3000`
     : `http://localhost:3000`
 
-export const GMAIL_API_BASE_URL = 'https://gmail.googleapis.com/gmail/v1'
+const GMAIL_API_BASE_URL = 'https://gmail.googleapis.com/gmail/v1'
 
-export const GOOGLE_OAUTH_BASE_URL = 'https://oauth2.googleapis.com'
+const GOOGLE_OAUTH_BASE_URL = 'https://oauth2.googleapis.com'
 
-export const GOOGLE_DRIVE_API_BASE_URL = 'https://www.googleapis.com/drive/v3'
+const GOOGLE_DRIVE_API_BASE_URL = 'https://www.googleapis.com/drive/v3'
+
+const DISCORD_API_BASE_URL = 'https://discord.com/api/v10'
 
 export const API_ROUTES = {
   GMAIL: {

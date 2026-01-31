@@ -32,7 +32,6 @@ interface WorkflowExecutionTabProps {
   clearLogs: () => void
 }
 
-// Helper to format node name from ID (e.g., "gmail_send_email" -> "Gmail Send Email")
 const formatNodeName = (nodeId?: string, nodeName?: string) => {
   if (nodeName) return nodeName
   if (!nodeId) return 'Unknown Node'

@@ -103,7 +103,6 @@ export async function addDiscordConnection(notes?: string) {
 
     let credential
     if (existingCredential) {
-      // Already connected - just return
       return {
         id: existingCredential.id,
         provider: existingCredential.provider,
@@ -111,15 +110,14 @@ export async function addDiscordConnection(notes?: string) {
         alreadyConnected: true
       }
     } else {
-      // Create new credential record (no token needed - we use shared bot)
       credential = await prisma.oAuthCredential.create({
         data: {
           userId: user.id,
           provider: 'discord',
           service: 'bot',
-          accessToken: 'shared-bot', // Placeholder - actual token is in env var
-          notes: notes || 'Discord Bot Connection',
-          accessTokenExpiresAt: null // Bot tokens don't expire
+          accessToken: 'shared-bot', // placeholder
+          notes: notes,
+          accessTokenExpiresAt: null // they don't expire
         }
       })
     }

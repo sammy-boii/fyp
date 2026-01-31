@@ -26,7 +26,7 @@ export async function getCurrentUser() {
       }
     })
 
-    return {...user, token}
+    return user
   } catch {
     return null
   }

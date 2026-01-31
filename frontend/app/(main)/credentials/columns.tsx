@@ -18,7 +18,6 @@ import { ColumnDef } from '@tanstack/react-table'
 import {
   CheckCircle2,
   Clock3,
-  Copy,
   Eye,
   FileText,
   Key,
@@ -70,8 +69,8 @@ const statusTone: Record<CredentialRow['status'], string> = {
 }
 
 function maskToken(token: string) {
-  if (!token) return '••••••••'
-  return `${token.slice(0, 4)}••••${token.slice(-4)}`
+  if (!token) return '••••••••••'
+  return `${token.slice(0, 5)}••••••••${token.slice(-5)}`
 }
 
 function formatDate(iso: string | null | undefined) {
@@ -161,17 +160,23 @@ export const columns: ColumnDef<CredentialRow>[] = [
       return (
         <div className='flex items-center gap-2 text-sm'>
           <FileText className='h-4 w-4 text-muted-foreground' />
-          <span className='max-w-[200px] truncate' title={notes}>
+          <span className='truncate max-w-[200px] ' title={notes}>
             {notes}
           </span>
         </div>
       )
     }
   },
+  // Move actions column to the end and align right
   {
     id: 'actions',
-    header: 'Actions',
-    cell: ({ row }) => <ActionCell cred={row.original} />
+    header: () => <div className='w-full pr-2'>Actions</div>,
+    cell: ({ row }) => (
+      <div className='w-full pr-2'>
+        <ActionCell cred={row.original} />
+      </div>
+    ),
+    meta: { align: 'right' }
   }
 ]
 
@@ -185,12 +190,6 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
   const [tokenToCopy, setTokenToCopy] = useState<string | null>(null)
   const deleteCredential = useDeleteCredential()
   const updateCredential = useUpdateCredential()
-
-  const handleCopyToken = (token: string) => {
-    setTokenToCopy(token)
-    setPassword('')
-    setIsPasswordOpen(true)
-  }
 
   const handlePasswordSubmit = () => {
     if (password.trim() === 'test' && tokenToCopy) {
@@ -295,7 +294,7 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                     <Key className='h-4 w-4 text-muted-foreground' />
                     Provider
                   </Label>
-                  <div className='rounded-md bg-muted/20 px-3 py-2 text-sm font-medium'>
+                  <div className='rounded-md text-muted-foreground capitalize bg-muted/20 px-3 py-2 text-sm font-medium'>
                     {cred.provider}
                   </div>
                 </div>
@@ -305,7 +304,7 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                       <ShieldCheck className='h-4 w-4 text-muted-foreground' />
                       Service
                     </Label>
-                    <div className='rounded-md bg-muted/20 px-3 py-2 text-sm'>
+                    <div className='capitalize text-muted-foreground font-medium rounded-md bg-muted/20 px-3 py-2 text-sm'>
                       {cred.service}
                     </div>
                   </div>
@@ -322,15 +321,6 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                   <div className='flex-1 rounded-md border bg-muted/30 px-3 py-2 font-mono text-xs'>
                     {maskToken(cred.accessToken)}
                   </div>
-                  <Button
-                    variant='outline'
-                    size='icon'
-                    className='h-9 w-9 shrink-0'
-                    onClick={() => handleCopyToken(cred.accessToken)}
-                  >
-                    <Copy className='h-4 w-4' />
-                    <span className='sr-only'>Copy access token</span>
-                  </Button>
                 </div>
               </div>
 
@@ -346,17 +336,6 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                       ? maskToken(cred.refreshToken)
                       : 'Not set'}
                   </div>
-                  {cred.refreshToken && (
-                    <Button
-                      variant='outline'
-                      size='icon'
-                      className='h-9 w-9 shrink-0'
-                      onClick={() => handleCopyToken(cred.refreshToken!)}
-                    >
-                      <Copy className='h-4 w-4' />
-                      <span className='sr-only'>Copy refresh token</span>
-                    </Button>
-                  )}
                 </div>
               </div>
 
@@ -413,7 +392,9 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                 </Label>
                 <div className='rounded-md border bg-muted/30 px-3 py-2 text-sm'>
                   {cred.notes ? (
-                    <p className='whitespace-pre-wrap'>{cred.notes}</p>
+                    <p className='max-w-md break-all whitespace-pre-line'>
+                      {cred.notes}
+                    </p>
                   ) : (
                     <span className='text-muted-foreground'>No notes</span>
                   )}
@@ -506,7 +487,7 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={5}
-                  className='resize-none'
+                  className='max-w-md'
                 />
               </div>
             </div>

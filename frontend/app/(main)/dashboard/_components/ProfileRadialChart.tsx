@@ -75,7 +75,7 @@ export function ProfileRadialChart() {
       <CardHeader className='items-center pb-0'>
         <CardTitle className='flex items-center gap-2'>
           {successData.rate >= 50 ? (
-            <CheckCircle2 className='h-4 w-4 text-green-500' />
+            <CheckCircle2 className='h-4 w-4 text-muted-foreground' />
           ) : (
             <XCircle className='h-4 w-4 text-red-500' />
           )}
@@ -143,18 +143,16 @@ export function ProfileRadialChart() {
       </CardContent>
       <CardFooter className='flex-col gap-2 text-sm'>
         <div className='flex items-center gap-4 leading-none font-medium'>
-          <span className='flex items-center gap-1 text-green-600'>
+          <span className='flex items-center gap-1 text-green-300'>
             <CheckCircle2 className='h-3.5 w-3.5' />
             {successData.completed} completed
           </span>
-          <span className='flex items-center gap-1 text-red-600'>
+          <span className='flex items-center gap-1 text-red-300'>
             <XCircle className='h-3.5 w-3.5' />
             {successData.failed} failed
           </span>
         </div>
-        <div className='text-muted-foreground leading-none'>
-          {successData.total} total executions (last 90 days)
-        </div>
+        <div className='text-muted-foreground leading-none'>Last 90 days</div>
       </CardFooter>
     </Card>
   )

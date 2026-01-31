@@ -26,7 +26,7 @@ import { DataTable } from './data-table'
 import Link from 'next/link'
 import { useGetCredentials } from '@/hooks/use-credentials'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CREDENTIALS_OPTIONS } from '@/constants'
+import { CREDENTIALS_OPTIONS } from '@/constants/registry'
 
 export default function CredentialsPage() {
   const { data, isLoading, isError } = useGetCredentials()

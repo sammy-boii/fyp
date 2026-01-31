@@ -18,7 +18,7 @@ import { useGetCredentials } from '@/hooks/use-credentials'
 import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { CREDENTIALS_OPTIONS } from '@/constants'
+import { CREDENTIALS_OPTIONS } from '@/constants/registry'
 import Link from 'next/link'
 
 function ProviderIcon({ provider }: { provider: string }) {

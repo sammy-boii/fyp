@@ -41,7 +41,7 @@ import {
   useDeleteCredential,
   useUpdateCredential
 } from '@/hooks/use-credentials'
-import { CREDENTIALS_OPTIONS } from '@/constants'
+import { CREDENTIALS_OPTIONS } from '@/constants/registry'
 
 export type CredentialRow = {
   id: string

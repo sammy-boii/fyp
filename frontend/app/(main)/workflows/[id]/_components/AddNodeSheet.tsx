@@ -8,7 +8,7 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet'
-import { NODE_OPTIONS } from '@/constants'
+import { NODE_DEFINITIONS } from '@/constants/registry'
 import { ValueOf } from '@/types/index.types'
 import { NODE_TYPES } from '@/constants'
 
@@ -29,12 +29,13 @@ export function AddNodeSheetContent({
           Choose a node and configure it to perform various tasks
         </SheetDescription>
       </SheetHeader>
+
       <div className='grid gap-3 p-4 pt-2'>
-        {NODE_OPTIONS.map((option) => (
+        {Object.entries(NODE_DEFINITIONS).map(([id, option]) => (
           <button
-            key={option.id}
+            key={id}
             onClick={() => {
-              onAddNode(option.id)
+              onAddNode(id as ValueOf<typeof NODE_TYPES>)
               onOpenChange(false)
             }}
             className='flex cursor-pointer w-full items-center justify-between rounded-lg border bg-card p-3 text-left transition hover:bg-muted'
@@ -43,16 +44,16 @@ export function AddNodeSheetContent({
               <span className='relative h-12 w-12 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900'>
                 <Image
                   src={option.icon}
-                  alt={option.name}
+                  alt={option.label}
                   fill
                   sizes='48px'
                   className='object-contain p-2'
                 />
               </span>
               <div className='flex flex-col'>
-                <span className='text-sm font-semibold'>{option.name}</span>
+                <span className='text-sm font-semibold'>{option.label}</span>
                 <span className='text-xs text-muted-foreground'>
-                  Connect and manage secure access
+                  {option.description}
                 </span>
               </div>
             </div>

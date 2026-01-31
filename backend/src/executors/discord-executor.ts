@@ -1,8 +1,6 @@
 import { TNodeExecutionResult } from '../types/workflow.types'
 import { getDiscordBotToken } from '../lib/credentials'
-
-// Discord API base URL
-const DISCORD_API = 'https://discord.com/api/v10'
+import { API_ROUTES } from '../constants'
 
 // Channel type mapping
 const CHANNEL_TYPES = {
@@ -19,7 +17,7 @@ async function discordRequest(
   botToken: string,
   options: RequestInit = {}
 ) {
-  const response = await fetch(`${DISCORD_API}${endpoint}`, {
+  const response = await fetch(endpoint, {
     ...options,
     headers: {
       Authorization: `Bot ${botToken}`,
@@ -85,7 +83,7 @@ export async function executeSendChannelMessage(
     }
 
     const message = await discordRequest(
-      `/channels/${channelId}/messages`,
+      API_ROUTES.DISCORD.GET_CHANNEL_MESSAGES(channelId),
       botToken,
       {
         method: 'POST',
@@ -129,10 +127,14 @@ export async function executeSendDM(
     const botToken = await getDiscordBotToken(credentialId)
 
     // First, create a DM channel with the user
-    const dmChannel = await discordRequest('/users/@me/channels', botToken, {
-      method: 'POST',
-      body: JSON.stringify({ recipient_id: userId })
-    })
+    const dmChannel = await discordRequest(
+      API_ROUTES.DISCORD.CREATE_DM_CHANNEL,
+      botToken,
+      {
+        method: 'POST',
+        body: JSON.stringify({ recipient_id: userId })
+      }
+    )
 
     // Then send the message to the DM channel
     const body: any = { content }
@@ -142,7 +144,7 @@ export async function executeSendDM(
     }
 
     const message = await discordRequest(
-      `/channels/${dmChannel.id}/messages`,
+      API_ROUTES.DISCORD.SEND_DM(dmChannel.id),
       botToken,
       {
         method: 'POST',
@@ -182,7 +184,7 @@ export async function executeListGuilds(
     const botToken = await getDiscordBotToken(credentialId)
 
     const guilds = await discordRequest(
-      `/users/@me/guilds?limit=${limit}`,
+      API_ROUTES.DISCORD.LIST_GUIDS(limit),
       botToken
     )
 
@@ -223,7 +225,7 @@ export async function executeListChannels(
     const botToken = await getDiscordBotToken(credentialId)
 
     const channels = await discordRequest(
-      `/guilds/${guildId}/channels`,
+      API_ROUTES.DISCORD.LIST_CHANNELS(guildId),
       botToken
     )
 
@@ -290,7 +292,7 @@ export async function executeCreateChannel(
     if (parentId) body.parent_id = parentId
 
     const channel = await discordRequest(
-      `/guilds/${guildId}/channels`,
+      API_ROUTES.DISCORD.CREATE_CHANNEL(guildId),
       botToken,
       {
         method: 'POST',

@@ -46,7 +46,18 @@ export const API_ROUTES = {
       GOOGLE_DRIVE_API_BASE_URL + `/files/${fileId}`
   },
 
+  // Google
   OAUTH: {
     REFRESH_TOKEN: GOOGLE_OAUTH_BASE_URL + '/token'
+  },
+
+  DISCORD: {
+    GET_CHANNEL_MESSAGES: (channelId: string) =>
+      `/channels/${channelId}/messages`,
+    LIST_GUIDS: (limit: number) => `/users/@me/guilds?limit=${limit}`,
+    LIST_CHANNELS: (guildId: string) => `/guilds/${guildId}/channels`,
+    CREATE_CHANNEL: (guildId: string) => `/guilds/${guildId}/channels`,
+    CREATE_DM_CHANNEL: '/users/@me/channels',
+    SEND_DM: (channelId: string) => `/channels/${channelId}/messages`
   }
 }

@@ -8,3 +8,9 @@ export const gmailWebhookTriggerFormSchema = z.object({
   labelId: z.string().optional(),
   watchEvents: z.array(z.string()).default(['message_added'])
 })
+
+// Discord webhook trigger schema
+export const discordWebhookTriggerFormSchema = z.object({
+  guildId: z.string().optional(),
+  channelId: z.string().optional()
+})

@@ -4,6 +4,7 @@ import { routes } from './routes'
 import { PORT } from './constants'
 import { cors } from 'hono/cors'
 import { websocketHandler } from './lib/websocket'
+import { initDiscordBot } from './lib/discord-bot'
 
 export const app = new Hono()
 
@@ -49,3 +50,6 @@ Bun.serve({
 console.log(
   `Server running at PORT ${PORT} & WS at ws://localhost:${PORT}/ws/workflow/:workflowId`
 )
+
+// Initialize Discord bot connection
+initDiscordBot()

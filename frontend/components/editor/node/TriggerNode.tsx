@@ -11,7 +11,7 @@ import {
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-import { Play, Settings, Trash2, Plus, Loader2 } from 'lucide-react'
+import { Play, Settings, Trash2, Plus } from 'lucide-react'
 import Image from 'next/image'
 import React, { useState, useCallback } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
@@ -257,25 +257,6 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
         <div className='relative group'>
           <div className='absolute -top-5 right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center'>
             {!isManualTrigger && (
-              <Button
-                size='icon'
-                variant='outline'
-                className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-green-500/10 hover:border-green-500/60 hover:text-green-500 hover:shadow-md disabled:opacity-40 disabled:hover:bg-background transition-all'
-                onClick={handleExecuteNode}
-                disabled={
-                  !data.actionId ||
-                  !data.config ||
-                  executeNodeMutation.isPending
-                }
-              >
-                {executeNodeMutation.isPending ? (
-                  <Loader2 className='h-3 w-3 animate-spin' />
-                ) : (
-                  <Play className='h-3 w-3' />
-                )}
-              </Button>
-            )}
-            {!isManualTrigger && (
               <NodeActionsSheet
                 node={node}
                 nodeId={id}
@@ -402,25 +383,6 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
       </ContextMenuTrigger>
 
       <ContextMenuContent className='w-44'>
-        {!isManualTrigger && (
-          <ContextMenuItem
-            className='gap-3'
-            onClick={handleExecuteNode}
-            disabled={
-              !data.actionId ||
-              !data.config ||
-              executeNodeMutation.isPending ||
-              isAnyOperationPending
-            }
-          >
-            {executeNodeMutation.isPending ? (
-              <Loader2 className='h-4 w-4 animate-spin' />
-            ) : (
-              <Play className='h-4 w-4' />
-            )}
-            Run
-          </ContextMenuItem>
-        )}
 
         {!isManualTrigger && (
           <ContextMenuItem className='gap-3' onClick={handleConfigure}>

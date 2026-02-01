@@ -15,7 +15,8 @@ import { GMAIL_ACTIONS } from '@/components/editor/custom-nodes/gmail/GmailActio
 
 import {
   MANUAL_TRIGGER_ACTIONS,
-  GMAIL_WEBHOOK_TRIGGER_ACTIONS
+  GMAIL_WEBHOOK_TRIGGER_ACTIONS,
+  DISCORD_WEBHOOK_TRIGGER_ACTIONS
 } from '@/components/editor/custom-nodes/triggers/TriggerActions'
 
 export const NODE_DEFINITIONS: NodeDefinition = {
@@ -52,6 +53,13 @@ export const TRIGGER_NODE_DEFINITIONS: TriggerNodeDefinition = {
     description: 'Trigger when a new email arrives',
     actions: GMAIL_WEBHOOK_TRIGGER_ACTIONS,
     icon: gmailIcon,
+    isTrigger: true
+  },
+  [TRIGGER_NODE_TYPES.DISCORD_WEBHOOK_TRIGGER]: {
+    label: 'Discord Message',
+    description: 'Trigger when a message is sent in a channel',
+    actions: DISCORD_WEBHOOK_TRIGGER_ACTIONS,
+    icon: discordIcon,
     isTrigger: true
   }
 }

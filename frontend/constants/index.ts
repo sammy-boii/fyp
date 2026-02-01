@@ -7,7 +7,8 @@ export const NODE_TYPES = {
 // Trigger node types (nodes that start a workflow)
 export const TRIGGER_NODE_TYPES = {
   MANUAL_TRIGGER: 'MANUAL_TRIGGER',
-  GMAIL_WEBHOOK_TRIGGER: 'GMAIL_WEBHOOK_TRIGGER'
+  GMAIL_WEBHOOK_TRIGGER: 'GMAIL_WEBHOOK_TRIGGER',
+  DISCORD_WEBHOOK_TRIGGER: 'DISCORD_WEBHOOK_TRIGGER'
 } as const
 
 // All node types combined

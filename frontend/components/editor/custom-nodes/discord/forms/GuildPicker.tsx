@@ -188,6 +188,8 @@ export function GuildPicker({
                       <Image
                         src={guild.icon}
                         alt={guild.name}
+                        width={24}
+                        height={24}
                         className='h-6 w-6 rounded-md'
                       />
                     ) : (

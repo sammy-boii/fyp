@@ -207,6 +207,8 @@ export function UserPicker({
                       <Image
                         src={member.avatar}
                         alt={member.displayName}
+                        width={20}
+                        height={20}
                         className='h-5 w-5 rounded-full'
                       />
                     ) : (

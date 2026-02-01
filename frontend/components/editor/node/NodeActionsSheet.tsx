@@ -21,7 +21,8 @@ export const NodeActionsSheet = ({
   open,
   onOpenChange,
   availableInputs = [],
-  nodeOutput
+  nodeOutput,
+  isTrigger = false
 }: {
   node: SingleNodeDefinition | SingleTriggerNodeDefinition
   nodeId: string
@@ -32,10 +33,13 @@ export const NodeActionsSheet = ({
   onOpenChange?: (open: boolean) => void
   availableInputs?: NodeInputSource[]
   nodeOutput?: NodeOutputData
+  isTrigger?: boolean
 }) => {
+  const defaultTriggerAction = isTrigger ? (node.actions[0] ?? null) : null
+
   const [openActionsSheet, setOpenActionsSheet] = useState(false)
   const [selectedAction, setSelectedAction] = useState<NodeAction | null>(
-    preSelectedAction || null
+    preSelectedAction || defaultTriggerAction
   )
 
   const [openConfigDialog, setOpenConfigDialog] = useState(false)
@@ -48,6 +52,16 @@ export const NodeActionsSheet = ({
   }
 
   const handleSettingsClick = () => {
+    if (isTrigger) {
+      const actionToUse = preSelectedAction || node.actions[0] || null
+      if (actionToUse) {
+        setSelectedAction(actionToUse)
+        setOpenConfigDialog(true)
+        onOpenChange?.(true)
+      }
+      return
+    }
+
     if (preSelectedAction) {
       // If node already has configuration, open config dialog directly without showing action sheet
       setSelectedAction(preSelectedAction)
@@ -61,14 +75,19 @@ export const NodeActionsSheet = ({
   // Sync external open state with internal state
   React.useEffect(() => {
     if (open !== undefined) {
-      if (preSelectedAction) {
+      if (isTrigger) {
+        const actionToUse = preSelectedAction || node.actions[0] || null
+        setSelectedAction(actionToUse)
+        setOpenConfigDialog(open)
+        setOpenActionsSheet(false)
+      } else if (preSelectedAction) {
         setSelectedAction(preSelectedAction)
         setOpenConfigDialog(open)
       } else {
         setOpenActionsSheet(open)
       }
     }
-  }, [open, preSelectedAction])
+  }, [open, preSelectedAction, isTrigger, node.actions])
 
   const handleConfigDialogChange = (isOpen: boolean) => {
     setOpenConfigDialog(isOpen)
@@ -91,49 +110,51 @@ export const NodeActionsSheet = ({
         />
       )}
 
-      {/* Action Selection Sheet - Controlled via state */}
-      <Sheet open={openActionsSheet} onOpenChange={setOpenActionsSheet}>
-        <SheetContent className='p-2 flex flex-col'>
-          <SheetHeader>
-            <div>
-              <h3 className='text-lg font-medium mb-1'>Select Action</h3>
-              <p className='text-sm text-muted-foreground'>
-                Choose what you want to do with {node.label}
-              </p>
-            </div>
-          </SheetHeader>
+      {/* Action Selection Sheet - only for non-trigger nodes */}
+      {!isTrigger && (
+        <Sheet open={openActionsSheet} onOpenChange={setOpenActionsSheet}>
+          <SheetContent className='p-2 flex flex-col'>
+            <SheetHeader>
+              <div>
+                <h3 className='text-lg font-medium mb-1'>Select Action</h3>
+                <p className='text-sm text-muted-foreground'>
+                  Choose what you want to do with {node.label}
+                </p>
+              </div>
+            </SheetHeader>
 
-          <div className='space-y-3 px-2 overflow-y-auto flex-1'>
-            {node.actions.map((action) => {
-              const Icon = action.icon
-              return (
-                <div
-                  key={action.id}
-                  className='group cursor-pointer rounded-lg border border-border bg-card p-4 transition-all hover:bg-accent hover:shadow-md'
-                  onClick={() => handleActionSelect(action)}
-                >
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center gap-3 flex-1'>
-                      <div className='p-1.5 rounded-md bg-primary/10 text-primary'>
-                        <Icon className='size-5' />
+            <div className='space-y-3 px-2 overflow-y-auto flex-1'>
+              {node.actions.map((action) => {
+                const Icon = action.icon
+                return (
+                  <div
+                    key={action.id}
+                    className='group cursor-pointer rounded-lg border border-border bg-card p-4 transition-all hover:bg-accent hover:shadow-md'
+                    onClick={() => handleActionSelect(action)}
+                  >
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center gap-3 flex-1'>
+                        <div className='p-1.5 rounded-md bg-primary/10 text-primary'>
+                          <Icon className='size-5' />
+                        </div>
+                        <div className='flex-1'>
+                          <h4 className='font-medium text-sm text-foreground group-hover:text-accent-foreground'>
+                            {action.label}
+                          </h4>
+                          <p className='text-xs text-muted-foreground mt-0.5'>
+                            {action.description}
+                          </p>
+                        </div>
                       </div>
-                      <div className='flex-1'>
-                        <h4 className='font-medium text-sm text-foreground group-hover:text-accent-foreground'>
-                          {action.label}
-                        </h4>
-                        <p className='text-xs text-muted-foreground mt-0.5'>
-                          {action.description}
-                        </p>
-                      </div>
+                      <ChevronRight className='h-4 w-4 text-muted-foreground group-hover:text-accent-foreground' />
                     </div>
-                    <ChevronRight className='h-4 w-4 text-muted-foreground group-hover:text-accent-foreground' />
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        </SheetContent>
-      </Sheet>
+                )
+              })}
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
 
       {/* Settings Button - Triggers either Sheet or Config Dialog */}
       <Button

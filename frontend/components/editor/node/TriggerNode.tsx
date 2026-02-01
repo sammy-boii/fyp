@@ -56,6 +56,7 @@ import { TActionID } from '@shared/constants'
 export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
   const node =
     TRIGGER_NODE_DEFINITIONS[data.type as keyof typeof TRIGGER_NODE_TYPES]
+  const isManualTrigger = data.type === TRIGGER_NODE_TYPES.MANUAL_TRIGGER
   const { setNodes, setEdges, getEdges, getNodes } = useReactFlow()
   const params = useParams()
   const workflowId = params?.id ? String(params.id) : null
@@ -225,7 +226,7 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
   // Check if node has existing config and find the action
   const getPreSelectedAction = () => {
     if (!data.actionId || !data.config) {
-      return undefined
+      return node.actions[0]
     }
 
     // Find the action from the node's actions that matches the saved actionId
@@ -255,32 +256,39 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
       <ContextMenuTrigger>
         <div className='relative group'>
           <div className='absolute -top-5 right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center'>
-            <Button
-              size='icon'
-              variant='outline'
-              className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-green-500/10 hover:border-green-500/60 hover:text-green-500 hover:shadow-md disabled:opacity-40 disabled:hover:bg-background transition-all'
-              onClick={handleExecuteNode}
-              disabled={
-                !data.actionId || !data.config || executeNodeMutation.isPending
-              }
-            >
-              {executeNodeMutation.isPending ? (
-                <Loader2 className='h-3 w-3 animate-spin' />
-              ) : (
-                <Play className='h-3 w-3' />
-              )}
-            </Button>
-            <NodeActionsSheet
-              node={node}
-              nodeId={id}
-              onSaveConfig={handleSaveConfig}
-              preSelectedAction={getPreSelectedAction()}
-              initialConfig={data.config}
-              open={configDialogOpen}
-              onOpenChange={setConfigDialogOpen}
-              availableInputs={availableInputs}
-              nodeOutput={nodeOutput}
-            />
+            {!isManualTrigger && (
+              <Button
+                size='icon'
+                variant='outline'
+                className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-green-500/10 hover:border-green-500/60 hover:text-green-500 hover:shadow-md disabled:opacity-40 disabled:hover:bg-background transition-all'
+                onClick={handleExecuteNode}
+                disabled={
+                  !data.actionId ||
+                  !data.config ||
+                  executeNodeMutation.isPending
+                }
+              >
+                {executeNodeMutation.isPending ? (
+                  <Loader2 className='h-3 w-3 animate-spin' />
+                ) : (
+                  <Play className='h-3 w-3' />
+                )}
+              </Button>
+            )}
+            {!isManualTrigger && (
+              <NodeActionsSheet
+                node={node}
+                nodeId={id}
+                onSaveConfig={handleSaveConfig}
+                preSelectedAction={getPreSelectedAction()}
+                initialConfig={data.config}
+                open={configDialogOpen}
+                onOpenChange={setConfigDialogOpen}
+                availableInputs={availableInputs}
+                nodeOutput={nodeOutput}
+                isTrigger
+              />
+            )}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogTrigger asChild>
                 <Button
@@ -324,15 +332,15 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
             className={`relative w-48 p-4 rounded-lg border transition-all duration-300 bg-card ${
               data.isExecuting || executeNodeMutation.isPending
                 ? 'border-transparent animate-executing-border'
-                : 'border-primary/50'
+                : 'border-border/50'
             }`}
           >
             {/* Content */}
             <div className='flex items-center gap-3'>
               <div
                 className={`p-3 rounded-xl 
-      bg-linear-to-br from-primary/20 to-primary/10 
-      shadow-lg shadow-primary/10 ring-1 ring-primary/20
+      bg-linear-to-br from-white/10 to-white/5 
+      shadow-lg shadow-black/10 ring-1 ring-black/5
       aspect-square relative overflow-hidden
     `}
               >
@@ -360,7 +368,7 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
             {/* Trigger nodes have NO target handle (no input) */}
             {/* Only source handle (output) */}
             <Handle
-              className='bg-primary! border-primary!'
+              className='bg-muted-foreground! border-muted-foreground!'
               style={{
                 width: 14,
                 height: 14,
@@ -371,12 +379,12 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
             >
               {!isSourceConnected && (
                 <div className='flex items-center -translate-y-3'>
-                  <div className='min-w-12 ml-1 border-t-2 border-primary' />
+                  <div className='min-w-12 ml-1 border-t-2 border-muted-foreground' />
 
                   <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                     <SheetTrigger asChild>
-                      <div className='border-2 p-1 rounded border-primary cursor-pointer hover:bg-primary/10 transition-colors'>
-                        <Plus className='text-primary' size={24} />
+                      <div className='border-2 p-1 rounded border-muted-foreground'>
+                        <Plus className='text-muted-foreground' size={24} />
                       </div>
                     </SheetTrigger>
 
@@ -394,28 +402,32 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
       </ContextMenuTrigger>
 
       <ContextMenuContent className='w-44'>
-        <ContextMenuItem
-          className='gap-3'
-          onClick={handleExecuteNode}
-          disabled={
-            !data.actionId ||
-            !data.config ||
-            executeNodeMutation.isPending ||
-            isAnyOperationPending
-          }
-        >
-          {executeNodeMutation.isPending ? (
-            <Loader2 className='h-4 w-4 animate-spin' />
-          ) : (
-            <Play className='h-4 w-4' />
-          )}
-          Run
-        </ContextMenuItem>
+        {!isManualTrigger && (
+          <ContextMenuItem
+            className='gap-3'
+            onClick={handleExecuteNode}
+            disabled={
+              !data.actionId ||
+              !data.config ||
+              executeNodeMutation.isPending ||
+              isAnyOperationPending
+            }
+          >
+            {executeNodeMutation.isPending ? (
+              <Loader2 className='h-4 w-4 animate-spin' />
+            ) : (
+              <Play className='h-4 w-4' />
+            )}
+            Run
+          </ContextMenuItem>
+        )}
 
-        <ContextMenuItem className='gap-3' onClick={handleConfigure}>
-          <Settings className='h-4 w-4' />
-          Configure
-        </ContextMenuItem>
+        {!isManualTrigger && (
+          <ContextMenuItem className='gap-3' onClick={handleConfigure}>
+            <Settings className='h-4 w-4' />
+            Configure
+          </ContextMenuItem>
+        )}
 
         <ContextMenuItem
           className='gap-3'

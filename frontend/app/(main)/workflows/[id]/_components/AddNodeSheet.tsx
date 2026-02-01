@@ -68,10 +68,10 @@ export function AddNodeSheetContent({
                   onAddNode(id as ValueOf<typeof TRIGGER_NODE_TYPES>)
                   onOpenChange(false)
                 }}
-                className='flex cursor-pointer w-full items-center justify-between rounded-lg border bg-card p-3 text-left transition hover:bg-muted border-primary/20 hover:border-primary/40'
+                className='flex cursor-pointer w-full items-center justify-between rounded-lg border bg-card p-3 text-left transition hover:bg-muted'
               >
                 <div className='flex items-center gap-3'>
-                  <span className='relative h-12 w-12 overflow-hidden rounded-md bg-primary/10 shadow-sm flex items-center justify-center'>
+                  <span className='relative h-12 w-12 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900 flex items-center justify-center'>
                     {option.icon ? (
                       <Image
                         src={option.icon}
@@ -81,7 +81,7 @@ export function AddNodeSheetContent({
                         className='object-contain p-2'
                       />
                     ) : option.iconComponent ? (
-                      <option.iconComponent className='size-6 text-primary' />
+                      <option.iconComponent className='size-6 text-foreground' />
                     ) : null}
                   </span>
                   <div className='flex flex-col'>

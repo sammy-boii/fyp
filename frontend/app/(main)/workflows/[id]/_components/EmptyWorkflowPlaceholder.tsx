@@ -28,11 +28,11 @@ export function EmptyWorkflowPlaceholder({
               onClick={() => setSheetOpen(true)}
             >
               <div>
-                <Plus className='size-12 text-muted-foreground/30 group-hover:text-primary transition-colors duration-300' />
+                <Plus className='size-12 text-muted-foreground/60 group-hover:text-primary transition-colors duration-300' />
               </div>
             </button>
             <div className='text-center space-y-1'>
-              <p className='text-xs duration-100 font-medium text-muted-foreground/70 group-hover:text-foreground transition-colors'>
+              <p className='text-xs duration-100 font-medium text-muted-foreground/60 group-hover:text-foreground transition-colors'>
                 Add a node
               </p>
             </div>

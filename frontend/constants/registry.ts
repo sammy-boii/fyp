@@ -1,4 +1,5 @@
 import gmailIcon from '@/public/gmail.png'
+import cursor from '@/public/cursor.svg'
 import driveIcon from '@/public/google-drive.png'
 import discordIcon from '@/public/discord.png'
 import googleDriveIcon from '@/public/google-drive.png'
@@ -16,8 +17,6 @@ import {
   MANUAL_TRIGGER_ACTIONS,
   GMAIL_WEBHOOK_TRIGGER_ACTIONS
 } from '@/components/editor/custom-nodes/triggers/TriggerActions'
-
-import { Play, Mail } from 'lucide-react'
 
 export const NODE_DEFINITIONS: NodeDefinition = {
   [NODE_TYPES.GMAIL]: {
@@ -45,7 +44,7 @@ export const TRIGGER_NODE_DEFINITIONS: TriggerNodeDefinition = {
     label: 'Manual Trigger',
     description: 'Start the workflow manually',
     actions: MANUAL_TRIGGER_ACTIONS,
-    iconComponent: Play,
+    icon: cursor,
     isTrigger: true
   },
   [TRIGGER_NODE_TYPES.GMAIL_WEBHOOK_TRIGGER]: {

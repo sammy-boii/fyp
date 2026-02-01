@@ -1,4 +1,4 @@
-import { NODE_ACTION_ID } from '@shared/constants'
+import { NODE_ACTION_ID, TRIGGER_ACTION_ID } from '@shared/constants'
 import { TNodeExecutionResult, TWorkflowNode } from '../types/workflow.types'
 import { executeReadEmail, executeSendEmail } from './gmail-executor'
 import {
@@ -16,12 +16,19 @@ import {
   executeListChannels,
   executeCreateChannel
 } from './discord-executor'
+import { executeTriggerNode, isTriggerNode } from './trigger-executor'
 
 export const executeNodeLogic = async (
   node: TWorkflowNode,
-  config: any
+  config: any,
+  triggerEventData?: Record<string, any>
 ): Promise<TNodeExecutionResult> => {
   const { actionId } = node.data
+
+  // Handle trigger nodes
+  if (isTriggerNode(actionId)) {
+    return executeTriggerNode(node, config, triggerEventData)
+  }
 
   let result: TNodeExecutionResult
 
@@ -87,3 +94,4 @@ export const executeNodeLogic = async (
 
   return result
 }
+

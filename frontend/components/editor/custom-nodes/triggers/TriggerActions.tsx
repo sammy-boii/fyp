@@ -10,12 +10,10 @@ import {
   gmailWebhookTriggerFormSchema,
   discordWebhookTriggerFormSchema
 } from '@/schema/nodes/trigger.schema'
+import { TRIGGER_ACTION_ID } from '@shared/constants'
 
-export const TRIGGER_NODE_ACTION_ID = {
-  MANUAL_TRIGGER: 'manual_trigger',
-  GMAIL_WEBHOOK_TRIGGER: 'gmail_webhook_trigger',
-  DISCORD_WEBHOOK_TRIGGER: 'discord_webhook_trigger'
-} as const
+// Re-export for backwards compatibility with existing code
+export const TRIGGER_NODE_ACTION_ID = TRIGGER_ACTION_ID
 
 export const MANUAL_TRIGGER_ACTIONS: NodeAction[] = [
   {

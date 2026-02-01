@@ -4,11 +4,9 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { ColumnDef } from '@tanstack/react-table'
 import {
-  Edit,
   ExternalLink,
   GitBranch,
   MoreHorizontal,
-  Play,
   PlayCircle,
   Trash2,
   Workflow,

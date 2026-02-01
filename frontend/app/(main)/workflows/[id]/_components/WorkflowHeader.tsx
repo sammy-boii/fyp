@@ -32,7 +32,6 @@ export function WorkflowHeader({
   isExecuting,
   isActive,
   onToggleActive,
-  isTogglingActive,
   isWorkflowEmpty
 }: WorkflowHeaderProps) {
   const { isAnyOperationPending } = useWorkflowEditor()

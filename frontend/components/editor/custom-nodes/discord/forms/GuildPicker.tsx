@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Loader2, Server, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Image from 'next/image'
 
 interface GuildPickerProps {
   value: string
@@ -184,7 +185,7 @@ export function GuildPicker({
                 >
                   <div className='flex items-center gap-3'>
                     {guild.icon ? (
-                      <img
+                      <Image
                         src={guild.icon}
                         alt={guild.name}
                         className='h-6 w-6 rounded-md'

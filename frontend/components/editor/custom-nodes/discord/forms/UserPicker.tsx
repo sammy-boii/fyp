@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Loader2, User, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Image from 'next/image'
 
 interface UserPickerProps {
   value: string
@@ -203,7 +204,7 @@ export function UserPicker({
                 >
                   <div className='flex items-center gap-2'>
                     {member.avatar ? (
-                      <img
+                      <Image
                         src={member.avatar}
                         alt={member.displayName}
                         className='h-5 w-5 rounded-full'

@@ -1,6 +1,7 @@
 import type { Node, Edge, XYPosition } from '@xyflow/react'
-import { NODE_TYPES, TRIGGER_NODE_TYPES, ALL_NODE_TYPES } from '@/constants'
+import { ALL_NODE_TYPES, TRIGGER_NODE_TYPES } from '@/constants'
 import { ValueOf } from '@/types/index.types'
+import { TRIGGER_ACTION_ID } from '@shared/constants'
 
 /**
  * Default edge styling constants used throughout the application
@@ -52,6 +53,22 @@ export function isTriggerNodeType(
 }
 
 /**
+ * Get the trigger action ID for a trigger node type
+ */
+function getTriggerActionId(nodeType: ValueOf<typeof TRIGGER_NODE_TYPES>): string {
+  switch (nodeType) {
+    case TRIGGER_NODE_TYPES.MANUAL_TRIGGER:
+      return TRIGGER_ACTION_ID.MANUAL_TRIGGER
+    case TRIGGER_NODE_TYPES.GMAIL_WEBHOOK_TRIGGER:
+      return TRIGGER_ACTION_ID.GMAIL_WEBHOOK_TRIGGER
+    case TRIGGER_NODE_TYPES.DISCORD_WEBHOOK_TRIGGER:
+      return TRIGGER_ACTION_ID.DISCORD_WEBHOOK_TRIGGER
+    default:
+      return ''
+  }
+}
+
+/**
  * Creates a new edge with default styling
  */
 export function createEdge(
@@ -82,6 +99,7 @@ export function createEdge(
 
 /**
  * Creates a new node with the specified type and position
+ * Trigger nodes are auto-configured with their actionId and empty config
  */
 export function createNode(
   nodeType: ValueOf<typeof ALL_NODE_TYPES>,
@@ -92,17 +110,25 @@ export function createNode(
   }
 ): Node {
   // Determine the node type based on whether it's a trigger or action
-  const reactFlowNodeType = isTriggerNodeType(nodeType)
-    ? 'trigger_node'
-    : 'custom_node'
+  const isTrigger = isTriggerNodeType(nodeType)
+  const reactFlowNodeType = isTrigger ? 'trigger_node' : 'custom_node'
+
+  // Build node data - auto-configure trigger nodes
+  const nodeData: Record<string, any> = {
+    type: nodeType
+  }
+
+  // Auto-configure trigger nodes with their actionId and empty config
+  if (isTrigger) {
+    nodeData.actionId = getTriggerActionId(nodeType as ValueOf<typeof TRIGGER_NODE_TYPES>)
+    nodeData.config = {}
+  }
 
   return {
     id: options?.id || generateNodeId(),
     type: options?.type || reactFlowNodeType,
     position,
-    data: {
-      type: nodeType
-    }
+    data: nodeData
   }
 }
 

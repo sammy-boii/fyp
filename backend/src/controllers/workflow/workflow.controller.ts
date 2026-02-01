@@ -13,7 +13,9 @@ import {
   TriggerType,
   WorkflowExecutionStatus
 } from '@shared/prisma/generated/prisma/enums'
+import { TRIGGER_ACTION_ID } from '@shared/constants'
 import { executeNodeLogic } from '@/src/executors/node-executor'
+import { isTriggerNode, isManualTrigger } from '@/src/executors/trigger-executor'
 import { replacePlaceholdersInConfig } from '@/src/lib/placeholder'
 
 import {
@@ -123,6 +125,32 @@ const buildExecutionOrder = (
   return executionOrder
 }
 
+/**
+ * Detect trigger node and determine trigger type from workflow nodes.
+ */
+const getTriggerInfo = (nodes: TWorkflowNode[]): {
+  triggerType: TriggerType
+  triggerNode: TWorkflowNode | null
+} => {
+  // Find the trigger node (the one with a trigger action ID)
+  const triggerNode = nodes.find((node) =>
+    isTriggerNode(node.data.actionId)
+  ) || null
+
+  if (!triggerNode) {
+    // No trigger node found, default to manual
+    return { triggerType: TriggerType.MANUAL, triggerNode: null }
+  }
+
+  // Determine trigger type based on the trigger node's action
+  const isManual = isManualTrigger(triggerNode.data.actionId)
+
+  return {
+    triggerType: isManual ? TriggerType.MANUAL : TriggerType.WEBHOOK,
+    triggerNode
+  }
+}
+
 export const runWorkflow = tryCatch(async (c: Context) => {
   const workflowId = c.req.param('id')
   const user = c.get('user')
@@ -150,11 +178,14 @@ export const runWorkflow = tryCatch(async (c: Context) => {
   const nodes = workflow.nodes as TWorkflowNode[]
   const edges = workflow.edges as TWorkflowEdge[]
 
+  // Detect trigger type from workflow nodes
+  const { triggerType } = getTriggerInfo(nodes)
+
   const execution = await prisma.workflowExecution.create({
     data: {
       workflowId: workflow.id,
       status: WorkflowExecutionStatus.RUNNING,
-      triggerType: TriggerType.MANUAL
+      triggerType: triggerType
     }
   })
 

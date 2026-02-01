@@ -11,7 +11,7 @@ import {
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-import { Play, Settings, Trash2, Plus } from 'lucide-react'
+import { Play, Settings, RefreshCw, Plus } from 'lucide-react'
 import Image from 'next/image'
 import React, { useState, useCallback } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
@@ -32,15 +32,6 @@ import {
   ContextMenuTrigger
 } from '@/components/ui/context-menu'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from '@/components/ui/dialog'
 
 import { TRIGGER_NODE_TYPES, ALL_NODE_TYPES } from '@/constants'
 import {
@@ -65,7 +56,7 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
     useWorkflowEditor()
 
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [replaceSheetOpen, setReplaceSheetOpen] = useState(false)
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
 
   // Get available inputs from predecessor nodes (stored in their data.lastOutput)
@@ -131,76 +122,37 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
     setSheetOpen(false)
   }
 
-  const handleExecuteNode = useCallback(async () => {
-    if (!workflowId) {
-      return
-    }
-
-    if (!data.actionId || !data.config) {
-      return
-    }
-
-    // Don't execute if any other operation is pending
-    if (isAnyOperationPending) {
-      return
-    }
-
-    setIsExecutingNode(true)
-    try {
-      // Auto-save workflow if there are changes before executing
-      await saveIfChanged()
-
-      const result = await executeNodeMutation.mutateAsync({
-        workflowId,
-        nodeId: id
-      })
-
-      // Store the output in the node's data (persisted with workflow)
-      if (result?.data?.output) {
-        setNodes((nds) =>
-          nds.map((n) =>
-            n.id === id
-              ? {
-                  ...n,
-                  data: {
-                    ...n.data,
-                    lastOutput: result.data.output,
-                    lastExecutedAt: new Date().toISOString()
-                  }
-                }
-              : n
-          )
-        )
-      }
-    } finally {
-      setIsExecutingNode(false)
-    }
-  }, [
-    workflowId,
-    data.actionId,
-    data.config,
-    executeNodeMutation,
-    id,
-    setNodes,
-    saveIfChanged,
-    isAnyOperationPending,
-    setIsExecutingNode
-  ])
-
   const handleConfigure = useCallback(() => {
     setConfigDialogOpen(true)
   }, [])
 
-  const handleDelete = useCallback(() => {
-    // Remove the node and all connected edges directly
-    setNodes((nds) => nds.filter((n) => n.id !== id))
-    setEdges((eds) => {
-      const filtered = eds.filter((e) => e.source !== id && e.target !== id)
-      return filtered
-    })
+  const handleReplaceTrigger = useCallback(
+    (newTriggerType: ValueOf<typeof TRIGGER_NODE_TYPES>) => {
+      // Get current node position
+      const nodes = getNodes()
+      const currentNode = nodes.find((n) => n.id === id)
+      if (!currentNode) return
 
-    setDeleteDialogOpen(false)
-  }, [id, setNodes, setEdges])
+      // Create new node data with the new trigger type
+      // The createNode function auto-configures trigger nodes
+      const newNode = createNode(newTriggerType, currentNode.position, { id })
+
+      // Replace the node data
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === id
+            ? {
+                ...n,
+                data: newNode.data
+              }
+            : n
+        )
+      )
+
+      setReplaceSheetOpen(false)
+    },
+    [id, getNodes, setNodes]
+  )
 
   const handleSaveConfig = useCallback(
     (configData: { nodeId: string; actionId: TActionID; config: any }) => {
@@ -270,43 +222,22 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
                 isTrigger
               />
             )}
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <DialogTrigger asChild>
+            <Sheet open={replaceSheetOpen} onOpenChange={setReplaceSheetOpen}>
+              <SheetTrigger asChild>
                 <Button
                   size='icon'
                   variant='outline'
-                  className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-destructive/10 hover:border-destructive/60 hover:text-destructive hover:shadow-md transition-all'
+                  className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-accent/50 hover:border-accent/60 hover:shadow-md transition-all'
                 >
-                  <Trash2 className='h-3 w-3' />
+                  <RefreshCw className='h-3 w-3' />
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle className='flex items-center gap-2'>
-                    <div className='p-2 rounded-md bg-destructive/20'>
-                      <Trash2 className='size-5 text-destructive' />
-                    </div>
-                    Delete Trigger
-                  </DialogTitle>
-                  <DialogDescription>
-                    Are you sure you want to delete this trigger? This action
-                    cannot be undone and will remove all connections to this
-                    trigger.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button
-                    variant='outline'
-                    onClick={() => setDeleteDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button variant='destructive' onClick={handleDelete}>
-                    Delete
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+              </SheetTrigger>
+              <AddNodeSheetContent
+                onOpenChange={setReplaceSheetOpen}
+                onAddNode={(nodeType) => handleReplaceTrigger(nodeType as ValueOf<typeof TRIGGER_NODE_TYPES>)}
+                showOnlyTriggers
+              />
+            </Sheet>
           </div>
 
           <Card
@@ -393,11 +324,10 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
 
         <ContextMenuItem
           className='gap-3'
-          variant='destructive'
-          onClick={() => setDeleteDialogOpen(true)}
+          onClick={() => setReplaceSheetOpen(true)}
         >
-          <Trash2 className='h-4 w-4' />
-          Delete
+          <RefreshCw className='h-4 w-4' />
+          Replace
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

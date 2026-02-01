@@ -59,6 +59,43 @@ export async function getWorkflow(id: string) {
       throw new Error('Workflow not found or access denied')
     }
 
+    // Fetch the latest completed execution with node outputs
+    const latestExecution = await prisma.workflowExecution.findFirst({
+      where: {
+        workflowId: id,
+        status: 'COMPLETED'
+      },
+      orderBy: { completedAt: 'desc' },
+      include: {
+        nodeExecutions: {
+          select: {
+            nodeId: true,
+            outputData: true
+          }
+        }
+      }
+    })
+
+    // Merge lastOutput into nodes if we have execution data
+    if (latestExecution && Array.isArray(workflow.nodes)) {
+      const nodeOutputMap = new Map(
+        latestExecution.nodeExecutions.map((ne) => [ne.nodeId, ne.outputData])
+      )
+
+      const nodesWithOutput = (workflow.nodes as any[]).map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          lastOutput: nodeOutputMap.get(node.id) || undefined
+        }
+      }))
+
+      return {
+        ...workflow,
+        nodes: nodesWithOutput
+      }
+    }
+
     return workflow
   })
 }

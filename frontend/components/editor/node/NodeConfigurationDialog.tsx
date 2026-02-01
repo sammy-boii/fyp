@@ -36,6 +36,7 @@ const NodeConfigurationDialog = ({
   availableInputs?: NodeInputSource[]
   nodeOutput?: NodeOutputData
 }) => {
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTitle className='sr-only'>Node Configuration</DialogTitle>

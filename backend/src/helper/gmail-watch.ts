@@ -45,10 +45,6 @@ export async function setupGmailWatch(
     }
   })
 
-  console.log(
-    `Gmail watch set up for ${providerEmail}, expires: ${new Date(parseInt(watchData.expiration))}`
-  )
-
   return watchData
 }
 

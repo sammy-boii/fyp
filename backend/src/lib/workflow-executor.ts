@@ -12,6 +12,14 @@ import {
 import { executeNodeLogic } from '@/src/executors/node-executor'
 import { replacePlaceholdersInConfig } from '@/src/lib/placeholder'
 import { AppError } from '@/src/types'
+import {
+  emitWorkflowStart,
+  emitNodeStart,
+  emitNodeComplete,
+  emitNodeError,
+  emitWorkflowComplete,
+  emitWorkflowError
+} from '@/src/lib/websocket'
 
 /**
  * Execute a workflow programmatically (not from HTTP request).
@@ -46,7 +54,7 @@ export async function executeWorkflowById(
     // Store outputs from executed nodes for placeholder replacement
     const nodeOutputs = new Map<string, Record<string, any>>()
 
-    // If trigger data is provided, seed it as the first output
+    // If trigger data is provided, seed it as the first output and create execution record
     if (triggerData) {
       // Find the trigger node and set its output
       const triggerNode = nodes.find((node) =>
@@ -54,14 +62,42 @@ export async function executeWorkflowById(
       )
       if (triggerNode) {
         nodeOutputs.set(triggerNode.id, triggerData)
+        
+        // Create NodeExecution record for the trigger node
+        await prisma.nodeExecution.create({
+          data: {
+            executionId: execution.id,
+            nodeId: triggerNode.id,
+            nodeType: triggerNode.type,
+            actionId: triggerNode.data.actionId || 'discord_webhook',
+            config: triggerNode.data.config || {},
+            status: NodeExecutionStatus.COMPLETED,
+            outputData: triggerData,
+            startedAt: new Date(),
+            completedAt: new Date()
+          }
+        })
+
+        // Emit websocket event for trigger node
+        emitNodeComplete(
+          workflowId,
+          execution.id,
+          triggerNode.id,
+          triggerData,
+          { current: 1, total: nodes.length }
+        )
       }
     }
+
+    // Emit workflow start event
+    emitWorkflowStart(workflowId, execution.id, nodes.length)
 
     try {
       // Build execution order
       const executionOrder = buildExecutionOrder(nodes, edges)
 
       // Execute nodes in order
+      let nodeIndex = triggerData ? 1 : 0 // Start from 1 if trigger already counted
       for (const nodeId of executionOrder) {
         const node = nodes.find((n) => n.id === nodeId)
         if (!node) continue
@@ -71,10 +107,27 @@ export async function executeWorkflowById(
           continue
         }
 
+        nodeIndex++
+        const progress = { current: nodeIndex, total: nodes.length }
+
+        // Emit node start event
+        emitNodeStart(
+          workflowId,
+          execution.id,
+          nodeId,
+          node.data?.type || 'Unknown',
+          node.data?.actionId || 'unknown',
+          progress
+        )
+
         const result = await executeNode(node, execution.id, nodeOutputs)
 
         if (!result.success) {
           const duration = Date.now() - startTime
+          
+          // Emit node error event
+          emitNodeError(workflowId, execution.id, nodeId, result.error || 'Unknown error', progress)
+          
           await prisma.workflowExecution.update({
             where: { id: execution.id },
             data: {
@@ -84,12 +137,19 @@ export async function executeWorkflowById(
               completedAt: new Date()
             }
           })
+          
+          // Emit workflow error event
+          emitWorkflowError(workflowId, execution.id, result.error || 'Unknown error', duration)
+          
           return {
             success: false,
             executionId: execution.id,
             error: result.error
           }
         }
+
+        // Emit node complete event
+        emitNodeComplete(workflowId, execution.id, nodeId, result.data, progress)
 
         // Store the output for use by subsequent nodes
         if (result.data) {
@@ -113,6 +173,9 @@ export async function executeWorkflowById(
         where: { id: workflow.id },
         data: { lastExecutedAt: new Date() }
       })
+
+      // Emit workflow complete event
+      emitWorkflowComplete(workflowId, execution.id, duration)
 
       return { success: true, executionId: execution.id }
     } catch (error: any) {

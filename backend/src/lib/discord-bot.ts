@@ -34,13 +34,23 @@ client.on(Events.MessageCreate, async (message) => {
   const channelId = message.channel.id
   const authorId = message.author.id
 
+  console.log("🔍 Cache stats:", triggerCache.getStats())
+  console.log(`📍 Looking for triggers: guildId=${guildId}, channelId=${channelId}`)
+  
   // Look up matching triggers from cache
   const matchingTriggers = triggerCache.getTriggersForMessage(
     guildId,
     channelId,
     authorId
   )
-  console.log("AAA", matchingTriggers.length)
+  
+  console.log("🎯 Matching triggers:", matchingTriggers.map(t => t.workflowId))
+  
+  // Check for duplicates
+  const uniqueWorkflowIds = new Set(matchingTriggers.map(t => t.workflowId))
+  if (uniqueWorkflowIds.size !== matchingTriggers.length) {
+    console.warn("⚠️ DUPLICATE TRIGGERS DETECTED!")
+  }
 
   if (matchingTriggers.length === 0) {
     return // No workflows to trigger

@@ -8,4 +8,7 @@ export const createWorkflowSchema = z.object({
   edges: z.array(z.any())
 })
 
-export const updateWorkflowSchema = createWorkflowSchema
+// Use partial schema for updates - all fields optional
+export const updateWorkflowSchema = createWorkflowSchema.partial().extend({
+  isActive: z.boolean().optional()
+})

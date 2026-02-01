@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { ColumnDef } from '@tanstack/react-table'
 import {
   Edit,
@@ -37,7 +38,7 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import { useState } from 'react'
-import { useDeleteWorkflow } from '@/hooks/use-workflows'
+import { useDeleteWorkflow, useUpdateWorkflow } from '@/hooks/use-workflows'
 
 export type WorkflowRow = {
   id: string
@@ -48,6 +49,7 @@ export type WorkflowRow = {
   executionCount: number
   createdAt: Date
   updatedAt: Date
+  isActive: boolean
 }
 
 function formatDate(iso: string | null | undefined) {
@@ -136,18 +138,23 @@ export const columns: ColumnDef<WorkflowRow>[] = [
       )
     }
   },
+  // {
+  //   accessorKey: 'updatedAt',
+  //   header: 'Last Modified',
+  //   cell: ({ getValue }) => {
+  //     const updatedAt = getValue() as string
+  //     return (
+  //       <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+  //         <Edit className='h-4 w-4' />
+  //         <span>{formatDate(updatedAt)}</span>
+  //       </div>
+  //     )
+  //   }
+  // },
   {
-    accessorKey: 'updatedAt',
-    header: 'Last Modified',
-    cell: ({ getValue }) => {
-      const updatedAt = getValue() as string
-      return (
-        <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-          <Edit className='h-4 w-4' />
-          <span>{formatDate(updatedAt)}</span>
-        </div>
-      )
-    }
+    id: 'status',
+    header: 'Status',
+    cell: ({ row }) => <StatusCell workflow={row.original} />
   },
   {
     id: 'actions',
@@ -155,6 +162,35 @@ export const columns: ColumnDef<WorkflowRow>[] = [
     cell: ({ row }) => <ActionCell workflow={row.original} />
   }
 ]
+
+function StatusCell({ workflow }: { workflow: WorkflowRow }) {
+  const [optimisticActive, setOptimisticActive] = useState(workflow.isActive)
+  const updateWorkflowMutation = useUpdateWorkflow()
+
+  const handleToggleActive = (active: boolean) => {
+    setOptimisticActive(active) // Optimistic update
+    updateWorkflowMutation.mutate(
+      {
+        id: workflow.id,
+        data: { isActive: active }
+      },
+      {
+        onError: () => {
+          setOptimisticActive(workflow.isActive) // Revert on error
+        }
+      }
+    )
+  }
+
+  return (
+    <div className='flex items-center gap-2'>
+      <Switch
+        checked={optimisticActive}
+        onCheckedChange={handleToggleActive}
+      />
+    </div>
+  )
+}
 
 function ActionCell({ workflow }: { workflow: WorkflowRow }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -192,11 +228,6 @@ function ActionCell({ workflow }: { workflow: WorkflowRow }) {
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem className='hover:bg-green-500/10 focus:bg-green-500/10 text-green-500 hover:text-green-500!'>
-                <Play className='text-green-500 mr-1 bg-green-500/10 h-4 w-4' />
-                Activate
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem
                 className='text-destructive hover:bg-destructive/10 focus:bg-destructive/10 hover:text-destructive!'
                 onClick={() => setDeleteDialogOpen(true)}

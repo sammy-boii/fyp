@@ -15,8 +15,10 @@ type WorkflowEditorContextValue = {
   isSaving: boolean
   isExecutingWorkflow: boolean
   isExecutingNode: boolean
+  isTogglingActive: boolean
   isAnyOperationPending: boolean
   setIsExecutingNode: (value: boolean) => void
+  setIsTogglingActive: (value: boolean) => void
 }
 
 const WorkflowEditorContext = createContext<WorkflowEditorContextValue | null>(
@@ -49,6 +51,8 @@ type WorkflowEditorProviderProps = {
   isExecutingWorkflow: boolean
   isExecutingNode: boolean
   setIsExecutingNode: (value: boolean) => void
+  isTogglingActive: boolean
+  setIsTogglingActive: (value: boolean) => void
 }
 
 export function WorkflowEditorProvider({
@@ -61,7 +65,9 @@ export function WorkflowEditorProvider({
   getEdgesHash,
   isExecutingWorkflow,
   isExecutingNode,
-  setIsExecutingNode
+  setIsExecutingNode,
+  isTogglingActive,
+  setIsTogglingActive
 }: WorkflowEditorProviderProps) {
   const { getNodes, getEdges } = useReactFlow()
   const updateWorkflow = useUpdateWorkflow()
@@ -69,7 +75,7 @@ export function WorkflowEditorProvider({
 
   const isSaving = updateWorkflow.isPending
   const isAnyOperationPending =
-    isSaving || isExecutingWorkflow || isExecutingNode
+    isSaving || isExecutingWorkflow || isExecutingNode || isTogglingActive
 
   const saveIfChanged = useCallback(async () => {
     if (isSavingRef.current || isExecutingWorkflow) return
@@ -129,11 +135,14 @@ export function WorkflowEditorProvider({
         isSaving,
         isExecutingWorkflow,
         isExecutingNode,
+        isTogglingActive,
         isAnyOperationPending,
-        setIsExecutingNode
+        setIsExecutingNode,
+        setIsTogglingActive
       }}
     >
       {children}
     </WorkflowEditorContext.Provider>
   )
 }
+

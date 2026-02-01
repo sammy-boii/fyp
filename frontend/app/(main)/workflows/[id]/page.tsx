@@ -79,9 +79,11 @@ function WorkflowViewPageInner() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [workflowName, setWorkflowName] = useState('')
   const [workflowDescription, setWorkflowDescription] = useState('')
+  const [isActive, setIsActive] = useState(false)
   const [, setExecutingNodeId] = useState<string | null>(null)
   const [isExecuting, setIsExecuting] = useState(false)
   const [isExecutingNode, setIsExecutingNode] = useState(false)
+  const [isTogglingActive, setIsTogglingActive] = useState(false)
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const hasInitialized = useRef(false)
   const initialStateRef = useRef<{
@@ -238,6 +240,7 @@ function WorkflowViewPageInner() {
       setEdges(formattedEdges)
       setWorkflowName(workflow.name || '')
       setWorkflowDescription(workflow.description || '')
+      setIsActive(workflow.isActive || false)
       hasInitialized.current = true
       // Store initial state hashes for change detection
       initialStateRef.current = {
@@ -428,6 +431,21 @@ function WorkflowViewPageInner() {
     updateWorkflow
   ])
 
+  const handleToggleActive = useCallback(async (active: boolean) => {
+    if (!workflowId || isTogglingActive) return
+
+    setIsTogglingActive(true)
+    try {
+      await updateWorkflow.mutateAsync({
+        id: workflowId,
+        data: { isActive: active }
+      })
+      setIsActive(active)
+    } finally {
+      setIsTogglingActive(false)
+    }
+  }, [workflowId, isTogglingActive, updateWorkflow])
+
   if (isLoading) {
     return (
       <div className='w-full h-screen flex items-center justify-center'>
@@ -478,6 +496,8 @@ function WorkflowViewPageInner() {
       isExecutingWorkflow={executeWorkflow.isPending || isExecuting}
       isExecutingNode={isExecutingNode}
       setIsExecutingNode={setIsExecutingNode}
+      isTogglingActive={isTogglingActive}
+      setIsTogglingActive={setIsTogglingActive}
     >
       <div className='relative flex flex-col h-screen'>
         {/* Top Bar */}
@@ -491,6 +511,10 @@ function WorkflowViewPageInner() {
           workflowId={workflowId}
           onExecute={handleExecuteWorkflow}
           isExecuting={executeWorkflow.isPending || isExecuting}
+          isActive={isActive}
+          onToggleActive={handleToggleActive}
+          isTogglingActive={isTogglingActive}
+          isWorkflowEmpty={nodes.length === 0}
         />
 
         {/* Edit Workflow Dialog */}

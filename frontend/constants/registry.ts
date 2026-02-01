@@ -56,8 +56,8 @@ export const TRIGGER_NODE_DEFINITIONS: TriggerNodeDefinition = {
     isTrigger: true
   },
   [TRIGGER_NODE_TYPES.DISCORD_WEBHOOK_TRIGGER]: {
-    label: 'Discord Message',
-    description: 'Trigger when a message is sent in a channel',
+    label: 'Discord Webhook',
+    description: 'Trigger when a message is sent',
     actions: DISCORD_WEBHOOK_TRIGGER_ACTIONS,
     icon: discordIcon,
     isTrigger: true

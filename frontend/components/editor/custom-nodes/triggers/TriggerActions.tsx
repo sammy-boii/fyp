@@ -43,10 +43,12 @@ export const GMAIL_WEBHOOK_TRIGGER_ACTIONS: NodeAction[] = [
 export const DISCORD_WEBHOOK_TRIGGER_ACTIONS: NodeAction[] = [
   {
     id: TRIGGER_NODE_ACTION_ID.DISCORD_WEBHOOK_TRIGGER,
-    label: 'Discord Message',
+    label: 'Discord Webhook',
     description: 'Trigger when a message is sent in a channel',
     icon: MessageSquare,
+    requiresCredential: true,
     configForm: <DiscordWebhookTriggerForm />,
     configFormSchema: discordWebhookTriggerFormSchema
   }
 ]
+

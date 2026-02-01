@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Save, SquarePen, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { useWorkflowEditor } from '../_context/WorkflowEditorContext'
 
 interface WorkflowHeaderProps {
@@ -14,6 +15,10 @@ interface WorkflowHeaderProps {
   workflowId: string | null
   onExecute: () => void
   isExecuting: boolean
+  isActive: boolean
+  onToggleActive: (active: boolean) => void
+  isTogglingActive: boolean
+  isWorkflowEmpty: boolean
 }
 
 export function WorkflowHeader({
@@ -24,7 +29,11 @@ export function WorkflowHeader({
   isSaving,
   workflowId,
   onExecute,
-  isExecuting
+  isExecuting,
+  isActive,
+  onToggleActive,
+  isTogglingActive,
+  isWorkflowEmpty
 }: WorkflowHeaderProps) {
   const { isAnyOperationPending } = useWorkflowEditor()
 
@@ -53,14 +62,24 @@ export function WorkflowHeader({
           <SquarePen className='size-3.5' />
         </Button>
       </div>
-      <div className='flex items-center gap-1.5 shrink-0'>
+      <div className='flex items-center gap-3 shrink-0'>
+        <div className='flex items-center mr-4 gap-2'>
+          <span className='text-xs font-medium text-muted-foreground'>
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
+          <Switch
+            checked={isActive}
+            onCheckedChange={onToggleActive}
+            disabled={isAnyOperationPending || !workflowId}
+          />
+        </div>
         <Button
           variant='outline'
           size='sm'
           className='gap-1.5 px-2 w-24 h-8 text-xs'
           onClick={onExecute}
           isLoading={isExecuting}
-          disabled={isAnyOperationPending || !workflowId}
+          disabled={isAnyOperationPending || !workflowId || isWorkflowEmpty}
         >
           <Play className='h-3.5 w-3.5' />
           Execute

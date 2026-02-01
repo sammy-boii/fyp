@@ -54,7 +54,7 @@ export function useUpdateWorkflow() {
     mutationFn: ({ id, data }: { id: string; data: Partial<Workflow> }) =>
       updateWorkflow(id, data),
     onMutate: async () => {
-      const toastId = toast.loading('Saving workflow...')
+      const toastId = toast.loading('Updating workflow...')
       return toastId
     },
     onSuccess: (data, variables, toastId) => {

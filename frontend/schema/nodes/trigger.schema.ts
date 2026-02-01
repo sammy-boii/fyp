@@ -11,6 +11,7 @@ export const gmailWebhookTriggerFormSchema = z.object({
 
 // Discord webhook trigger schema
 export const discordWebhookTriggerFormSchema = z.object({
-  guildId: z.string().optional(),
-  channelId: z.string().optional()
+  guildId: z.string().min(1, 'Server is required'),
+  channelId: z.string().min(1, 'Channel is required'),
+  userId: z.string().optional()
 })

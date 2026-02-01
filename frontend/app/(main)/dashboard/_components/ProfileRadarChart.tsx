@@ -72,7 +72,7 @@ export function ProfileRadarChart() {
       </CardHeader>
       <CardContent className='pb-0'>
         {chartData.length === 0 ? (
-          <div className='flex aspect-square max-h-[250px] items-center justify-center text-muted-foreground'>
+          <div className='flex w-full aspect-square max-h-[250px] items-center justify-center text-center text-muted-foreground'>
             <p>Run workflows to see action usage</p>
           </div>
         ) : (

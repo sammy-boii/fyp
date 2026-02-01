@@ -77,7 +77,7 @@ export function ProfileRadialChart() {
           {successData.rate >= 50 ? (
             <CheckCircle2 className='h-4 w-4 text-muted-foreground' />
           ) : (
-            <XCircle className='h-4 w-4 text-red-500' />
+            <XCircle className='h-4 w-4 text-muted-foreground' />
           )}
           Success Rate
         </CardTitle>

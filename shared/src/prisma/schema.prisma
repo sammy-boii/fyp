@@ -129,10 +129,29 @@ model OAuthCredential {
   refreshTokenExpiresAt DateTime?
   scopes                String[]
 
+  discordGuilds DiscordGuild[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // A user can only have one credential for a unique service from a unique provider
   @@unique([provider, service, userId])
   @@index([userId])
+}
+
+// Track which Discord guilds a user has authorized the bot for
+model DiscordGuild {
+  id           String          @id @default(cuid())
+  credentialId String
+  credential   OAuthCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  guildId   String // Discord's guild ID
+  guildName String? // Optional: store guild name for display without API call
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // A credential can only have one entry per guild
+  @@unique([credentialId, guildId])
+  @@index([credentialId])
 }

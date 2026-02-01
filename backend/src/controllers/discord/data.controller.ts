@@ -34,8 +34,8 @@ async function discordRequest(
 }
 
 /**
- * List all guilds (servers) the bot is in
- * Used for dropdowns in the frontend
+ * List guilds (servers) that the user has authorized the bot for
+ * Only returns guilds that the specific user added, not all guilds the bot is in
  */
 export const listGuilds = tryCatch(async (c) => {
   const user = c.get('user')
@@ -45,12 +45,15 @@ export const listGuilds = tryCatch(async (c) => {
     throw new AppError('Credential ID is required', 400)
   }
 
-  // Verify the credential belongs to the user
+  // Verify the credential belongs to the user and get associated guilds
   const credential = await prisma.oAuthCredential.findFirst({
     where: {
       id: credentialId,
       userId: user.id,
       provider: 'discord'
+    },
+    include: {
+      discordGuilds: true
     }
   })
 
@@ -58,19 +61,49 @@ export const listGuilds = tryCatch(async (c) => {
     throw new AppError('Discord credential not found', 404)
   }
 
+  // If no guilds are authorized, return empty array
+  if (!credential.discordGuilds || credential.discordGuilds.length === 0) {
+    return c.json({
+      success: true,
+      data: []
+    })
+  }
+
   const botToken = await getDiscordBotToken(credentialId)
 
-  // Fetch guilds the bot is in
-  const guilds = await discordRequest('/users/@me/guilds?limit=100', botToken)
+  // Fetch full guild info from Discord API for each authorized guild
+  const guildPromises = credential.discordGuilds.map(async (discordGuild) => {
+    try {
+      const guild = await discordRequest(
+        `/guilds/${discordGuild.guildId}`,
+        botToken
+      )
+      return {
+        id: guild.id,
+        name: guild.name,
+        icon: guild.icon
+          ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`
+          : null,
+        owner: false // We don't have this info from /guilds/:id endpoint
+      }
+    } catch (error) {
+      // If we can't fetch the guild (bot was removed), use stored info or skip
+      if (discordGuild.guildName) {
+        return {
+          id: discordGuild.guildId,
+          name: discordGuild.guildName,
+          icon: null,
+          owner: false
+        }
+      }
+      return null
+    }
+  })
 
-  const items = guilds.map((guild: any) => ({
-    id: guild.id,
-    name: guild.name,
-    icon: guild.icon
-      ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`
-      : null,
-    owner: guild.owner
-  }))
+  const guildsResults = await Promise.all(guildPromises)
+
+  // Filter out null results (guilds that couldn't be fetched and have no stored name)
+  const items = guildsResults.filter((guild) => guild !== null)
 
   return c.json({
     success: true,
@@ -112,10 +145,7 @@ export const listChannels = tryCatch(async (c) => {
   const botToken = await getDiscordBotToken(credentialId)
 
   // Fetch channels in the guild
-  const channels = await discordRequest(
-    `/guilds/${guildId}/channels`,
-    botToken
-  )
+  const channels = await discordRequest(`/guilds/${guildId}/channels`, botToken)
 
   // Channel type mapping
   const CHANNEL_TYPES: Record<string, number> = {

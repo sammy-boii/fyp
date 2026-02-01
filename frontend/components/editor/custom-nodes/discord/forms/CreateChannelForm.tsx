@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/placeholder-input'
 import { Controller, useFormContext } from 'react-hook-form'
 import { GuildPicker } from './GuildPicker'
-import { ChannelPicker } from './ChannelPicker'
+import { Hash, Volume2, Megaphone, MessageSquare } from 'lucide-react'
 
 export function CreateChannelForm() {
   const { control } = useFormContext()
@@ -77,12 +77,30 @@ export function CreateChannelForm() {
                 <SelectValue placeholder='Select channel type' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='text'>Text Channel</SelectItem>
-                <SelectItem value='voice'>Voice Channel</SelectItem>
-                <SelectItem value='announcement'>
-                  Announcement Channel
+                <SelectItem value='text'>
+                  <div className='flex items-center gap-2'>
+                    <Hash className='h-4 w-4 text-muted-foreground' />
+                    <span>Text Channel</span>
+                  </div>
                 </SelectItem>
-                <SelectItem value='forum'>Forum Channel</SelectItem>
+                <SelectItem value='voice'>
+                  <div className='flex items-center gap-2'>
+                    <Volume2 className='h-4 w-4 text-muted-foreground' />
+                    <span>Voice Channel</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value='announcement'>
+                  <div className='flex items-center gap-2'>
+                    <Megaphone className='h-4 w-4 text-muted-foreground' />
+                    <span>Announcement Channel</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value='forum'>
+                  <div className='flex items-center gap-2'>
+                    <MessageSquare className='h-4 w-4 text-muted-foreground' />
+                    <span>Forum Channel</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
             <FieldError errors={[fieldState.error]} />
@@ -106,29 +124,6 @@ export function CreateChannelForm() {
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />
-          </Field>
-        )}
-      />
-
-      <Controller
-        name='parentId'
-        control={control}
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel className='text-xs font-medium'>
-              Category (Optional)
-            </FieldLabel>
-            <ChannelPicker
-              value={field.value || ''}
-              onChange={field.onChange}
-              channelType='category'
-              placeholder='Select a category...'
-              aria-invalid={fieldState.invalid}
-            />
-            <FieldError errors={[fieldState.error]} />
-            <p className='text-xs text-muted-foreground mt-1'>
-              Place the channel under a specific category
-            </p>
           </Field>
         )}
       />

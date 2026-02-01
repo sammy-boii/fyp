@@ -10,6 +10,14 @@ import {
 } from '@/components/ui/select'
 import { Controller, useFormContext } from 'react-hook-form'
 import { GuildPicker } from './GuildPicker'
+import {
+  Hash,
+  Volume2,
+  Folder,
+  Megaphone,
+  MessageSquare,
+  LayoutList
+} from 'lucide-react'
 
 export function ListChannelsForm() {
   const { control } = useFormContext()
@@ -45,14 +53,42 @@ export function ListChannelsForm() {
                 <SelectValue placeholder='All channel types' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='all'>All Types</SelectItem>
-                <SelectItem value='text'>Text Channels</SelectItem>
-                <SelectItem value='voice'>Voice Channels</SelectItem>
-                <SelectItem value='category'>Categories</SelectItem>
-                <SelectItem value='announcement'>
-                  Announcement Channels
+                <SelectItem value='all'>
+                  <div className='flex items-center gap-2'>
+                    <LayoutList className='h-4 w-4 text-muted-foreground' />
+                    <span>All Types</span>
+                  </div>
                 </SelectItem>
-                <SelectItem value='forum'>Forum Channels</SelectItem>
+                <SelectItem value='text'>
+                  <div className='flex items-center gap-2'>
+                    <Hash className='h-4 w-4 text-muted-foreground' />
+                    <span>Text Channels</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value='voice'>
+                  <div className='flex items-center gap-2'>
+                    <Volume2 className='h-4 w-4 text-muted-foreground' />
+                    <span>Voice Channels</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value='category'>
+                  <div className='flex items-center gap-2'>
+                    <Folder className='h-4 w-4 text-muted-foreground' />
+                    <span>Categories</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value='announcement'>
+                  <div className='flex items-center gap-2'>
+                    <Megaphone className='h-4 w-4 text-muted-foreground' />
+                    <span>Announcement Channels</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value='forum'>
+                  <div className='flex items-center gap-2'>
+                    <MessageSquare className='h-4 w-4 text-muted-foreground' />
+                    <span>Forum Channels</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
             <FieldError errors={[fieldState.error]} />

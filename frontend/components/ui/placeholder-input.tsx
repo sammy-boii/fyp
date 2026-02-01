@@ -99,7 +99,7 @@ function PlaceholderTextarea({
       {hasPlaceholder && !isFocused && (
         <div
           className={cn(
-            'pointer-events-none absolute inset-0 px-3 py-2 text-base md:text-sm overflow-hidden whitespace-pre-wrap break-words',
+            'pointer-events-none absolute inset-0 px-3 py-2 text-base md:text-sm overflow-hidden whitespace-pre-wrap wrap-break-word',
             'rounded-md border border-transparent'
           )}
           onClick={() => textareaRef.current?.focus()}

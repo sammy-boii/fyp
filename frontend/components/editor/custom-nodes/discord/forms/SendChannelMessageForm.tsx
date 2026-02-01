@@ -40,7 +40,7 @@ export function SendChannelMessageForm() {
             <ChannelPicker
               value={field.value || ''}
               onChange={field.onChange}
-              channelType='text'
+              channelType='all'
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />

@@ -29,7 +29,14 @@ export const API_ROUTES = {
       GMAIL_API_BASE_URL +
       `/users/me/messages/${messageId}/attachments/${attachmentId}`,
 
-    SEND_MESSAGE: GMAIL_API_BASE_URL + `/users/me/messages/send`
+    SEND_MESSAGE: GMAIL_API_BASE_URL + `/users/me/messages/send`,
+
+    // Gmail Push Notifications
+    WATCH: GMAIL_API_BASE_URL + `/users/me/watch`,
+    STOP_WATCH: GMAIL_API_BASE_URL + `/users/me/stop`,
+    HISTORY_LIST: (startHistoryId: string) =>
+      GMAIL_API_BASE_URL +
+      `/users/me/history?startHistoryId=${startHistoryId}&historyTypes=messageAdded`
   },
 
   GOOGLE_DRIVE: {
@@ -53,11 +60,15 @@ export const API_ROUTES = {
 
   DISCORD: {
     GET_CHANNEL_MESSAGES: (channelId: string) =>
-     DISCORD_API_BASE_URL+ `/channels/${channelId}/messages`,
-    LIST_GUIDS: (limit: number) => DISCORD_API_BASE_URL+`/users/@me/guilds?limit=${limit}`,
-    LIST_CHANNELS: (guildId: string) => DISCORD_API_BASE_URL+`/guilds/${guildId}/channels`,
-    CREATE_CHANNEL: (guildId: string) => DISCORD_API_BASE_URL+`/guilds/${guildId}/channels`,
-    CREATE_DM_CHANNEL: DISCORD_API_BASE_URL+`/users/@me/channels`,
-    SEND_DM: (channelId: string) => DISCORD_API_BASE_URL+`/channels/${channelId}/messages`
+      DISCORD_API_BASE_URL + `/channels/${channelId}/messages`,
+    LIST_GUIDS: (limit: number) =>
+      DISCORD_API_BASE_URL + `/users/@me/guilds?limit=${limit}`,
+    LIST_CHANNELS: (guildId: string) =>
+      DISCORD_API_BASE_URL + `/guilds/${guildId}/channels`,
+    CREATE_CHANNEL: (guildId: string) =>
+      DISCORD_API_BASE_URL + `/guilds/${guildId}/channels`,
+    CREATE_DM_CHANNEL: DISCORD_API_BASE_URL + `/users/@me/channels`,
+    SEND_DM: (channelId: string) =>
+      DISCORD_API_BASE_URL + `/channels/${channelId}/messages`
   }
 }

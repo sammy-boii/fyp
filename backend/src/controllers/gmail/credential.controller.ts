@@ -3,6 +3,7 @@ import { encryptToken } from '@/src/lib/crypto'
 import { tryCatch } from '@/src/lib/utils'
 import { AppError } from '@/src/types'
 import { prisma } from '@shared/db/prisma'
+import { setupGmailWatch } from '@/src/helper/gmail-watch'
 
 export const addOrUpdateCredential = tryCatch(async (c) => {
   const googleUser = c.get('user-google')
@@ -30,7 +31,7 @@ export const addOrUpdateCredential = tryCatch(async (c) => {
     ? new Date(Date.now() + refreshToken.expires_in * 1000)
     : null
 
-  await prisma.oAuthCredential.upsert({
+  const credential = await prisma.oAuthCredential.upsert({
     where: {
       provider_service_userId: {
         provider: 'google',
@@ -57,6 +58,15 @@ export const addOrUpdateCredential = tryCatch(async (c) => {
       scopes
     }
   })
+
+  // Set up Gmail push notifications watch
+  try {
+    await setupGmailWatch(accessToken.token, credential.id, googleUser.email)
+    console.log(`Gmail watch set up successfully for ${googleUser.email}`)
+  } catch (error) {
+    console.error('Failed to set up Gmail watch:', error)
+    // Don't fail the OAuth flow if watch setup fails
+  }
 
   // must always return in hono else undefined will be returned which serealizes into {}
   return c.redirect(FRONTEND_BASE_URL + '/credentials')

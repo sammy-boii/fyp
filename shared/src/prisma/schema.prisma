@@ -129,6 +129,11 @@ model OAuthCredential {
   refreshTokenExpiresAt DateTime?
   scopes                String[]
 
+  // Gmail Pub/Sub watch fields
+  providerEmail        String? // The email address associated with this credential
+  gmailHistoryId       String? // Last known history ID for tracking changes
+  gmailWatchExpiration DateTime? // When the watch expires (renew before this)
+
   discordGuilds DiscordGuild[]
 
   createdAt DateTime @default(now())
@@ -137,6 +142,7 @@ model OAuthCredential {
   // A user can only have one credential for a unique service from a unique provider
   @@unique([provider, service, userId])
   @@index([userId])
+  @@index([providerEmail]) // For quick lookup when webhook arrives
 }
 
 // Track which Discord guilds a user has authorized the bot for

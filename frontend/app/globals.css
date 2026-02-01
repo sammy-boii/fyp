@@ -115,6 +115,12 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  *:hover {
+    scrollbar-color: oklch(0.5 0 0 / 30%) transparent;
   }
 
   body {

@@ -128,7 +128,7 @@ export const BaseConfigurationForm = ({
             onSubmit={form.handleSubmit(onSubmit)}
             className='flex flex-1 flex-col overflow-hidden'
           >
-            <div className='flex-1 overflow-y-scroll pl-4 pr-2 py-4 scrollbar-thin'>
+            <div className='flex-1 overflow-y-scroll pl-4 pr-2 py-4'>
               <div className='space-y-3'>
                 {/* Credential Selection */}
                 {requiresCredential && (

@@ -36,7 +36,7 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import { useState } from 'react'
-import { useDeleteWorkflow, useUpdateWorkflow } from '@/hooks/use-workflows'
+import { useDeleteWorkflow } from '@/hooks/use-workflows'
 
 export type WorkflowRow = {
   id: string
@@ -163,21 +163,25 @@ export const columns: ColumnDef<WorkflowRow>[] = [
 
 function StatusCell({ workflow }: { workflow: WorkflowRow }) {
   const [optimisticActive, setOptimisticActive] = useState(workflow.isActive)
-  const updateWorkflowMutation = useUpdateWorkflow()
+  const [isToggling, setIsToggling] = useState(false)
 
-  const handleToggleActive = (active: boolean) => {
+  const handleToggleActive = async (active: boolean) => {
+    if (isToggling) return
+    
     setOptimisticActive(active) // Optimistic update
-    updateWorkflowMutation.mutate(
-      {
-        id: workflow.id,
-        data: { isActive: active }
-      },
-      {
-        onError: () => {
-          setOptimisticActive(workflow.isActive) // Revert on error
-        }
+    setIsToggling(true)
+    
+    try {
+      const { toggleWorkflowActive } = await import('@/actions/workflow.actions')
+      const result = await toggleWorkflowActive(workflow.id, active)
+      if (!result.data) {
+        setOptimisticActive(workflow.isActive) // Revert on error
       }
-    )
+    } catch {
+      setOptimisticActive(workflow.isActive) // Revert on error
+    } finally {
+      setIsToggling(false)
+    }
   }
 
   return (
@@ -185,6 +189,7 @@ function StatusCell({ workflow }: { workflow: WorkflowRow }) {
       <Switch
         checked={optimisticActive}
         onCheckedChange={handleToggleActive}
+        disabled={isToggling}
       />
     </div>
   )

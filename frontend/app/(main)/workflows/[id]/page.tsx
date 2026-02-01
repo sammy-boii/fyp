@@ -413,38 +413,41 @@ function WorkflowViewPageInner() {
   const handleSaveWorkflow = useCallback(async () => {
     if (!workflowId) return
 
-    await updateWorkflow.mutateAsync({
-      id: workflowId,
-      data: {
-        name: workflowName,
-        description: workflowDescription,
-        nodes: nodes as unknown as any[],
-        edges: edges as unknown as any[]
-      }
-    })
+    const { toast } = await import('sonner')
+
+    try {
+      // Save workflow data
+      await updateWorkflow.mutateAsync({
+        id: workflowId,
+        data: {
+          name: workflowName,
+          description: workflowDescription,
+          nodes: nodes as unknown as any[],
+          edges: edges as unknown as any[]
+        }
+      })
+
+      // Update activation status via the backend endpoint (for cache update)
+      const { toggleWorkflowActive } = await import('@/actions/workflow.actions')
+      await toggleWorkflowActive(workflowId, isActive)
+
+      toast.success('Workflow saved')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save workflow')
+    }
   }, [
     workflowId,
     workflowName,
     workflowDescription,
     nodes,
     edges,
+    isActive,
     updateWorkflow
   ])
 
-  const handleToggleActive = useCallback(async (active: boolean) => {
-    if (!workflowId || isTogglingActive) return
-
-    setIsTogglingActive(true)
-    try {
-      await updateWorkflow.mutateAsync({
-        id: workflowId,
-        data: { isActive: active }
-      })
-      setIsActive(active)
-    } finally {
-      setIsTogglingActive(false)
-    }
-  }, [workflowId, isTogglingActive, updateWorkflow])
+  const handleToggleActive = useCallback((active: boolean) => {
+    setIsActive(active)
+  }, [])
 
   if (isLoading) {
     return (
@@ -515,6 +518,7 @@ function WorkflowViewPageInner() {
           onToggleActive={handleToggleActive}
           isTogglingActive={isTogglingActive}
           isWorkflowEmpty={nodes.length === 0}
+          isManualTrigger={nodes.some((n) => n.data?.actionId === 'on_demand')}
         />
 
         {/* Edit Workflow Dialog */}

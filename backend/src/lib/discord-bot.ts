@@ -1,4 +1,6 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js'
+import { triggerCache } from './trigger-cache'
+import { executeWorkflowById } from './workflow-executor'
 
 // Create Discord client with necessary intents
 const client = new Client({
@@ -20,16 +22,67 @@ client.once(Events.ClientReady, (readyClient) => {
 })
 
 // Listen for new messages
-client.on(Events.MessageCreate, (message) => {
+client.on(Events.MessageCreate, async (message) => {
   // Ignore messages from bots (including this bot)
   if (message.author.bot) return
 
-  console.log('📩 New Discord message received:')
-  console.log(`   Server: ${message.guild?.name || 'DM'}`)
-  console.log(`   Channel: ${message.channel.isDMBased() ? 'DM' : (message.channel as any).name}`)
-  console.log(`   Author: ${message.author.tag}`)
-  console.log(`   Content: ${message.content}`)
-  console.log(`   Timestamp: ${message.createdAt.toISOString()}`)
+  // Ignore DMs
+  if (!message.guild) return
+
+
+  const guildId = message.guild.id
+  const channelId = message.channel.id
+  const authorId = message.author.id
+
+  // Look up matching triggers from cache
+  const matchingTriggers = triggerCache.getTriggersForMessage(
+    guildId,
+    channelId,
+    authorId
+  )
+  console.log("AAA", matchingTriggers.length)
+
+  if (matchingTriggers.length === 0) {
+    return // No workflows to trigger
+  }
+
+  console.log(`📩 Discord message matched ${matchingTriggers.length} workflow(s)`)
+
+  // Build trigger data to pass to workflows
+  const triggerData = {
+    guildId,
+    guildName: message.guild.name,
+    channelId,
+    channelName: (message.channel as any).name || 'unknown',
+    authorId,
+    authorUsername: message.author.username,
+    authorTag: message.author.tag,
+    content: message.content,
+    messageId: message.id,
+    timestamp: message.createdAt.toISOString(),
+    attachments: message.attachments.map((a) => ({
+      name: a.name,
+      url: a.url,
+      contentType: a.contentType
+    }))
+  }
+
+  // Execute each matching workflow
+  for (const trigger of matchingTriggers) {
+    console.log(`🚀 Executing workflow ${trigger.workflowId}...`)
+    
+    try {
+      const result = await executeWorkflowById(trigger.workflowId, triggerData)
+      
+      if (result.success) {
+        console.log(`✅ Workflow ${trigger.workflowId} executed successfully (execution: ${result.executionId})`)
+      } else {
+        console.error(`❌ Workflow ${trigger.workflowId} failed: ${result.error}`)
+      }
+    } catch (error) {
+      console.error(`❌ Error executing workflow ${trigger.workflowId}:`, error)
+    }
+  }
 })
 
 // Initialize the Discord bot

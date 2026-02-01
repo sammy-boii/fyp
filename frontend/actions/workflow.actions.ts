@@ -201,3 +201,35 @@ export async function executeNode(workflowId: string, nodeId: string) {
     return result
   })
 }
+
+/**
+ * Toggle workflow active status.
+ * This calls the backend endpoint to update the trigger cache.
+ */
+export async function toggleWorkflowActive(id: string, isActive: boolean) {
+  return tryCatch(async () => {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      throw new Error('Not authenticated')
+    }
+
+    // Verify the workflow belongs to the current user
+    const workflow = await prisma.workflow.findUnique({
+      where: {
+        id,
+        authorId: user.id
+      }
+    })
+
+    if (!workflow) {
+      throw new Error('Workflow not found or access denied')
+    }
+
+    const result = await api
+      .patch(`api/workflow/${id}/activate`, { json: { isActive } })
+      .json<ApiResponse<{ id: string; isActive: boolean }>>()
+
+    return result.data
+  })
+}

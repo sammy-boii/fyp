@@ -19,6 +19,7 @@ interface WorkflowHeaderProps {
   onToggleActive: (active: boolean) => void
   isTogglingActive: boolean
   isWorkflowEmpty: boolean
+  isManualTrigger: boolean
 }
 
 export function WorkflowHeader({
@@ -32,7 +33,8 @@ export function WorkflowHeader({
   isExecuting,
   isActive,
   onToggleActive,
-  isWorkflowEmpty
+  isWorkflowEmpty,
+  isManualTrigger
 }: WorkflowHeaderProps) {
   const { isAnyOperationPending } = useWorkflowEditor()
 
@@ -78,7 +80,7 @@ export function WorkflowHeader({
           className='gap-1.5 px-2 w-24 h-8 text-xs'
           onClick={onExecute}
           isLoading={isExecuting}
-          disabled={isAnyOperationPending || !workflowId || isWorkflowEmpty}
+          disabled={isAnyOperationPending || !workflowId || isWorkflowEmpty || !isManualTrigger}
         >
           <Play className='h-3.5 w-3.5' />
           Execute

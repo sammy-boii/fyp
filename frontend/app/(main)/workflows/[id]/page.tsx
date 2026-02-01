@@ -416,20 +416,17 @@ function WorkflowViewPageInner() {
     const { toast } = await import('sonner')
 
     try {
-      // Save workflow data
+      // Save workflow data (including isActive - updateWorkflow will handle cache update)
       await updateWorkflow.mutateAsync({
         id: workflowId,
         data: {
           name: workflowName,
           description: workflowDescription,
           nodes: nodes as unknown as any[],
-          edges: edges as unknown as any[]
+          edges: edges as unknown as any[],
+          isActive
         }
       })
-
-      // Update activation status via the backend endpoint (for cache update)
-      const { toggleWorkflowActive } = await import('@/actions/workflow.actions')
-      await toggleWorkflowActive(workflowId, isActive)
 
       toast.success('Workflow saved')
     } catch (err: any) {

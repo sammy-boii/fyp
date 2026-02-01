@@ -8,7 +8,7 @@ import { triggerCache } from '@/src/lib/trigger-cache'
  * Toggle workflow active status.
  * Updates the database and refreshes the trigger cache.
  */
-export const toggleWorkflowActive = tryCatch(async (c: Context) => {
+export const updateWorkflowCache = tryCatch(async (c: Context) => {
   const workflowId = c.req.param('id')
   const user = c.get('user')
 

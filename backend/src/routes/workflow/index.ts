@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { runWorkflow } from '@/src/controllers/workflow/workflow.controller'
 import { executeSingleNode } from '@/src/controllers/workflow/node.controller'
-import { toggleWorkflowActive } from '@/src/controllers/workflow/activation.controller'
+import { updateWorkflowCache } from '@/src/controllers/workflow/cache.controller'
 import { authMiddleware } from '@/src/middleware/auth.middleware'
 
 export const workflowRoutes = new Hono()
@@ -16,5 +16,5 @@ workflowRoutes.get(
   executeSingleNode
 )
 
-// Toggle workflow active status
-workflowRoutes.patch('/:id/activate', authMiddleware, toggleWorkflowActive)
+// Update trigger cache (called when Discord webhook workflow activation changes)
+workflowRoutes.patch('/:id/update-cache', authMiddleware, updateWorkflowCache)

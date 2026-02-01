@@ -172,8 +172,8 @@ function StatusCell({ workflow }: { workflow: WorkflowRow }) {
     setIsToggling(true)
     
     try {
-      const { toggleWorkflowActive } = await import('@/actions/workflow.actions')
-      const result = await toggleWorkflowActive(workflow.id, active)
+      const { updateWorkflow } = await import('@/actions/workflow.actions')
+      const result = await updateWorkflow(workflow.id, { isActive: active })
       if (!result.data) {
         setOptimisticActive(workflow.isActive) // Revert on error
       }

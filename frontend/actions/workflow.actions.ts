@@ -114,6 +114,24 @@ export async function updateWorkflow(id: string, data: Partial<Workflow>) {
       data: parsedData
     })
 
+    // If isActive changed, check if workflow has Discord webhook trigger and update cache
+    if (parsedData.isActive !== undefined && parsedData.isActive !== existing.isActive) {
+      const nodes = workflow.nodes as any[]
+      const hasDiscordTrigger = nodes?.some(
+        (node) => node.data?.actionId === 'discord_webhook'
+      )
+
+      if (hasDiscordTrigger) {
+        try {
+          await api
+            .patch(`api/workflow/${id}/update-cache`, { json: { isActive: parsedData.isActive } })
+            .json()
+        } catch (err) {
+          console.error('Failed to update trigger cache:', err)
+        }
+      }
+    }
+
     return workflow
   })
 }
@@ -199,37 +217,5 @@ export async function executeNode(workflowId: string, nodeId: string) {
       .json<NodeExecutionResult>()
 
     return result
-  })
-}
-
-/**
- * Toggle workflow active status.
- * This calls the backend endpoint to update the trigger cache.
- */
-export async function toggleWorkflowActive(id: string, isActive: boolean) {
-  return tryCatch(async () => {
-    const user = await getCurrentUser()
-
-    if (!user) {
-      throw new Error('Not authenticated')
-    }
-
-    // Verify the workflow belongs to the current user
-    const workflow = await prisma.workflow.findUnique({
-      where: {
-        id,
-        authorId: user.id
-      }
-    })
-
-    if (!workflow) {
-      throw new Error('Workflow not found or access denied')
-    }
-
-    const result = await api
-      .patch(`api/workflow/${id}/activate`, { json: { isActive } })
-      .json<ApiResponse<{ id: string; isActive: boolean }>>()
-
-    return result.data
   })
 }

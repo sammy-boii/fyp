@@ -1,4 +1,4 @@
-import { NODE_ACTION_ID, TRIGGER_ACTION_ID } from '@shared/constants'
+import { NODE_ACTION_ID } from '@shared/constants'
 import { TNodeExecutionResult, TWorkflowNode } from '../types/workflow.types'
 import { executeReadEmail, executeSendEmail } from './gmail-executor'
 import {

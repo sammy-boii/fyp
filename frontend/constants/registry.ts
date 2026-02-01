@@ -49,15 +49,15 @@ export const TRIGGER_NODE_DEFINITIONS: TriggerNodeDefinition = {
     isTrigger: true
   },
   [TRIGGER_NODE_TYPES.GMAIL_WEBHOOK_TRIGGER]: {
-    label: 'Gmail Webhook',
+    label: 'New Gmail',
     description: 'Trigger when a new email arrives',
     actions: GMAIL_WEBHOOK_TRIGGER_ACTIONS,
     icon: gmailIcon,
     isTrigger: true
   },
   [TRIGGER_NODE_TYPES.DISCORD_WEBHOOK_TRIGGER]: {
-    label: 'Discord Webhook',
-    description: 'Trigger when a message is sent',
+    label: 'New Message',
+    description: 'Trigger when a new message is sent',
     actions: DISCORD_WEBHOOK_TRIGGER_ACTIONS,
     icon: discordIcon,
     isTrigger: true

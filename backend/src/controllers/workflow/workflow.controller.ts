@@ -13,7 +13,6 @@ import {
   TriggerType,
   WorkflowExecutionStatus
 } from '@shared/prisma/generated/prisma/enums'
-import { TRIGGER_ACTION_ID } from '@shared/constants'
 import { executeNodeLogic } from '@/src/executors/node-executor'
 import { isTriggerNode, isManualTrigger } from '@/src/executors/trigger-executor'
 import { replacePlaceholdersInConfig } from '@/src/lib/placeholder'

@@ -26,9 +26,9 @@ export const NODE_ACTION_ID = {
 } as const
 
 export const TRIGGER_ACTION_ID = {
-  MANUAL_TRIGGER: 'manual_trigger',
-  GMAIL_WEBHOOK_TRIGGER: 'gmail_webhook_trigger',
-  DISCORD_WEBHOOK_TRIGGER: 'discord_webhook_trigger'
+  MANUAL_TRIGGER: 'on_demand',
+  GMAIL_WEBHOOK_TRIGGER: 'gmail_webhook',
+  DISCORD_WEBHOOK_TRIGGER: 'discord_webhook'
 } as const
 
 export type TTriggerActionID = typeof TRIGGER_ACTION_ID[keyof typeof TRIGGER_ACTION_ID]

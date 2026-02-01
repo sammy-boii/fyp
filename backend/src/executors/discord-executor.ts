@@ -17,11 +17,14 @@ async function discordRequest(
   botToken: string,
   options: RequestInit = {}
 ) {
+  const isMultipart =
+    typeof FormData !== 'undefined' && options.body instanceof FormData
+
   const response = await fetch(endpoint, {
     ...options,
     headers: {
       Authorization: `Bot ${botToken}`,
-      'Content-Type': 'application/json',
+      ...(isMultipart ? {} : { 'Content-Type': 'application/json' }),
       ...options.headers
     }
   })
@@ -35,6 +38,74 @@ async function discordRequest(
   }
 
   return response.json()
+}
+
+function normalizeAttachmentUrls(attachmentUrls?: string | string[]): string[] {
+  if (!attachmentUrls) return []
+  if (Array.isArray(attachmentUrls)) {
+    return attachmentUrls.map((url) => url.trim()).filter(Boolean)
+  }
+  return attachmentUrls
+    .split(/\r?\n|,/)
+    .map((url) => url.trim())
+    .filter(Boolean)
+}
+
+function getFileNameFromUrl(url: string, index: number) {
+  try {
+    const parsed = new URL(url)
+    const pathname = parsed.pathname
+    const lastSegment = pathname.split('/').pop()
+    return lastSegment && lastSegment.length > 0
+      ? lastSegment
+      : `attachment-${index + 1}`
+  } catch {
+    return `attachment-${index + 1}`
+  }
+}
+
+async function buildMessagePayload(
+  content: string,
+  embed: object | null,
+  attachmentUrls?: string | string[]
+): Promise<{ body: BodyInit; isMultipart: boolean }> {
+  const urls = normalizeAttachmentUrls(attachmentUrls)
+
+  if (urls.length === 0) {
+    const jsonBody: any = { content }
+    if (embed) {
+      jsonBody.embeds = [embed]
+    }
+    return { body: JSON.stringify(jsonBody), isMultipart: false }
+  }
+
+  const formData = new FormData()
+  const payload: any = { content }
+  if (embed) {
+    payload.embeds = [embed]
+  }
+  formData.append('payload_json', JSON.stringify(payload))
+
+  await Promise.all(
+    urls.map(async (url, index) => {
+      const fileResponse = await fetch(url)
+      if (!fileResponse.ok) {
+        throw new Error(`Failed to fetch attachment: ${url}`)
+      }
+      const arrayBuffer = await fileResponse.arrayBuffer()
+      const fileName = getFileNameFromUrl(url, index)
+      const contentType =
+        fileResponse.headers.get('content-type') || 'application/octet-stream'
+
+      formData.append(
+        `files[${index}]`,
+        new Blob([arrayBuffer], { type: contentType }),
+        fileName
+      )
+    })
+  )
+
+  return { body: formData, isMultipart: true }
 }
 
 // Helper to build embed object
@@ -67,6 +138,7 @@ export async function executeSendChannelMessage(
       embedTitle,
       embedDescription,
       embedColor,
+      attachmentUrls,
       credentialId
     } = config
 
@@ -76,18 +148,15 @@ export async function executeSendChannelMessage(
 
     const botToken = await getDiscordBotToken(credentialId)
 
-    const body: any = { content }
     const embed = buildEmbed(embedTitle, embedDescription, embedColor)
-    if (embed) {
-      body.embeds = [embed]
-    }
+    const { body } = await buildMessagePayload(content, embed, attachmentUrls)
 
     const message = await discordRequest(
       API_ROUTES.DISCORD.GET_CHANNEL_MESSAGES(channelId),
       botToken,
       {
         method: 'POST',
-        body: JSON.stringify(body)
+        body
       }
     )
 
@@ -117,8 +186,14 @@ export async function executeSendDM(
   config: any
 ): Promise<TNodeExecutionResult> {
   try {
-    const { userId, content, embedTitle, embedDescription, credentialId } =
-      config
+    const {
+      userId,
+      content,
+      embedTitle,
+      embedDescription,
+      attachmentUrls,
+      credentialId
+    } = config
 
     if (!credentialId) {
       return { success: false, error: 'Discord credential is required' }
@@ -137,18 +212,15 @@ export async function executeSendDM(
     )
 
     // Then send the message to the DM channel
-    const body: any = { content }
     const embed = buildEmbed(embedTitle, embedDescription)
-    if (embed) {
-      body.embeds = [embed]
-    }
+    const { body } = await buildMessagePayload(content, embed, attachmentUrls)
 
     const message = await discordRequest(
       API_ROUTES.DISCORD.SEND_DM(dmChannel.id),
       botToken,
       {
         method: 'POST',
-        body: JSON.stringify(body)
+        body
       }
     )
 

@@ -5,6 +5,7 @@ export const sendChannelMessageFormSchema = z.object({
   guildId: z.string().min(1, 'Please select a server'),
   channelId: z.string().min(1, 'Please select a channel'),
   content: z.string().min(1, 'Please enter a message'),
+  attachmentUrls: z.string().optional(),
   embedTitle: z.string().optional(),
   embedDescription: z.string().optional(),
   embedColor: z.string().optional()
@@ -15,6 +16,7 @@ export const sendDMFormSchema = z.object({
   guildId: z.string().min(1, 'Please select a server'),
   userId: z.string().min(1, 'Please select a user'),
   content: z.string().min(1, 'Please enter a message'),
+  attachmentUrls: z.string().optional(),
   embedTitle: z.string().optional(),
   embedDescription: z.string().optional()
 })

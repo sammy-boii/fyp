@@ -3,14 +3,21 @@ import driveIcon from '@/public/google-drive.png'
 import discordIcon from '@/public/discord.png'
 import googleDriveIcon from '@/public/google-drive.png'
 
-import { NodeDefinition } from '@/types/node.types'
-import { BACKEND_URL, NODE_TYPES } from '.'
+import { NodeDefinition, TriggerNodeDefinition } from '@/types/node.types'
+import { BACKEND_URL, NODE_TYPES, TRIGGER_NODE_TYPES } from '.'
 
 import { GOOGLE_DRIVE_ACTIONS } from '@/components/editor/custom-nodes/google-drive/GoogleDriveActions'
 
 import { DISCORD_ACTIONS } from '@/components/editor/custom-nodes/discord/DiscordActions'
 
 import { GMAIL_ACTIONS } from '@/components/editor/custom-nodes/gmail/GmailActions'
+
+import {
+  MANUAL_TRIGGER_ACTIONS,
+  GMAIL_WEBHOOK_TRIGGER_ACTIONS
+} from '@/components/editor/custom-nodes/triggers/TriggerActions'
+
+import { Play, Mail } from 'lucide-react'
 
 export const NODE_DEFINITIONS: NodeDefinition = {
   [NODE_TYPES.GMAIL]: {
@@ -30,6 +37,23 @@ export const NODE_DEFINITIONS: NodeDefinition = {
     actions: DISCORD_ACTIONS,
     description: 'Add a bot to a server to manage interactions',
     icon: discordIcon
+  }
+}
+
+export const TRIGGER_NODE_DEFINITIONS: TriggerNodeDefinition = {
+  [TRIGGER_NODE_TYPES.MANUAL_TRIGGER]: {
+    label: 'Manual Trigger',
+    description: 'Start the workflow manually',
+    actions: MANUAL_TRIGGER_ACTIONS,
+    iconComponent: Play,
+    isTrigger: true
+  },
+  [TRIGGER_NODE_TYPES.GMAIL_WEBHOOK_TRIGGER]: {
+    label: 'Gmail Webhook',
+    description: 'Trigger when a new email arrives',
+    actions: GMAIL_WEBHOOK_TRIGGER_ACTIONS,
+    icon: gmailIcon,
+    isTrigger: true
   }
 }
 

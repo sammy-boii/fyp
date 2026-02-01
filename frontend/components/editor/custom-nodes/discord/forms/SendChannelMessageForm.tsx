@@ -67,6 +67,27 @@ export function SendChannelMessageForm() {
       />
 
       <Controller
+        name='attachmentUrls'
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>Attachments</FieldLabel>
+            <PlaceholderTextarea
+              placeholder='Paste file URLs (one per line or comma-separated)'
+              rows={3}
+              className='resize-none text-sm'
+              {...field}
+              aria-invalid={fieldState.invalid}
+            />
+            <FieldError errors={[fieldState.error]} />
+            <p className='text-xs text-muted-foreground mt-1'>
+              Supports images and documents via direct URLs
+            </p>
+          </Field>
+        )}
+      />
+
+      <Controller
         name='embedTitle'
         control={control}
         render={({ field, fieldState }) => (

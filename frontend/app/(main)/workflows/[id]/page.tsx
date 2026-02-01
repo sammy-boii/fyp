@@ -37,6 +37,7 @@ import {
 import { WorkflowHeader } from './_components/WorkflowHeader'
 import { AddNodeSheetContent } from './_components/AddNodeSheet'
 import { EditWorkflowDialog } from './_components/EditWorkflowDialog'
+import { EmptyWorkflowPlaceholder } from './_components/EmptyWorkflowPlaceholder'
 import {
   DEFAULT_EDGE_OPTIONS,
   createNode,
@@ -47,7 +48,7 @@ import {
   formatEdges
 } from '@/lib/react-flow-utils'
 import { ValueOf } from '@/types/index.types'
-import { NODE_TYPES } from '@/constants'
+import { ALL_NODE_TYPES } from '@/constants'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
 import WorkflowExecutionTab from './_components/WorkflowExecutionTab'
 import { useWorkflowWebSocket } from '@/hooks/use-workflow-websocket'
@@ -304,7 +305,7 @@ function WorkflowViewPageInner() {
     [setEdges]
   )
 
-  const addNode = (nodeType: ValueOf<typeof NODE_TYPES>) => {
+  const addNode = (nodeType: ValueOf<typeof ALL_NODE_TYPES>) => {
     // Find the last node in the chain
     const lastNode = findLastNode(nodes, edges)
 
@@ -526,9 +527,16 @@ function WorkflowViewPageInner() {
                   <AddNodeSheetContent
                     onOpenChange={setSheetOpen}
                     onAddNode={addNode}
+                    showOnlyTriggers={nodes.length === 0}
+                    showOnlyActions={nodes.length > 0}
                   />
                 </Sheet>
               </div>
+
+              {/* Empty workflow placeholder - show only when no nodes */}
+              {nodes.length === 0 && (
+                <EmptyWorkflowPlaceholder onAddNode={addNode} />
+              )}
 
               <ReactFlow
                 onNodesChange={onNodesChange}

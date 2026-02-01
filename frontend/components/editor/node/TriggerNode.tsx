@@ -15,7 +15,7 @@ import { Play, Settings, Trash2, Plus, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import React, { useState, useCallback } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
-import { NODE_DEFINITIONS } from '@/constants/registry'
+import { TRIGGER_NODE_DEFINITIONS } from '@/constants/registry'
 import { useParams } from 'next/navigation'
 import { useExecuteNode } from '@/hooks/use-workflows'
 import {
@@ -42,7 +42,7 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog'
 
-import { NODE_TYPES, ALL_NODE_TYPES } from '@/constants'
+import { TRIGGER_NODE_TYPES, ALL_NODE_TYPES } from '@/constants'
 import {
   createNode,
   createEdge,
@@ -53,8 +53,9 @@ import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/Workflow
 import { ValueOf } from '@/types/index.types'
 import { TActionID } from '@shared/constants'
 
-export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
-  const node = NODE_DEFINITIONS[data.type as keyof typeof NODE_TYPES]
+export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
+  const node =
+    TRIGGER_NODE_DEFINITIONS[data.type as keyof typeof TRIGGER_NODE_TYPES]
   const { setNodes, setEdges, getEdges, getNodes } = useReactFlow()
   const params = useParams()
   const workflowId = params?.id ? String(params.id) : null
@@ -169,7 +170,6 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
               : n
           )
         )
-      } else {
       }
     } finally {
       setIsExecutingNode(false)
@@ -233,6 +233,23 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     return action
   }
 
+  // If node definition doesn't exist, return null
+  if (!node) {
+    return null
+  }
+
+  // Render icon - either from StaticImageData or LucideIcon component
+  const renderIcon = () => {
+    if (node.icon) {
+      return <Image src={node.icon} alt={node.label} width={24} height={24} />
+    }
+    if (node.iconComponent) {
+      const IconComponent = node.iconComponent
+      return <IconComponent className='size-6' />
+    }
+    return <Play className='size-6' />
+  }
+
   return (
     <ContextMenu>
       <ContextMenuTrigger>
@@ -280,12 +297,12 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
                     <div className='p-2 rounded-md bg-destructive/20'>
                       <Trash2 className='size-5 text-destructive' />
                     </div>
-                    Delete Node
+                    Delete Trigger
                   </DialogTitle>
                   <DialogDescription>
-                    Are you sure you want to delete this node? This action
+                    Are you sure you want to delete this trigger? This action
                     cannot be undone and will remove all connections to this
-                    node.
+                    trigger.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
@@ -307,26 +324,19 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
             className={`relative w-48 p-4 rounded-lg border transition-all duration-300 bg-card ${
               data.isExecuting || executeNodeMutation.isPending
                 ? 'border-transparent animate-executing-border'
-                : 'border-border/50'
+                : 'border-primary/50'
             }`}
           >
             {/* Content */}
             <div className='flex items-center gap-3'>
               <div
                 className={`p-3 rounded-xl 
-      bg-linear-to-br from-white/10 to-white/5 
-      shadow-lg shadow-black/10 ring-1 ring-black/5
+      bg-linear-to-br from-primary/20 to-primary/10 
+      shadow-lg shadow-primary/10 ring-1 ring-primary/20
       aspect-square relative overflow-hidden
     `}
               >
-                <div className='relative z-10'>
-                  <Image
-                    src={node.icon}
-                    alt={node.label}
-                    width={24}
-                    height={24}
-                  />
-                </div>
+                <div className='relative z-10'>{renderIcon()}</div>
               </div>
               <div className='flex-1 min-w-0'>
                 <h3 className='font-semibold text-sm text-foreground truncate'>
@@ -342,28 +352,15 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
                             word.slice(1).toLowerCase()
                         )
                         .join(' ')
-                    : 'Select Action'}
+                    : 'Configure'}
                 </p>
               </div>
             </div>
 
-            {/* Connection handles */}
+            {/* Trigger nodes have NO target handle (no input) */}
+            {/* Only source handle (output) */}
             <Handle
-              type='target'
-              position={Position.Left}
-              style={{
-                width: '10px',
-                borderRadius: '4px 0px 0px 4px',
-                height: '28px',
-                left: '-5px',
-                border: 'none',
-                background: 'gray'
-              }}
-            />
-
-            {/* Right handle - Conditional styling based on connection state */}
-            <Handle
-              className='bg-muted-foreground! border-muted-foreground!'
+              className='bg-primary! border-primary!'
               style={{
                 width: 14,
                 height: 14,
@@ -374,12 +371,12 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
             >
               {!isSourceConnected && (
                 <div className='flex items-center -translate-y-3'>
-                  <div className='min-w-12 ml-1 border-t-2 border-muted-foreground' />
+                  <div className='min-w-12 ml-1 border-t-2 border-primary' />
 
                   <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                     <SheetTrigger asChild>
-                      <div className='border-2 p-1 rounded border-muted-foreground'>
-                        <Plus className='text-muted-foreground' size={24} />
+                      <div className='border-2 p-1 rounded border-primary cursor-pointer hover:bg-primary/10 transition-colors'>
+                        <Plus className='text-primary' size={24} />
                       </div>
                     </SheetTrigger>
 
@@ -434,11 +431,14 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
 }
 
 // Wrap with memo to prevent unnecessary re-renders
-export const BaseNodeMemo = React.memo(BaseNode, (prevProps, nextProps) => {
-  // Only re-render if data or selected state changes
-  return (
-    prevProps.id === nextProps.id &&
-    prevProps.data === nextProps.data &&
-    prevProps.selected === nextProps.selected
-  )
-})
+export const TriggerNodeMemo = React.memo(
+  TriggerNode,
+  (prevProps, nextProps) => {
+    // Only re-render if data or selected state changes
+    return (
+      prevProps.id === nextProps.id &&
+      prevProps.data === nextProps.data &&
+      prevProps.selected === nextProps.selected
+    )
+  }
+)

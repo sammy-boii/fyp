@@ -1,5 +1,5 @@
 import type { Node, Edge, XYPosition } from '@xyflow/react'
-import { NODE_TYPES } from '@/constants'
+import { NODE_TYPES, TRIGGER_NODE_TYPES, ALL_NODE_TYPES } from '@/constants'
 import { ValueOf } from '@/types/index.types'
 
 /**
@@ -41,6 +41,17 @@ export function generateEdgeId(sourceId: string, targetId: string): string {
 }
 
 /**
+ * Check if a node type is a trigger node
+ */
+export function isTriggerNodeType(
+  nodeType: string
+): nodeType is ValueOf<typeof TRIGGER_NODE_TYPES> {
+  return Object.values(TRIGGER_NODE_TYPES).includes(
+    nodeType as ValueOf<typeof TRIGGER_NODE_TYPES>
+  )
+}
+
+/**
  * Creates a new edge with default styling
  */
 export function createEdge(
@@ -73,16 +84,21 @@ export function createEdge(
  * Creates a new node with the specified type and position
  */
 export function createNode(
-  nodeType: ValueOf<typeof NODE_TYPES>,
+  nodeType: ValueOf<typeof ALL_NODE_TYPES>,
   position: XYPosition,
   options?: {
     id?: string
     type?: string
   }
 ): Node {
+  // Determine the node type based on whether it's a trigger or action
+  const reactFlowNodeType = isTriggerNodeType(nodeType)
+    ? 'trigger_node'
+    : 'custom_node'
+
   return {
     id: options?.id || generateNodeId(),
-    type: options?.type || 'custom_node',
+    type: options?.type || reactFlowNodeType,
     position,
     data: {
       type: nodeType
@@ -197,8 +213,17 @@ export function formatEdges(edges: any[]): Edge[] {
  * Formats nodes to ensure they have the correct type (useful when loading from API)
  */
 export function formatNodes(nodes: any[]): Node[] {
-  return nodes.map((node: any) => ({
-    ...node,
-    type: node.type || 'custom_node'
-  }))
+  return nodes.map((node: any) => {
+    // Determine the correct node type based on the data.type
+    const nodeDataType = node.data?.type
+    const reactFlowNodeType =
+      nodeDataType && isTriggerNodeType(nodeDataType)
+        ? 'trigger_node'
+        : 'custom_node'
+
+    return {
+      ...node,
+      type: node.type || reactFlowNodeType
+    }
+  })
 }

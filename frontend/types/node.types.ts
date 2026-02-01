@@ -1,5 +1,5 @@
 import { TActionID } from '@shared/constants'
-import { NODE_TYPES } from '@/constants'
+import { NODE_TYPES, TRIGGER_NODE_TYPES, ALL_NODE_TYPES } from '@/constants'
 import type { Node } from '@xyflow/react'
 import { LucideIcon } from 'lucide-react'
 import type { StaticImageData } from 'next/image'
@@ -31,8 +31,22 @@ export type SingleNodeDefinition = {
   icon: StaticImageData
 }
 
+// Trigger node definitions
+export type TriggerNodeDefinition = {
+  [key in keyof typeof TRIGGER_NODE_TYPES]: SingleTriggerNodeDefinition
+}
+
+export type SingleTriggerNodeDefinition = {
+  label: string
+  description: string
+  actions: NodeAction[]
+  icon?: StaticImageData
+  iconComponent?: LucideIcon
+  isTrigger: true
+}
+
 export type BaseNodeProps = Node<{
-  type: ValueOf<typeof NODE_TYPES>
+  type: ValueOf<typeof ALL_NODE_TYPES>
   actionId: TActionID
   config?: any
   lastOutput?: Record<string, any>
@@ -42,9 +56,11 @@ export type BaseNodeProps = Node<{
 
 // custom node types for react flow
 import { BaseNodeMemo } from '@/components/editor/node/BaseNode'
+import { TriggerNodeMemo } from '@/components/editor/node/TriggerNode'
 
 export const nodeTypes = {
-  custom_node: BaseNodeMemo
+  custom_node: BaseNodeMemo,
+  trigger_node: TriggerNodeMemo
 }
 
 // custom edge types for react flow

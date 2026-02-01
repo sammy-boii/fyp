@@ -2,7 +2,11 @@
 
 import { Button } from '@/components/ui/button'
 import { SheetContent, Sheet, SheetHeader } from '@/components/ui/sheet'
-import { NodeAction, SingleNodeDefinition } from '@/types/node.types'
+import {
+  NodeAction,
+  SingleNodeDefinition,
+  SingleTriggerNodeDefinition
+} from '@/types/node.types'
 import { ChevronRight, Settings } from 'lucide-react'
 import React, { useState } from 'react'
 import NodeConfigurationDialog from './NodeConfigurationDialog'
@@ -19,7 +23,7 @@ export const NodeActionsSheet = ({
   availableInputs = [],
   nodeOutput
 }: {
-  node: SingleNodeDefinition
+  node: SingleNodeDefinition | SingleTriggerNodeDefinition
   nodeId: string
   onSaveConfig?: (data: any) => void
   preSelectedAction?: NodeAction

@@ -7,6 +7,8 @@ import {
   PlaceholderTextarea
 } from '@/components/ui/placeholder-input'
 import { Controller, useFormContext } from 'react-hook-form'
+import { GuildPicker } from './GuildPicker'
+import { ChannelPicker } from './ChannelPicker'
 
 export function SendChannelMessageForm() {
   const { control } = useFormContext()
@@ -14,23 +16,34 @@ export function SendChannelMessageForm() {
   return (
     <div className='space-y-4'>
       <Controller
+        name='guildId'
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>Server</FieldLabel>
+            <GuildPicker
+              value={field.value || ''}
+              onChange={field.onChange}
+              aria-invalid={fieldState.invalid}
+            />
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      <Controller
         name='channelId'
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel className='text-xs font-medium'>Channel ID</FieldLabel>
-            <PlaceholderInput
-              type='text'
-              placeholder='Enter channel ID'
-              className='h-9 text-sm'
-              {...field}
+            <FieldLabel className='text-xs font-medium'>Channel</FieldLabel>
+            <ChannelPicker
+              value={field.value || ''}
+              onChange={field.onChange}
+              channelType='text'
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />
-            <p className='text-xs text-muted-foreground mt-1'>
-              Right-click a channel in Discord and select &quot;Copy Channel
-              ID&quot; (requires Developer Mode enabled)
-            </p>
           </Field>
         )}
       />

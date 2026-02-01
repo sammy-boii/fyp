@@ -2,7 +2,8 @@ import { z } from 'zod'
 
 // Send message to a channel via bot
 export const sendChannelMessageFormSchema = z.object({
-  channelId: z.string().min(1, 'Please enter a channel ID'),
+  guildId: z.string().min(1, 'Please select a server'),
+  channelId: z.string().min(1, 'Please select a channel'),
   content: z.string().min(1, 'Please enter a message'),
   embedTitle: z.string().optional(),
   embedDescription: z.string().optional(),
@@ -11,7 +12,8 @@ export const sendChannelMessageFormSchema = z.object({
 
 // Send DM to a user via bot
 export const sendDMFormSchema = z.object({
-  userId: z.string().min(1, 'Please enter a user ID'),
+  guildId: z.string().min(1, 'Please select a server'),
+  userId: z.string().min(1, 'Please select a user'),
   content: z.string().min(1, 'Please enter a message'),
   embedTitle: z.string().optional(),
   embedDescription: z.string().optional()

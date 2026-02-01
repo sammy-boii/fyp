@@ -13,6 +13,8 @@ import {
   PlaceholderTextarea
 } from '@/components/ui/placeholder-input'
 import { Controller, useFormContext } from 'react-hook-form'
+import { GuildPicker } from './GuildPicker'
+import { ChannelPicker } from './ChannelPicker'
 
 export function CreateChannelForm() {
   const { control } = useFormContext()
@@ -24,19 +26,13 @@ export function CreateChannelForm() {
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel className='text-xs font-medium'>Server ID</FieldLabel>
-            <PlaceholderInput
-              type='text'
-              placeholder='Enter server ID'
-              className='h-9 text-sm'
-              {...field}
+            <FieldLabel className='text-xs font-medium'>Server</FieldLabel>
+            <GuildPicker
+              value={field.value || ''}
+              onChange={field.onChange}
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />
-            <p className='text-xs text-muted-foreground mt-1'>
-              Right-click a server in Discord and select &quot;Copy Server
-              ID&quot;
-            </p>
           </Field>
         )}
       />
@@ -120,13 +116,13 @@ export function CreateChannelForm() {
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel className='text-xs font-medium'>
-              Category ID (Optional)
+              Category (Optional)
             </FieldLabel>
-            <PlaceholderInput
-              type='text'
-              placeholder='Enter category ID'
-              className='h-9 text-sm'
-              {...field}
+            <ChannelPicker
+              value={field.value || ''}
+              onChange={field.onChange}
+              channelType='category'
+              placeholder='Select a category...'
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />

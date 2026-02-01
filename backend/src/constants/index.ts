@@ -53,11 +53,11 @@ export const API_ROUTES = {
 
   DISCORD: {
     GET_CHANNEL_MESSAGES: (channelId: string) =>
-      `/channels/${channelId}/messages`,
-    LIST_GUIDS: (limit: number) => `/users/@me/guilds?limit=${limit}`,
-    LIST_CHANNELS: (guildId: string) => `/guilds/${guildId}/channels`,
-    CREATE_CHANNEL: (guildId: string) => `/guilds/${guildId}/channels`,
-    CREATE_DM_CHANNEL: '/users/@me/channels',
-    SEND_DM: (channelId: string) => `/channels/${channelId}/messages`
+     DISCORD_API_BASE_URL+ `/channels/${channelId}/messages`,
+    LIST_GUIDS: (limit: number) => DISCORD_API_BASE_URL+`/users/@me/guilds?limit=${limit}`,
+    LIST_CHANNELS: (guildId: string) => DISCORD_API_BASE_URL+`/guilds/${guildId}/channels`,
+    CREATE_CHANNEL: (guildId: string) => DISCORD_API_BASE_URL+`/guilds/${guildId}/channels`,
+    CREATE_DM_CHANNEL: DISCORD_API_BASE_URL+`/users/@me/channels`,
+    SEND_DM: (channelId: string) => DISCORD_API_BASE_URL+`/channels/${channelId}/messages`
   }
 }

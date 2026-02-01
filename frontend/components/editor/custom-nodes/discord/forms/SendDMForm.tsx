@@ -6,6 +6,8 @@ import {
   PlaceholderTextarea
 } from '@/components/ui/placeholder-input'
 import { Controller, useFormContext } from 'react-hook-form'
+import { GuildPicker } from './GuildPicker'
+import { UserPicker } from './UserPicker'
 
 export function SendDMForm() {
   const { control } = useFormContext()
@@ -13,23 +15,36 @@ export function SendDMForm() {
   return (
     <div className='space-y-4'>
       <Controller
-        name='userId'
+        name='guildId'
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel className='text-xs font-medium'>User ID</FieldLabel>
-            <PlaceholderInput
-              type='text'
-              placeholder='Enter user ID'
-              className='h-9 text-sm'
-              {...field}
+            <FieldLabel className='text-xs font-medium'>Server</FieldLabel>
+            <GuildPicker
+              value={field.value || ''}
+              onChange={field.onChange}
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />
             <p className='text-xs text-muted-foreground mt-1'>
-              Right-click a user in Discord and select &quot;Copy User ID&quot;
-              (requires Developer Mode enabled)
+              Select a server to find users from
             </p>
+          </Field>
+        )}
+      />
+
+      <Controller
+        name='userId'
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>User</FieldLabel>
+            <UserPicker
+              value={field.value || ''}
+              onChange={field.onChange}
+              aria-invalid={fieldState.invalid}
+            />
+            <FieldError errors={[fieldState.error]} />
           </Field>
         )}
       />

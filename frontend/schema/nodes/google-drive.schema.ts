@@ -37,7 +37,8 @@ export const listFilesFormSchema = z.object({
     .default(50),
   fileType: z
     .enum(['all', 'pdf', 'image', 'document', 'spreadsheet', 'folder'])
-    .default('all')
+    .default('all'),
+  includeContent: z.boolean().default(false)
 })
 
 export const deleteFileFormSchema = z.object({

@@ -301,12 +301,19 @@ export const executeDeleteFolder = async (
 
 /**
  * List files from Google Drive
+ * If includeContent is true, fetches content for each file
  */
 export const executeListFiles = async (
   config: any
 ): Promise<TNodeExecutionResult> => {
   try {
-    const { folderId, maxResults = 50, fileType = 'all', credentialId } = config
+    const {
+      folderId,
+      maxResults = 50,
+      fileType = 'all',
+      includeContent = false,
+      credentialId
+    } = config
 
     if (!credentialId) {
       return { success: false, error: 'Missing credential ID' }
@@ -381,6 +388,44 @@ export const executeListFiles = async (
       iconLink: file.iconLink
     }))
 
+    // If includeContent is enabled, fetch content for each file
+    if (includeContent) {
+      const filesWithContent = await Promise.all(
+        files.map(async (file: any) => {
+          // Skip folders - they don't have content
+          if (file.mimeType === 'application/vnd.google-apps.folder') {
+            return {
+              ...file,
+              content: null,
+              contentError: 'Folders have no content'
+            }
+          }
+
+          try {
+            const content = await fetchFileContent(
+              file.id,
+              file.mimeType,
+              token
+            )
+            return { ...file, ...content }
+          } catch (error: any) {
+            return { ...file, content: null, contentError: error.message }
+          }
+        })
+      )
+
+      return {
+        success: true,
+        data: {
+          files: filesWithContent,
+          count: filesWithContent.length,
+          folderId: folderId || 'root',
+          fileType,
+          includeContent: true
+        }
+      }
+    }
+
     return {
       success: true,
       data: {
@@ -392,6 +437,80 @@ export const executeListFiles = async (
     }
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to list files' }
+  }
+}
+
+/**
+ * Helper function to fetch file content based on mime type
+ * Returns text for text-based files, base64 for binary files
+ */
+async function fetchFileContent(
+  fileId: string,
+  mimeType: string,
+  token: string
+): Promise<{ content: string; contentType: 'text' | 'base64' }> {
+  // Google Docs - export as plain text
+  if (mimeType === 'application/vnd.google-apps.document') {
+    const exportUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(fileId, 'text/plain')
+    const response = await fetch(exportUrl, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!response.ok) throw new Error('Failed to export Google Doc')
+    return { content: await response.text(), contentType: 'text' }
+  }
+
+  // Google Sheets - export as CSV
+  if (mimeType === 'application/vnd.google-apps.spreadsheet') {
+    const exportUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(fileId, 'text/csv')
+    const response = await fetch(exportUrl, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!response.ok) throw new Error('Failed to export Google Sheet')
+    return { content: await response.text(), contentType: 'text' }
+  }
+
+  // Google Slides/Presentations - export as PDF and return base64
+  if (mimeType === 'application/vnd.google-apps.presentation') {
+    const exportUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(
+      fileId,
+      'application/pdf'
+    )
+    const response = await fetch(exportUrl, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!response.ok) throw new Error('Failed to export Google Slides')
+    const buffer = Buffer.from(await response.arrayBuffer())
+    return {
+      content: `data:application/pdf;base64,${buffer.toString('base64')}`,
+      contentType: 'base64'
+    }
+  }
+
+  // Text-based files - return as text
+  if (
+    mimeType.startsWith('text/') ||
+    mimeType === 'application/json' ||
+    mimeType === 'application/xml' ||
+    mimeType === 'application/javascript'
+  ) {
+    const downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
+    const response = await fetch(downloadUrl, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!response.ok) throw new Error('Failed to download text file')
+    return { content: await response.text(), contentType: 'text' }
+  }
+
+  // All other files (PDFs, images, binaries) - return as base64
+  const downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
+  const response = await fetch(downloadUrl, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  if (!response.ok) throw new Error('Failed to download file')
+  const buffer = Buffer.from(await response.arrayBuffer())
+  return {
+    content: `data:${mimeType};base64,${buffer.toString('base64')}`,
+    contentType: 'base64'
   }
 }
 

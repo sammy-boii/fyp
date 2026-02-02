@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Controller, useFormContext } from 'react-hook-form'
 import {
   FileText,
@@ -106,6 +107,28 @@ export function ListFilesForm() {
               aria-invalid={fieldState.invalid}
             />
             <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      {/* Include Content */}
+      <Controller
+        name='includeContent'
+        control={control}
+        render={({ field }) => (
+          <Field>
+            <div className='flex items-center justify-between'>
+              <FieldLabel className='text-xs font-medium'>
+                Include File Content
+                <p className='text-muted-foreground text-[10px] font-normal'>
+                  Fetch content for each file (slower for many files)
+                </p>
+              </FieldLabel>
+              <Switch
+                checked={field.value || false}
+                onCheckedChange={field.onChange}
+              />
+            </div>
           </Field>
         )}
       />

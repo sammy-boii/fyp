@@ -527,6 +527,8 @@ function WorkflowViewPageInner() {
           workflowName={workflowName}
           workflowDescription={workflowDescription}
           workflowId={workflowId}
+          onNameChange={setWorkflowName}
+          onDescriptionChange={setWorkflowDescription}
         />
 
         <Tabs defaultValue='editor'>

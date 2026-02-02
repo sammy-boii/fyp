@@ -151,22 +151,20 @@ export async function updateWorkflow(id: string, data: Partial<Workflow>) {
       data: parsedData
     })
 
-    // If isActive changed, check if workflow has Discord webhook trigger and update cache
-    if (parsedData.isActive !== undefined && parsedData.isActive !== existing.isActive) {
-      const nodes = workflow.nodes as any[]
-      const hasDiscordTrigger = nodes?.some(
-        (node) => node.data?.actionId === 'discord_webhook'
-      )
-
-      if (hasDiscordTrigger) {
-        try {
-          await api
-            .patch(`api/workflow/${id}/update-cache`, { json: { isActive: parsedData.isActive } })
-            .json()
-        } catch (err) {
-          console.error('Failed to update trigger cache:', err)
-        }
-      }
+    // Always refresh the trigger cache when a workflow is updated.
+    // This handles all cases:
+    // - Workflow changed from Discord trigger to Manual trigger (removes from cache)
+    // - Workflow changed from Manual to Discord trigger (adds to cache)
+    // - Discord trigger config changed (updates cache)
+    // - Workflow activated/deactivated (adds/removes from cache)
+    // The refreshWorkflow method internally handles all the logic:
+    // it removes any existing entry and re-adds only if the workflow is active
+    // and has a properly configured Discord webhook trigger.
+    try {
+      await api.patch(`api/workflow/${id}/refresh-cache`).json()
+    } catch (err) {
+      // Log but don't fail the update if cache refresh fails
+      console.error('Failed to refresh trigger cache:', err)
     }
 
     return workflow
@@ -191,6 +189,14 @@ export async function deleteWorkflow(id: string) {
 
     if (!workflow) {
       throw new Error('Workflow not found or access denied')
+    }
+
+    // Remove from trigger cache before deleting
+    try {
+      await api.delete(`api/workflow/${id}/cache`).json()
+    } catch (err) {
+      // Log but don't fail the delete if cache removal fails
+      console.error('Failed to remove workflow from trigger cache:', err)
     }
 
     await prisma.workflow.delete({

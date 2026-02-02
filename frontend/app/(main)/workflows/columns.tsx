@@ -246,8 +246,10 @@ function ActionCell({ workflow }: { workflow: WorkflowRow }) {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <div className='flex items-center gap-2'>
-              <AlertCircle className='h-5 w-5 text-destructive' />
+            <div className='flex items-center gap-3'>
+              <div className='bg-destructive/10 rounded-md p-2'>
+                <AlertCircle className='size-5 text-destructive' />
+              </div>
               <AlertDialogTitle>Delete workflow?</AlertDialogTitle>
             </div>
             <AlertDialogDescription>

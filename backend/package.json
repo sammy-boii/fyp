@@ -2,7 +2,7 @@
   "name": "backend",
   "version": "0.1.0",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "npx kill-port 5000 && bun run --hot src/index.ts"
   },
   "dependencies": {
     "@hono/oauth-providers": "^0.8.5",

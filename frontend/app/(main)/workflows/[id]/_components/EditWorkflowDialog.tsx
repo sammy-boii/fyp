@@ -23,6 +23,8 @@ interface EditWorkflowDialogProps {
   workflowName: string
   workflowDescription: string | null
   workflowId: string | null
+  onNameChange?: (name: string) => void
+  onDescriptionChange?: (description: string) => void
 }
 
 export function EditWorkflowDialog({
@@ -30,7 +32,9 @@ export function EditWorkflowDialog({
   onOpenChange,
   workflowName,
   workflowDescription,
-  workflowId
+  workflowId,
+  onNameChange,
+  onDescriptionChange
 }: EditWorkflowDialogProps) {
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
@@ -55,14 +59,15 @@ export function EditWorkflowDialog({
         id: workflowId,
         data: {
           name,
-          description: description || null,
-          nodes: [],
-          edges: []
+          description: description || null
         }
       },
       {
         onSuccess: () => {
           toast.success('Workflow details updated')
+          // Update parent state with new values
+          onNameChange?.(name)
+          onDescriptionChange?.(description || '')
           onOpenChange(false)
         },
         onError: (error) => {
@@ -76,10 +81,12 @@ export function EditWorkflowDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className='flex items-center gap-2'>
-            <Edit2 className='h-5 w-5' />
-            Edit Workflow
-          </DialogTitle>
+           <DialogTitle className='flex items-center gap-3'>
+                <div className='bg-muted/60 rounded-md p-2'>
+                  <Edit2 className='size-5' />
+                </div>
+                Edit workflow
+              </DialogTitle>
           <DialogDescription>
             Change the name or description of your workflow.
           </DialogDescription>

@@ -48,11 +48,13 @@ class TriggerCacheService {
     for (const workflow of workflows) {
       const nodes = workflow.nodes as any[]
       const discordTrigger = nodes.find(
-        (node) => node.data?.actionId === TRIGGER_ACTION_ID.DISCORD_WEBHOOK_TRIGGER
+        (node) =>
+          node.data?.actionId === TRIGGER_ACTION_ID.DISCORD_WEBHOOK_TRIGGER
       )
 
       if (discordTrigger && discordTrigger.data?.config) {
-        const { credentialId, guildId, channelId, userId } = discordTrigger.data.config
+        const { credentialId, guildId, channelId, userId } =
+          discordTrigger.data.config
 
         if (credentialId && guildId && channelId) {
           this.addToCache({
@@ -117,11 +119,13 @@ class TriggerCacheService {
 
     const nodes = workflow.nodes as any[]
     const discordTrigger = nodes.find(
-      (node) => node.data?.actionId === TRIGGER_ACTION_ID.DISCORD_WEBHOOK_TRIGGER
+      (node) =>
+        node.data?.actionId === TRIGGER_ACTION_ID.DISCORD_WEBHOOK_TRIGGER
     )
 
     if (discordTrigger && discordTrigger.data?.config) {
-      const { credentialId, guildId, channelId, userId } = discordTrigger.data.config
+      const { credentialId, guildId, channelId, userId } =
+        discordTrigger.data.config
 
       if (credentialId && guildId && channelId) {
         this.addToCache({
@@ -150,7 +154,9 @@ class TriggerCacheService {
     // Remove from all channels in this guild
     const entries = Array.from(guildCache.entries())
     for (const [channelId, triggers] of entries) {
-      const filtered = triggers.filter((t: CachedTrigger) => t.workflowId !== workflowId)
+      const filtered = triggers.filter(
+        (t: CachedTrigger) => t.workflowId !== workflowId
+      )
       if (filtered.length === 0) {
         guildCache.delete(channelId)
       } else {
@@ -190,6 +196,13 @@ class TriggerCacheService {
 
     // Index for quick removal
     this.workflowIndex.set(workflowId, guildId)
+  }
+
+  /**
+   * Check if a workflow exists in the cache.
+   */
+  hasWorkflow(workflowId: string): boolean {
+    return this.workflowIndex.has(workflowId)
   }
 
   /**

@@ -70,7 +70,12 @@ export default function WorkflowsPage() {
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create workflow</DialogTitle>
+              <DialogTitle className='flex items-center gap-3'>
+                <div className='bg-muted/60 rounded-md p-2'>
+                  <Workflow className='size-5' />
+                </div>
+                Add workflow
+              </DialogTitle>
               <DialogDescription>
                 Give your workflow a name and description. You can configure its
                 steps on the next screen.

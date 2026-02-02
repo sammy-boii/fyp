@@ -36,7 +36,9 @@ export const API_ROUTES = {
     STOP_WATCH: GMAIL_API_BASE_URL + `/users/me/stop`,
     HISTORY_LIST: (startHistoryId: string) =>
       GMAIL_API_BASE_URL +
-      `/users/me/history?startHistoryId=${startHistoryId}&historyTypes=messageAdded`
+      `/users/me/history?startHistoryId=${startHistoryId}&historyTypes=messageAdded`,
+    MODIFY_MESSAGE: (messageId: string) =>
+      GMAIL_API_BASE_URL + `/users/me/messages/${messageId}/modify`
   },
 
   GOOGLE_DRIVE: {

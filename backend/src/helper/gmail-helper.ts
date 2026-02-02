@@ -39,8 +39,11 @@ export async function extractGmailMessageContent(
               headers: { Authorization: `Bearer ${token}` }
             }
           )
-          const data = await res.arrayBuffer()
-          const base64Data = Buffer.from(data).toString('base64')
+          const attachmentData = await res.json()
+          // Gmail returns base64url encoded data, convert to standard base64
+          const base64Data = attachmentData.data
+            .replace(/-/g, '+')
+            .replace(/_/g, '/')
 
           // Check if it's inline
           const isInline = part.headers?.some(

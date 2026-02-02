@@ -2,7 +2,6 @@
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { PlaceholderInput } from '@/components/ui/placeholder-input'
 import {
   Select,
   SelectContent,
@@ -11,10 +10,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Checkbox } from '@/components/ui/checkbox'
-import { DatePicker } from '@/components/ui/date-picker'
 import { Controller, useFormContext } from 'react-hook-form'
-import { useState } from 'react'
 import {
   Inbox,
   Send,
@@ -39,7 +35,6 @@ const GMAIL_LABELS = [
 
 export function ReadEmailForm() {
   const { control } = useFormContext()
-  const [showFilters, setShowFilters] = useState(false)
 
   return (
     <div className='space-y-4'>
@@ -99,175 +94,87 @@ export function ReadEmailForm() {
         )}
       />
 
-      {/* Show Filters Checkbox */}
-      <div className='flex items-center space-x-2 pt-2'>
-        <Checkbox
-          id='show-filters'
-          checked={showFilters}
-          onCheckedChange={(checked) => setShowFilters(!!checked)}
+      {/* Toggle Options */}
+      <div className='space-y-3 pt-2'>
+        {/* Mark as Read */}
+        <Controller
+          name='markAsRead'
+          control={control}
+          render={({ field }) => (
+            <div className='flex items-center justify-between rounded-lg border p-3'>
+              <div className='space-y-0.5'>
+                <label
+                  htmlFor='markAsRead'
+                  className='text-sm font-medium cursor-pointer'
+                >
+                  Mark as Read
+                </label>
+                <p className='text-xs text-muted-foreground'>
+                  Auto-mark fetched emails as read
+                </p>
+              </div>
+              <Switch
+                id='markAsRead'
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </div>
+          )}
         />
-        <label
-          htmlFor='show-filters'
-          className='text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
-        >
-          Advanced Filters
-        </label>
+
+        {/* Include Body */}
+        <Controller
+          name='includeBody'
+          control={control}
+          render={({ field }) => (
+            <div className='flex items-center justify-between rounded-lg border p-3'>
+              <div className='space-y-0.5'>
+                <label
+                  htmlFor='includeBody'
+                  className='text-sm font-medium cursor-pointer'
+                >
+                  Include Body
+                </label>
+                <p className='text-xs text-muted-foreground'>
+                  Include full email body content
+                </p>
+              </div>
+              <Switch
+                id='includeBody'
+                checked={field.value ?? true}
+                onCheckedChange={field.onChange}
+              />
+            </div>
+          )}
+        />
+
+        {/* Include Attachments */}
+        <Controller
+          name='includeAttachments'
+          control={control}
+          render={({ field }) => (
+            <div className='flex items-center justify-between rounded-lg border p-3'>
+              <div className='space-y-0.5'>
+                <label
+                  htmlFor='includeAttachments'
+                  className='text-sm font-medium cursor-pointer'
+                >
+                  Include Attachments
+                </label>
+                <p className='text-xs text-muted-foreground'>
+                  Download attachment data (base64)
+                </p>
+              </div>
+              <Switch
+                id='includeAttachments'
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </div>
+          )}
+        />
       </div>
-
-      {/* Collapsible Filters */}
-      {showFilters && (
-        <div className='space-y-4 pt-2'>
-          {/* From */}
-          <Controller
-            name='from'
-            control={control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel className='text-xs font-medium'>From</FieldLabel>
-                <PlaceholderInput
-                  type='text'
-                  placeholder='sender@example.com'
-                  className='h-9 text-sm'
-                  {...field}
-                  aria-invalid={fieldState.invalid}
-                />
-                <FieldError errors={[fieldState.error]} />
-              </Field>
-            )}
-          />
-
-          {/* To */}
-          <Controller
-            name='to'
-            control={control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel className='text-xs font-medium'>To</FieldLabel>
-                <PlaceholderInput
-                  type='text'
-                  placeholder='recipient@example.com'
-                  className='h-9 text-sm'
-                  {...field}
-                  aria-invalid={fieldState.invalid}
-                />
-                <FieldError errors={[fieldState.error]} />
-              </Field>
-            )}
-          />
-
-          {/* Subject */}
-          <Controller
-            name='subject'
-            control={control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel className='text-xs font-medium'>
-                  Subject Contains
-                </FieldLabel>
-                <PlaceholderInput
-                  type='text'
-                  placeholder='Meeting notes'
-                  className='h-9 text-sm'
-                  {...field}
-                  aria-invalid={fieldState.invalid}
-                />
-                <FieldError errors={[fieldState.error]} />
-              </Field>
-            )}
-          />
-
-          {/* Date Range */}
-          <div className='grid grid-cols-2 gap-3'>
-            {/* After Date */}
-            <Controller
-              name='after'
-              control={control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel className='text-xs font-medium'>After</FieldLabel>
-                  <DatePicker
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder='Select date'
-                  />
-                  <FieldError errors={[fieldState.error]} />
-                </Field>
-              )}
-            />
-
-            {/* Before Date */}
-            <Controller
-              name='before'
-              control={control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel className='text-xs font-medium'>
-                    Before
-                  </FieldLabel>
-                  <DatePicker
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder='Select date'
-                  />
-                  <FieldError errors={[fieldState.error]} />
-                </Field>
-              )}
-            />
-          </div>
-
-          {/* Unread Only */}
-          <Controller
-            name='isUnread'
-            control={control}
-            render={({ field }) => (
-              <div className='flex items-center justify-between rounded-lg border p-3'>
-                <div className='space-y-0.5'>
-                  <label
-                    htmlFor='isUnread'
-                    className='text-sm font-medium cursor-pointer'
-                  >
-                    Unread Only
-                  </label>
-                  <p className='text-xs text-muted-foreground'>
-                    Only fetch unread emails
-                  </p>
-                </div>
-                <Switch
-                  id='isUnread'
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </div>
-            )}
-          />
-
-          {/* Has Attachment */}
-          <Controller
-            name='hasAttachment'
-            control={control}
-            render={({ field }) => (
-              <div className='flex items-center justify-between rounded-lg border p-3'>
-                <div className='space-y-0.5'>
-                  <label
-                    htmlFor='hasAttachment'
-                    className='text-sm font-medium cursor-pointer'
-                  >
-                    Has Attachment
-                  </label>
-                  <p className='text-xs text-muted-foreground'>
-                    Only fetch emails with attachments
-                  </p>
-                </div>
-                <Switch
-                  id='hasAttachment'
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </div>
-            )}
-          />
-        </div>
-      )}
     </div>
   )
 }
+

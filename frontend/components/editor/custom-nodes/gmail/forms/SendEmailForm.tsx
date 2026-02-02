@@ -12,6 +12,7 @@ export function SendEmailForm() {
 
   return (
     <div className='space-y-4'>
+      {/* To */}
       <Controller
         name='to'
         control={control}
@@ -30,6 +31,51 @@ export function SendEmailForm() {
         )}
       />
 
+      {/* CC */}
+      <Controller
+        name='cc'
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>CC</FieldLabel>
+            <PlaceholderInput
+              type='text'
+              placeholder='cc1@example.com, cc2@example.com'
+              className='h-9 text-sm'
+              {...field}
+              aria-invalid={fieldState.invalid}
+            />
+            <p className='text-xs text-muted-foreground mt-1'>
+              Separate multiple addresses with commas
+            </p>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      {/* BCC */}
+      <Controller
+        name='bcc'
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>BCC</FieldLabel>
+            <PlaceholderInput
+              type='text'
+              placeholder='bcc@example.com'
+              className='h-9 text-sm'
+              {...field}
+              aria-invalid={fieldState.invalid}
+            />
+            <p className='text-xs text-muted-foreground mt-1'>
+              Hidden recipients
+            </p>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      {/* Subject */}
       <Controller
         control={control}
         name='subject'
@@ -48,6 +94,7 @@ export function SendEmailForm() {
         )}
       />
 
+      {/* Body */}
       <Controller
         control={control}
         name='body'
@@ -61,6 +108,28 @@ export function SendEmailForm() {
               {...field}
               aria-invalid={fieldState.invalid}
             />
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      {/* Attachments */}
+      <Controller
+        control={control}
+        name='attachments'
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className='text-xs font-medium'>Attachments</FieldLabel>
+            <PlaceholderInput
+              type='text'
+              placeholder='Enter drive file ID or file link'
+              className='h-9 text-sm'
+              {...field}
+              aria-invalid={fieldState.invalid}
+            />
+            <p className='text-xs text-muted-foreground mt-1'>
+              URL or Google Drive file ID. Separate multiple with commas.
+            </p>
             <FieldError errors={[fieldState.error]} />
           </Field>
         )}

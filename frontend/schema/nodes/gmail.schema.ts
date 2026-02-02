@@ -2,8 +2,11 @@ import { z } from 'zod'
 
 export const sendEmailFormSchema = z.object({
   to: z.string().min(1, 'Please enter a recipient'),
+  cc: z.string().optional(),
+  bcc: z.string().optional(),
   subject: z.string().optional(),
-  body: z.string().optional()
+  body: z.string().optional(),
+  attachments: z.string().optional() // URL or Google Drive file ID, comma-separated
 })
 
 export const readEmailFormSchema = z.object({
@@ -19,5 +22,8 @@ export const readEmailFormSchema = z.object({
   before: z.string().optional(), // Date string in YYYY-MM-DD format
   hasAttachment: z.boolean().default(false),
   isUnread: z.boolean().default(false),
-  labelId: z.string().optional()
+  labelId: z.string().optional(),
+  markAsRead: z.boolean().default(false),
+  includeBody: z.boolean().default(true),
+  includeAttachments: z.boolean().default(false)
 })

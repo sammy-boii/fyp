@@ -93,8 +93,6 @@ function WorkflowViewPageInner() {
     description: string
   } | null>(null)
 
-  console.log(nodes)
-
   // Helper to extract comparable node data (excludes transient properties)
   const getNodesHash = useCallback((nodes: Node[]) => {
     return JSON.stringify(

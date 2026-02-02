@@ -1,12 +1,15 @@
 import { API_ROUTES } from '../constants'
 import { extractGmailMessageContent } from '../helper/gmail-helper'
-import { getValidGmailAccessTokenByCredentialId } from '../lib/credentials'
+import {
+  getValidGmailAccessTokenByCredentialId,
+  getValidGoogleDriveAccessTokenByCredentialId
+} from '../lib/credentials'
 import { TNodeExecutionResult } from '../types/workflow.types'
 
 // Helper to fetch file content from URL or Google Drive
 async function fetchAttachmentContent(
   source: string,
-  gmailToken: string
+  driveToken: string
 ): Promise<{ data: string; filename: string; mimeType: string } | null> {
   try {
     // Check if it's a URL
@@ -30,7 +33,7 @@ async function fetchAttachmentContent(
     const metaRes = await fetch(
       API_ROUTES.GOOGLE_DRIVE.GET_FILE(source) + '?fields=name,mimeType',
       {
-        headers: { Authorization: `Bearer ${gmailToken}` }
+        headers: { Authorization: `Bearer ${driveToken}` }
       }
     )
 
@@ -38,10 +41,12 @@ async function fetchAttachmentContent(
 
     const meta = await metaRes.json()
 
+    console.log('NOT WORKING:::', driveToken)
+
     const contentRes = await fetch(
       API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(source),
       {
-        headers: { Authorization: `Bearer ${gmailToken}` }
+        headers: { Authorization: `Bearer ${driveToken}` }
       }
     )
 
@@ -72,6 +77,9 @@ function buildMimeEmail(params: {
   const boundary = `boundary_${Date.now()}_${Math.random().toString(36).slice(2)}`
   const lines: string[] = []
 
+  const chunkBase64 = (data: string, size = 76) =>
+    data.match(new RegExp(`.{1,${size}}`, 'g'))?.join('\r\n') || data
+
   // Headers
   lines.push(`To: ${params.to}`)
   if (params.cc) lines.push(`Cc: ${params.cc}`)
@@ -95,7 +103,7 @@ function buildMimeEmail(params: {
     lines.push('Content-Transfer-Encoding: base64')
     lines.push(`Content-Disposition: attachment; filename="${att.filename}"`)
     lines.push('')
-    lines.push(att.data)
+    lines.push(chunkBase64(att.data))
     lines.push('')
   }
 
@@ -108,7 +116,16 @@ export const executeSendEmail = async (
   config: any
 ): Promise<TNodeExecutionResult> => {
   try {
-    const { to, cc, bcc, subject, body, attachments, credentialId } = config
+    const {
+      to,
+      cc,
+      bcc,
+      subject,
+      body,
+      attachments,
+      credentialId,
+      driveCredentialId
+    } = config
 
     if (!credentialId) {
       return { success: false, error: 'Missing credential ID' }
@@ -131,6 +148,21 @@ export const executeSendEmail = async (
           .filter(Boolean)
       : []
 
+    const isUrl = (value: string) =>
+      value.startsWith('http://') || value.startsWith('https://')
+
+    const driveAttachmentSources = attachmentSources.filter(
+      (s: string) => !isUrl(s)
+    )
+
+    if (driveAttachmentSources.length > 0 && !driveCredentialId) {
+      return {
+        success: false,
+        error:
+          'Drive attachment detected. Please select a Google Drive credential.'
+      }
+    }
+
     if (attachmentSources.length > 0) {
       // Fetch all attachments
       const fetchedAttachments: {
@@ -139,9 +171,25 @@ export const executeSendEmail = async (
         mimeType: string
       }[] = []
 
+      const driveToken = driveCredentialId
+        ? (
+            await getValidGoogleDriveAccessTokenByCredentialId(
+              driveCredentialId
+            )
+          ).token
+        : token
+
       for (const source of attachmentSources) {
-        const att = await fetchAttachmentContent(source, token)
+        const att = await fetchAttachmentContent(source, driveToken)
         if (att) fetchedAttachments.push(att)
+      }
+
+      if (fetchedAttachments.length === 0) {
+        return {
+          success: false,
+          error:
+            'Unable to fetch attachments. Check URLs/Drive file IDs and access permissions.'
+        }
       }
 
       // Build MIME multipart email

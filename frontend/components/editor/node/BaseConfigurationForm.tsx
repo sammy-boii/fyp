@@ -82,6 +82,8 @@ export const BaseConfigurationForm = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       credentialId: '',
+      driveCredentialId: '',
+      attachmentType: 'url',
       maxResults: 10,
       from: '',
       to: '',

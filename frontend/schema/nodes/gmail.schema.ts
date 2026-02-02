@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 export const sendEmailFormSchema = z.object({
   to: z.string().min(1, 'Please enter a recipient'),
+  attachmentType: z.enum(['url', 'drive']).default('url'),
+  driveCredentialId: z.string().optional(),
   cc: z.string().optional(),
   bcc: z.string().optional(),
   subject: z.string().optional(),

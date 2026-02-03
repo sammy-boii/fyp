@@ -6,7 +6,10 @@ export const manualTriggerFormSchema = z.object({})
 // Gmail webhook trigger schema
 export const gmailWebhookTriggerFormSchema = z.object({
   labelId: z.string().optional(),
-  watchEvents: z.array(z.string()).default(['message_added'])
+  watchEvents: z.array(z.string()).default(['message_added']),
+  markAsRead: z.boolean().default(false),
+  includeBody: z.boolean().default(true),
+  includeAttachments: z.boolean().default(false)
 })
 
 // Discord webhook trigger schema

@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { prisma } from '@shared/db/prisma'
 import { getNewMessages, getFullMessage } from '@/src/helper/gmail-watch'
 import { getValidGmailAccessTokenByCredentialId } from '@/src/lib/credentials'
-import { extractGmailMessageContent } from '@/src/helper/gmail-helper'
+import { triggerGmailWorkflows } from '@/src/lib/gmail-trigger'
 
 export const webhookGmailRoutes = new Hono()
 
@@ -100,21 +100,15 @@ webhookGmailRoutes.post('/', async (c) => {
           headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())
             ?.value || ''
 
-        const { body } = await extractGmailMessageContent(
-          messageId,
-          message.payload,
-          token
-        )
-
         const emailData = {
           id: message.id,
           threadId: message.threadId,
+          labelIds: message.labelIds || [],
           from: getHeader('From'),
           to: getHeader('To'),
           subject: getHeader('Subject'),
           date: getHeader('Date'),
-          snippet: message.snippet,
-          body: body.substring(0, 500) // Log first 500 chars
+          snippet: message.snippet
         }
 
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
@@ -126,8 +120,13 @@ webhookGmailRoutes.post('/', async (c) => {
         console.log('Snippet:', emailData.snippet)
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
-        // TODO: Trigger workflows that have Gmail trigger configured
-        // await triggerGmailWorkflows(credential.userId, emailData)
+        await triggerGmailWorkflows(
+          credential.userId,
+          credential.id,
+          token,
+          message,
+          emailData
+        )
       } catch (err) {
         console.error('Error processing message:', messageId, err)
       }

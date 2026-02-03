@@ -51,6 +51,7 @@ export function ScheduleTriggerForm() {
                 step={60}
                 value={field.value || ''}
                 onChange={field.onChange}
+                className="text-sm appearance-none [&::-webkit-calendar-picker-indicator]:opacity-40 [&::-webkit-calendar-picker-indicator]:hover:opacity-70 [&::-webkit-datetime-edit]:text-foreground"
                 aria-invalid={fieldState.invalid}
               />
             </InputGroup>

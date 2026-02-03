@@ -168,7 +168,6 @@ export function CreateFileForm() {
                   <TooltipContent side='top' className='max-w-[250px]'>
                     <p>
                       Only accepts base64 data. <br />
-                      Get File Content can return base64 data.
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -202,7 +201,6 @@ export function CreateFileForm() {
                   <TooltipContent side='top' className='max-w-[250px]'>
                     <p>
                       Accepts raw text or base64. <br />
-                      Get File Content can return base64 data.
                     </p>
                   </TooltipContent>
                 </Tooltip>

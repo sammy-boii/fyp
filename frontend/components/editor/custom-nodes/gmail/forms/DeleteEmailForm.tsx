@@ -24,7 +24,7 @@ export function DeleteEmailForm() {
             />
             <FieldError errors={[fieldState.error]} />
             <p className='text-xs text-muted-foreground mt-1'>
-              Use a message ID from a previous Gmail Read step.
+              Moves the message to Trash. Use a message ID from Gmail Read.
             </p>
           </Field>
         )}

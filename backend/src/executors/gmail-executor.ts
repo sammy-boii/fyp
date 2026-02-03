@@ -507,18 +507,23 @@ export const executeDeleteEmail = async (
 
     const { token } = await getValidGmailAccessTokenByCredentialId(credentialId)
 
-    const deleteRes = await fetch(API_ROUTES.GMAIL.DELETE_MESSAGE(messageId), {
-      method: 'DELETE',
+    const trashRes = await fetch(API_ROUTES.GMAIL.MODIFY_MESSAGE(messageId), {
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        addLabelIds: ['TRASH'],
+        removeLabelIds: ['INBOX']
+      })
     })
 
-    if (!deleteRes.ok) {
-      const err = await deleteRes.json().catch(() => null)
+    if (!trashRes.ok) {
+      const err = await trashRes.json().catch(() => null)
       return {
         success: false,
-        error: err?.error?.message || 'Failed to delete email'
+        error: err?.error?.message || 'Failed to move email to trash'
       }
     }
 
@@ -526,10 +531,13 @@ export const executeDeleteEmail = async (
       success: true,
       data: {
         messageId,
-        deleted: true
+        trashed: true
       }
     }
   } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to delete email' }
+    return {
+      success: false,
+      error: error.message || 'Failed to move email to trash'
+    }
   }
 }

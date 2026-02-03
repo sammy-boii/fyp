@@ -31,8 +31,8 @@ export const GMAIL_ACTIONS: NodeAction[] = [
   },
   {
     id: NODE_ACTION_ID.GMAIL.DELETE_EMAIL,
-    label: 'Delete Email',
-    description: 'Permanently delete a Gmail message',
+    label: 'Move to Trash',
+    description: 'Move a Gmail message to trash',
     icon: Trash2,
     configForm: <DeleteEmailForm />,
     configFormSchema: deleteEmailFormSchema

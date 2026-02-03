@@ -2,7 +2,8 @@ export const NODE_ACTION_ID = {
   // Gmail actions
   GMAIL: {
     SEND_EMAIL: 'send_email',
-    READ_EMAIL: 'read_email'
+    READ_EMAIL: 'read_email',
+    DELETE_EMAIL: 'delete_email'
   },
 
   // Google Drive actions

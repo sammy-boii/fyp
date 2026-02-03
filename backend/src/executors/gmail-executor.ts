@@ -490,3 +490,46 @@ export const executeReadEmail = async (
     return { success: false, error: error.message || 'Failed to read emails' }
   }
 }
+
+export const executeDeleteEmail = async (
+  config: any
+): Promise<TNodeExecutionResult> => {
+  try {
+    const { credentialId, messageId } = config
+
+    if (!credentialId) {
+      return { success: false, error: 'Missing credential ID' }
+    }
+
+    if (!messageId) {
+      return { success: false, error: 'Missing message ID' }
+    }
+
+    const { token } = await getValidGmailAccessTokenByCredentialId(credentialId)
+
+    const deleteRes = await fetch(API_ROUTES.GMAIL.DELETE_MESSAGE(messageId), {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    if (!deleteRes.ok) {
+      const err = await deleteRes.json().catch(() => null)
+      return {
+        success: false,
+        error: err?.error?.message || 'Failed to delete email'
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        messageId,
+        deleted: true
+      }
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to delete email' }
+  }
+}

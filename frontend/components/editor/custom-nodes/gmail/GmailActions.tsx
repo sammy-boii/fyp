@@ -1,12 +1,14 @@
 'use client'
 
 import { NodeAction } from '@/types/node.types'
-import { Mail, Search } from 'lucide-react'
+import { Mail, Search, Trash2 } from 'lucide-react'
 import { SendEmailForm } from './forms/SendEmailForm'
 import { ReadEmailForm } from './forms/ReadEmailForm'
+import { DeleteEmailForm } from './forms/DeleteEmailForm'
 import {
   sendEmailFormSchema,
-  readEmailFormSchema
+  readEmailFormSchema,
+  deleteEmailFormSchema
 } from '@/schema/nodes/gmail.schema'
 import { NODE_ACTION_ID } from '@shared/constants'
 
@@ -26,5 +28,13 @@ export const GMAIL_ACTIONS: NodeAction[] = [
     icon: Search,
     configForm: <ReadEmailForm />,
     configFormSchema: readEmailFormSchema
+  },
+  {
+    id: NODE_ACTION_ID.GMAIL.DELETE_EMAIL,
+    label: 'Delete Email',
+    description: 'Permanently delete a Gmail message',
+    icon: Trash2,
+    configForm: <DeleteEmailForm />,
+    configFormSchema: deleteEmailFormSchema
   }
 ]

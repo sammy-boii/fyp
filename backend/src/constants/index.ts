@@ -30,6 +30,8 @@ export const API_ROUTES = {
       `/users/me/messages/${messageId}/attachments/${attachmentId}`,
 
     SEND_MESSAGE: GMAIL_API_BASE_URL + `/users/me/messages/send`,
+    DELETE_MESSAGE: (messageId: string) =>
+      GMAIL_API_BASE_URL + `/users/me/messages/${messageId}`,
 
     // Gmail Push Notifications
     WATCH: GMAIL_API_BASE_URL + `/users/me/watch`,

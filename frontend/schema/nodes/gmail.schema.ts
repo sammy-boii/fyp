@@ -29,3 +29,7 @@ export const readEmailFormSchema = z.object({
   includeBody: z.boolean().default(true),
   includeAttachments: z.boolean().default(false)
 })
+
+export const deleteEmailFormSchema = z.object({
+  messageId: z.string().min(1, 'Message ID is required')
+})

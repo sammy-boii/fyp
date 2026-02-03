@@ -5,7 +5,10 @@ export const sendChannelMessageFormSchema = z.object({
   guildId: z.string().min(1, 'Please select a server'),
   channelId: z.string().min(1, 'Please select a channel'),
   content: z.string().min(1, 'Please enter a message'),
+  attachmentMode: z.enum(['url', 'base64']).default('url'),
   attachmentUrls: z.string().optional(),
+  attachmentData: z.string().optional(),
+  attachmentFilename: z.string().optional(),
   embedTitle: z.string().optional(),
   embedDescription: z.string().optional(),
   embedColor: z.string().optional()
@@ -16,7 +19,10 @@ export const sendDMFormSchema = z.object({
   guildId: z.string().min(1, 'Please select a server'),
   userId: z.string().min(1, 'Please select a user'),
   content: z.string().min(1, 'Please enter a message'),
+  attachmentMode: z.enum(['url', 'base64']).default('url'),
   attachmentUrls: z.string().optional(),
+  attachmentData: z.string().optional(),
+  attachmentFilename: z.string().optional(),
   embedTitle: z.string().optional(),
   embedDescription: z.string().optional()
 })

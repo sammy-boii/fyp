@@ -20,8 +20,8 @@ import {
   List
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { NODE_DEFINITIONS } from '@/constants/registry'
-import { NODE_TYPES } from '@/constants'
+import { NODE_DEFINITIONS, TRIGGER_NODE_DEFINITIONS } from '@/constants/registry'
+import { NODE_TYPES, TRIGGER_NODE_TYPES } from '@/constants'
 import { createPlaceholder } from '@/lib/placeholder-utils'
 import { NodeInputSource } from '@/lib/node-execution-store'
 import { parseNodeOutput, ParsedOutputField } from '@/lib/output-parser'
@@ -252,12 +252,17 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
     })
   }
 
-  // Shorten node ID for display
-  const shortenNodeId = (nodeId: string) => {
-    if (nodeId.length > 12) {
-      return nodeId.substring(0, 8) + '...'
-    }
-    return nodeId
+  const isTriggerNodeType = (nodeType: string) =>
+    Object.values(TRIGGER_NODE_TYPES).includes(
+      nodeType as keyof typeof TRIGGER_NODE_TYPES
+    )
+
+  const formatActionLabel = (actionId?: string) => {
+    if (!actionId) return 'Not configured'
+    return actionId
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
   }
 
   if (availableInputs.length === 0) {
@@ -310,7 +315,12 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
 
         {availableInputs.map((source) => {
           const nodeType = source.nodeType as keyof typeof NODE_TYPES
-          const nodeDef = NODE_DEFINITIONS[nodeType]
+          const isTrigger = isTriggerNodeType(source.nodeType)
+          const nodeDef = isTrigger
+            ? TRIGGER_NODE_DEFINITIONS[
+                source.nodeType as keyof typeof TRIGGER_NODE_TYPES
+              ]
+            : NODE_DEFINITIONS[nodeType]
           const isExpanded = expandedNodes.has(source.nodeId)
 
           // Use rawOutput if available, otherwise fall back to reconstruction
@@ -321,6 +331,15 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
             source.actionId,
             outputForParsing
           )
+
+          const actionLabel =
+            nodeDef?.actions?.find((action) => action.id === source.actionId)
+              ?.label || formatActionLabel(source.actionId)
+
+          const iconComponent =
+            'iconComponent' in (nodeDef || {})
+              ? (nodeDef as any).iconComponent
+              : null
 
           return (
             <Collapsible
@@ -349,12 +368,19 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
                       />
                     </div>
                   )}
+                  {!nodeDef?.icon && iconComponent && (
+                    <div className='p-1.5 rounded-md bg-background shadow-sm ring-1 ring-border/50'>
+                      {React.createElement(iconComponent, {
+                        className: 'h-4 w-4 text-foreground'
+                      })}
+                    </div>
+                  )}
                   <div className='flex-1 min-w-0'>
                     <span className='text-sm font-medium block truncate'>
                       {nodeDef?.label || source.nodeType}
                     </span>
                     <span className='text-[10px] text-muted-foreground font-mono'>
-                      {shortenNodeId(source.nodeId)}
+                      {actionLabel}
                     </span>
                   </div>
                   <Badge

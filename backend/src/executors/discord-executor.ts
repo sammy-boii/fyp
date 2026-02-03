@@ -11,6 +11,17 @@ const CHANNEL_TYPES = {
   forum: 15
 } as const
 
+type AttachmentInput =
+  | string
+  | {
+      type?: 'url' | 'base64' | 'drive'
+      value?: string
+      url?: string
+      data?: string
+      filename?: string
+      mimeType?: string
+    }
+
 // Helper to make Discord API requests
 async function discordRequest(
   endpoint: string,
@@ -40,15 +51,258 @@ async function discordRequest(
   return response.json()
 }
 
-function normalizeAttachmentUrls(attachmentUrls?: string | string[]): string[] {
-  if (!attachmentUrls) return []
-  if (Array.isArray(attachmentUrls)) {
-    return attachmentUrls.map((url) => url.trim()).filter(Boolean)
+function normalizeAttachmentInputs(
+  attachmentInput?: AttachmentInput | AttachmentInput[]
+): AttachmentInput[] {
+  if (!attachmentInput) return []
+
+  if (Array.isArray(attachmentInput)) {
+    return attachmentInput.flatMap((item) => normalizeAttachmentInputs(item))
   }
-  return attachmentUrls
-    .split(/\r?\n|,/)
-    .map((url) => url.trim())
-    .filter(Boolean)
+
+  if (typeof attachmentInput === 'string') {
+    const trimmed = attachmentInput.trim()
+    if (!trimmed) return []
+
+    if (isProbablyBase64String(trimmed)) {
+      return [{ type: 'base64', value: trimmed }]
+    }
+
+    if (
+      (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+      (trimmed.startsWith('{') && trimmed.endsWith('}'))
+    ) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        return normalizeAttachmentInputs(parsed as AttachmentInput)
+      } catch {
+        // fallthrough to treat as URLs
+      }
+    }
+
+    return trimmed
+      .split(/\r?\n|,/)
+      .map((url) => url.trim())
+      .filter(Boolean)
+  }
+
+  return [attachmentInput]
+}
+
+function isProbablyBase64String(value: string): boolean {
+  if (value.startsWith('data:') && value.includes('base64,')) {
+    return true
+  }
+
+  if (value.includes('://')) return false
+  if (value.length < 80) return false
+
+  const sample = value.replace(/\s/g, '').slice(0, 200)
+  return /^[A-Za-z0-9+/=]+$/.test(sample)
+}
+
+function normalizeAttachmentSpec(input: AttachmentInput): {
+  type: 'url' | 'base64' | 'drive'
+  value?: string
+  data?: string
+  filename: string
+  mimeType: string
+} | null {
+  if (typeof input === 'string') {
+    return {
+      type: 'url',
+      value: input,
+      filename: getFileNameFromUrl(input, 0),
+      mimeType: 'application/octet-stream'
+    }
+  }
+
+  if (input.data) {
+    const parsed = parseDataUrl(input.data)
+    if (parsed) {
+      const mimeType =
+        input.mimeType || parsed.mimeType || 'application/octet-stream'
+      return {
+        type: 'base64',
+        data: parsed.data,
+        filename: ensureFilenameExtension(input.filename || 'attachment', mimeType),
+        mimeType
+      }
+    }
+  }
+
+  if (input.url) {
+    return {
+      type: 'url',
+      value: input.url,
+      filename: input.filename || getFileNameFromUrl(input.url, 0),
+      mimeType: input.mimeType || 'application/octet-stream'
+    }
+  }
+
+  if (input.data) {
+    const inferredMimeType =
+      input.mimeType || detectMimeTypeFromBase64(input.data)
+    const mimeType = inferredMimeType || 'application/octet-stream'
+    return {
+      type: 'base64',
+      data: input.data,
+      filename: ensureFilenameExtension(input.filename || 'attachment', mimeType),
+      mimeType
+    }
+  }
+
+  if (input.type === 'url' && input.value) {
+    return {
+      type: 'url',
+      value: input.value,
+      filename: input.filename || getFileNameFromUrl(input.value, 0),
+      mimeType: input.mimeType || 'application/octet-stream'
+    }
+  }
+
+  if (input.type === 'base64' && input.value) {
+    const parsed = parseDataUrl(input.value)
+    const inferredMimeType =
+      input.mimeType ||
+      parsed?.mimeType ||
+      detectMimeTypeFromBase64(input.value)
+    const mimeType = inferredMimeType || 'application/octet-stream'
+    return {
+      type: 'base64',
+      data: parsed?.data || input.value,
+      filename: ensureFilenameExtension(input.filename || 'attachment', mimeType),
+      mimeType
+    }
+  }
+
+  if (input.type === 'drive' && input.value) {
+    return {
+      type: 'drive',
+      value: input.value,
+      filename: input.filename || 'attachment',
+      mimeType: input.mimeType || 'application/octet-stream'
+    }
+  }
+
+  return null
+}
+
+function parseDataUrl(value: string): { mimeType: string; data: string } | null {
+  if (!value.startsWith('data:')) return null
+  const match = value.match(/^data:([^;]+);base64,(.+)$/)
+  if (!match) return null
+  return { mimeType: match[1], data: match[2] }
+}
+
+function ensureFilenameExtension(filename: string, mimeType: string): string {
+  if (filename.includes('.')) return filename
+  const extension = extensionFromMimeType(mimeType)
+  return extension ? `${filename}.${extension}` : `${filename}.bin`
+}
+
+function extensionFromMimeType(mimeType: string): string | null {
+  const normalized = mimeType.toLowerCase().split(';')[0].trim()
+  const map: Record<string, string> = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+    'application/pdf': 'pdf',
+    'text/plain': 'txt',
+    'text/csv': 'csv',
+    'application/zip': 'zip',
+    'application/json': 'json',
+    'audio/mpeg': 'mp3',
+    'audio/wav': 'wav',
+    'video/mp4': 'mp4'
+  }
+
+  return map[normalized] || null
+}
+
+function detectMimeTypeFromBase64(value: string): string | null {
+  const cleaned = value.includes('base64,')
+    ? value.split('base64,').pop() || ''
+    : value
+  const sample = cleaned.replace(/\s/g, '').slice(0, 120)
+  if (!sample) return null
+
+  let buffer: Buffer
+  try {
+    buffer = Buffer.from(sample, 'base64')
+  } catch {
+    return null
+  }
+
+  const header = buffer.subarray(0, 12)
+
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (
+    header.length >= 8 &&
+    header[0] === 0x89 &&
+    header[1] === 0x50 &&
+    header[2] === 0x4e &&
+    header[3] === 0x47
+  ) {
+    return 'image/png'
+  }
+
+  // JPEG: FF D8 FF
+  if (header.length >= 3 && header[0] === 0xff && header[1] === 0xd8) {
+    return 'image/jpeg'
+  }
+
+  // GIF: 47 49 46 38
+  if (
+    header.length >= 4 &&
+    header[0] === 0x47 &&
+    header[1] === 0x49 &&
+    header[2] === 0x46 &&
+    header[3] === 0x38
+  ) {
+    return 'image/gif'
+  }
+
+  // PDF: 25 50 44 46
+  if (
+    header.length >= 4 &&
+    header[0] === 0x25 &&
+    header[1] === 0x50 &&
+    header[2] === 0x44 &&
+    header[3] === 0x46
+  ) {
+    return 'application/pdf'
+  }
+
+  // ZIP: 50 4B 03 04
+  if (
+    header.length >= 4 &&
+    header[0] === 0x50 &&
+    header[1] === 0x4b &&
+    header[2] === 0x03 &&
+    header[3] === 0x04
+  ) {
+    return 'application/zip'
+  }
+
+  // WEBP: "RIFF"...."WEBP"
+  if (
+    header.length >= 12 &&
+    header[0] === 0x52 &&
+    header[1] === 0x49 &&
+    header[2] === 0x46 &&
+    header[3] === 0x46 &&
+    header[8] === 0x57 &&
+    header[9] === 0x45 &&
+    header[10] === 0x42 &&
+    header[11] === 0x50
+  ) {
+    return 'image/webp'
+  }
+
+  return null
 }
 
 function getFileNameFromUrl(url: string, index: number) {
@@ -67,11 +321,14 @@ function getFileNameFromUrl(url: string, index: number) {
 async function buildMessagePayload(
   content: string,
   embed: object | null,
-  attachmentUrls?: string | string[]
+  attachmentInputs?: AttachmentInput | AttachmentInput[]
 ): Promise<{ body: BodyInit; isMultipart: boolean }> {
-  const urls = normalizeAttachmentUrls(attachmentUrls)
+  const inputs = normalizeAttachmentInputs(attachmentInputs)
+  const attachments = inputs
+    .map((item) => normalizeAttachmentSpec(item))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
 
-  if (urls.length === 0) {
+  if (attachments.length === 0) {
     const jsonBody: any = { content }
     if (embed) {
       jsonBody.embeds = [embed]
@@ -87,20 +344,46 @@ async function buildMessagePayload(
   formData.append('payload_json', JSON.stringify(payload))
 
   await Promise.all(
-    urls.map(async (url, index) => {
-      const fileResponse = await fetch(url)
-      if (!fileResponse.ok) {
-        throw new Error(`Failed to fetch attachment: ${url}`)
-      }
-      const arrayBuffer = await fileResponse.arrayBuffer()
-      const fileName = getFileNameFromUrl(url, index)
-      const contentType =
-        fileResponse.headers.get('content-type') || 'application/octet-stream'
+    attachments.map(async (attachment, index) => {
+      if (attachment.type === 'url') {
+        const url = attachment.value || ''
+        const fileResponse = await fetch(url)
+        if (!fileResponse.ok) {
+          throw new Error(`Failed to fetch attachment: ${url}`)
+        }
+        const arrayBuffer = await fileResponse.arrayBuffer()
+        const fileName = ensureFilenameExtension(
+          attachment.filename || getFileNameFromUrl(url, index),
+          contentType
+        )
+        const contentType =
+          fileResponse.headers.get('content-type') || attachment.mimeType
 
-      formData.append(
-        `files[${index}]`,
-        new Blob([arrayBuffer], { type: contentType }),
-        fileName
+        formData.append(
+          `files[${index}]`,
+          new Blob([arrayBuffer], { type: contentType }),
+          fileName
+        )
+        return
+      }
+
+      if (attachment.type === 'base64') {
+        const rawData = attachment.data || ''
+        const cleaned = rawData.includes('base64,')
+          ? rawData.split('base64,').pop() || ''
+          : rawData
+        const buffer = Buffer.from(cleaned, 'base64')
+        const fileName = attachment.filename || `attachment-${index + 1}`
+        formData.append(
+          `files[${index}]`,
+          new Blob([buffer], { type: attachment.mimeType }),
+          fileName
+        )
+        return
+      }
+
+      throw new Error(
+        'Drive attachments are not supported without file content.'
       )
     })
   )
@@ -139,6 +422,9 @@ export async function executeSendChannelMessage(
       embedDescription,
       embedColor,
       attachmentUrls,
+      attachmentData,
+      attachmentFilename,
+      attachmentMode,
       credentialId
     } = config
 
@@ -149,7 +435,21 @@ export async function executeSendChannelMessage(
     const botToken = await getDiscordBotToken(credentialId)
 
     const embed = buildEmbed(embedTitle, embedDescription, embedColor)
-    const { body } = await buildMessagePayload(content, embed, attachmentUrls)
+    const attachmentInput =
+      attachmentMode === 'base64'
+        ? attachmentData
+          ? attachmentData.trim().startsWith('[') ||
+            attachmentData.trim().startsWith('{')
+            ? attachmentData
+            : {
+                type: 'base64',
+                value: attachmentData,
+                filename: attachmentFilename
+              }
+          : undefined
+        : attachmentUrls
+
+    const { body } = await buildMessagePayload(content, embed, attachmentInput)
 
     const message = await discordRequest(
       API_ROUTES.DISCORD.GET_CHANNEL_MESSAGES(channelId),
@@ -192,6 +492,9 @@ export async function executeSendDM(
       embedTitle,
       embedDescription,
       attachmentUrls,
+      attachmentData,
+      attachmentFilename,
+      attachmentMode,
       credentialId
     } = config
 
@@ -213,7 +516,21 @@ export async function executeSendDM(
 
     // Then send the message to the DM channel
     const embed = buildEmbed(embedTitle, embedDescription)
-    const { body } = await buildMessagePayload(content, embed, attachmentUrls)
+    const attachmentInput =
+      attachmentMode === 'base64'
+        ? attachmentData
+          ? attachmentData.trim().startsWith('[') ||
+            attachmentData.trim().startsWith('{')
+            ? attachmentData
+            : {
+                type: 'base64',
+                value: attachmentData,
+                filename: attachmentFilename
+              }
+          : undefined
+        : attachmentUrls
+
+    const { body } = await buildMessagePayload(content, embed, attachmentInput)
 
     const message = await discordRequest(
       API_ROUTES.DISCORD.SEND_DM(dmChannel.id),

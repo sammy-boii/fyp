@@ -52,6 +52,7 @@ export function ScheduleTriggerForm() {
                 value={field.value || ''}
                 onChange={field.onChange}
                 className="text-sm appearance-none [&::-webkit-calendar-picker-indicator]:opacity-40 [&::-webkit-calendar-picker-indicator]:hover:opacity-70 [&::-webkit-datetime-edit]:text-foreground"
+                style={{ accentColor: 'hsl(var(--primary))' }}
                 aria-invalid={fieldState.invalid}
               />
             </InputGroup>

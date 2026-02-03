@@ -11,19 +11,15 @@ import {
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-import { Play, Settings, Trash2, Plus, Loader2 } from 'lucide-react'
-import Image from 'next/image'
+import { Settings, Trash2, Plus, GitBranch } from 'lucide-react'
 import React, { useState, useCallback } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
-import { NODE_DEFINITIONS } from '@/constants/registry'
-import { useParams } from 'next/navigation'
-import { useExecuteNode } from '@/hooks/use-workflows'
 import {
   getAvailableInputsFromNodes,
   NodeOutputData
 } from '@/lib/node-execution-store'
 
-import { NodeActionsSheet } from './NodeActionsSheet'
+import NodeConfigurationDialog from '@/components/editor/node/NodeConfigurationDialog'
 
 import {
   ContextMenu,
@@ -42,32 +38,26 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog'
 
-import { NODE_TYPES, ALL_NODE_TYPES } from '@/constants'
+import { ALL_NODE_TYPES } from '@/constants'
 import {
   createNode,
   createEdge,
   calculateNewNodePosition
 } from '@/lib/react-flow-utils'
 import { AddNodeSheetContent } from '@/app/(main)/workflows/[id]/_components/AddNodeSheet'
-import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 import { ValueOf } from '@/types/index.types'
 import { TActionID } from '@shared/constants'
+import { CONDITION_ACTIONS } from './ConditionActions'
 
-export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
-  const node = NODE_DEFINITIONS[data.type as keyof typeof NODE_TYPES]
+export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
   const { setNodes, setEdges, getEdges, getNodes } = useReactFlow()
-  const params = useParams()
-  const workflowId = params?.id ? String(params.id) : null
-  const executeNodeMutation = useExecuteNode()
-  const { saveIfChanged, isAnyOperationPending, setIsExecutingNode } =
-    useWorkflowEditor()
 
-  const [sheetOpen, setSheetOpen] = useState(false)
+  const [trueSheetOpen, setTrueSheetOpen] = useState(false)
+  const [falseSheetOpen, setFalseSheetOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
 
-  // Get available inputs from predecessor nodes (stored in their data.lastOutput)
-  // Using useStore to properly subscribe to node/edge changes
+  // Get available inputs from predecessor nodes
   const availableInputs = useStore((state) => {
     return getAvailableInputsFromNodes(
       id,
@@ -83,7 +73,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     )
   })
 
-  // Get this node's output from its data - use useStore to ensure reactivity
+  // Get this node's output from its data
   const nodeOutput: NodeOutputData | undefined = useStore((state) => {
     const currentNode = state.nodes.find((n) => n.id === id)
     if (currentNode?.data?.lastOutput) {
@@ -99,111 +89,66 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     return undefined
   })
 
-  // Check if this node has outgoing edges - subscribe to edge changes via useStore
-  const isSourceConnected = useStore((state) =>
-    state.edges.some((e) => e.source === id)
+  // Check if each handle has outgoing edges
+  const trueHandleConnected = useStore((state) =>
+    state.edges.some((e) => e.source === id && e.sourceHandle === 'true')
+  )
+  const falseHandleConnected = useStore((state) =>
+    state.edges.some((e) => e.source === id && e.sourceHandle === 'false')
   )
 
-  const addNode = (nodeType: ValueOf<typeof ALL_NODE_TYPES>) => {
+  const addNodeFromHandle = (
+    nodeType: ValueOf<typeof ALL_NODE_TYPES>,
+    handleType: 'true' | 'false'
+  ) => {
     const nodes = getNodes()
     const edges = getEdges()
     const currentNode = nodes.find((n) => n.id === id)
     if (!currentNode) return
 
-    // Calculate position for the new node relative to current node
+    // Calculate offset based on handle type
+    const yOffset = handleType === 'true' ? -60 : 60
+
+    // Calculate position for the new node
     const newPosition = calculateNewNodePosition(nodes, edges, {
       fromNode: currentNode,
-      offsetX: 250
+      offsetX: 250,
+      offsetY: yOffset
     })
 
-    // Create the new node using utility function
+    // Create the new node
     const newNode = createNode(nodeType, newPosition)
 
     // Add the new node
     setNodes((nds) => [...nds, newNode])
 
-    // Create an edge from the current node to the new node
+    // Create an edge from the condition node to the new node with the handle
     const newEdge = createEdge(id, newNode.id)
+    newEdge.sourceHandle = handleType
     setEdges((eds) => addEdge(newEdge, eds))
 
-    setSheetOpen(false)
+    if (handleType === 'true') {
+      setTrueSheetOpen(false)
+    } else {
+      setFalseSheetOpen(false)
+    }
   }
-
-  const handleExecuteNode = useCallback(async () => {
-    if (!workflowId) {
-      return
-    }
-
-    if (!data.actionId || !data.config) {
-      return
-    }
-
-    // Don't execute if any other operation is pending
-    if (isAnyOperationPending) {
-      return
-    }
-
-    setIsExecutingNode(true)
-    try {
-      // Auto-save workflow if there are changes before executing
-      await saveIfChanged()
-
-      const result = await executeNodeMutation.mutateAsync({
-        workflowId,
-        nodeId: id
-      })
-
-      // Store the output in the node's data (persisted with workflow)
-      if (result?.data?.output) {
-        setNodes((nds) =>
-          nds.map((n) =>
-            n.id === id
-              ? {
-                  ...n,
-                  data: {
-                    ...n.data,
-                    lastOutput: result.data.output,
-                    lastExecutedAt: new Date().toISOString()
-                  }
-                }
-              : n
-          )
-        )
-      } else {
-      }
-    } finally {
-      setIsExecutingNode(false)
-    }
-  }, [
-    workflowId,
-    data.actionId,
-    data.config,
-    executeNodeMutation,
-    id,
-    setNodes,
-    saveIfChanged,
-    isAnyOperationPending,
-    setIsExecutingNode
-  ])
 
   const handleConfigure = useCallback(() => {
     setConfigDialogOpen(true)
   }, [])
 
   const handleDelete = useCallback(() => {
-    // Remove the node and all connected edges directly
     setNodes((nds) => nds.filter((n) => n.id !== id))
     setEdges((eds) => {
       const filtered = eds.filter((e) => e.source !== id && e.target !== id)
       return filtered
     })
-
     setDeleteDialogOpen(false)
   }, [id, setNodes, setEdges])
 
   const handleSaveConfig = useCallback(
     (configData: { nodeId: string; actionId: TActionID; config: any }) => {
-      // Update the node data with the configuration
       setNodes((nds) =>
         nds.map((node) =>
           node.id === id
@@ -222,16 +167,8 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     [id, setNodes]
   )
 
-  // Check if node has existing config and find the action
-  const getPreSelectedAction = () => {
-    if (!data.actionId || !data.config) {
-      return undefined
-    }
-
-    // Find the action from the node's actions that matches the saved actionId
-    const action = node.actions.find((act) => act.id === data.actionId)
-    return action
-  }
+  // Get the condition action (there's only one)
+  const conditionAction = CONDITION_ACTIONS[0]
 
   return (
     <ContextMenu>
@@ -241,26 +178,18 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
             <Button
               size='icon'
               variant='outline'
-              className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-green-500/10 hover:border-green-500/60 hover:text-green-500 hover:shadow-md disabled:opacity-40 disabled:hover:bg-background transition-all'
-              onClick={handleExecuteNode}
-              disabled={
-                !data.actionId || !data.config || executeNodeMutation.isPending
-              }
+              className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-muted hover:border-border hover:shadow-md transition-all'
+              onClick={handleConfigure}
             >
-              {executeNodeMutation.isPending ? (
-                <Loader2 className='h-3 w-3 animate-spin' />
-              ) : (
-                <Play className='h-3 w-3' />
-              )}
+              <Settings className='h-3 w-3' />
             </Button>
-            <NodeActionsSheet
-              node={node}
+            <NodeConfigurationDialog
+              action={conditionAction}
+              isOpen={configDialogOpen}
+              setIsOpen={setConfigDialogOpen}
               nodeId={id}
               onSaveConfig={handleSaveConfig}
-              preSelectedAction={getPreSelectedAction()}
               initialConfig={data.config}
-              open={configDialogOpen}
-              onOpenChange={setConfigDialogOpen}
               availableInputs={availableInputs}
               nodeOutput={nodeOutput}
             />
@@ -283,9 +212,8 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
                     Delete Node
                   </DialogTitle>
                   <DialogDescription>
-                    Are you sure you want to delete this node? This action
-                    cannot be undone and will remove all connections to this
-                    node.
+                    Are you sure you want to delete this condition node? This
+                    action cannot be undone and will remove all connections.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
@@ -305,7 +233,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
 
           <Card
             className={`relative w-48 p-4 rounded-lg border transition-all duration-300 bg-card ${
-              data.isExecuting || executeNodeMutation.isPending
+              data.isExecuting
                 ? 'border-transparent animate-executing-border'
                 : 'border-border/50'
             }`}
@@ -314,44 +242,28 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
             <div className='flex items-center gap-3'>
               <div
                 className={`p-3 rounded-xl 
-      bg-linear-to-br from-white/10 to-white/5 
-      shadow-lg shadow-black/10 ring-1 ring-black/5
-      aspect-square relative overflow-hidden flex items-center justify-center
-    `}
+                  bg-linear-to-br from-white/10 to-white/5 
+                  shadow-lg shadow-black/10 ring-1 ring-black/5
+                  aspect-square relative overflow-hidden flex items-center justify-center
+                `}
               >
                 <div className='relative z-10'>
-                  {node.icon ? (
-                    <Image
-                      src={node.icon}
-                      alt={node.label}
-                      width={24}
-                      height={24}
-                    />
-                  ) : node.iconComponent ? (
-                    <node.iconComponent className='h-6 w-6 text-foreground' />
-                  ) : null}
+                  <GitBranch className='h-6 w-6 text-foreground' />
                 </div>
               </div>
               <div className='flex-1 min-w-0'>
                 <h3 className='font-semibold text-sm text-foreground truncate'>
-                  {node.label}
+                  Condition
                 </h3>
                 <p className='text-xs text-muted-foreground font-medium truncate'>
-                  {data.actionId
-                    ? data.actionId
-                        .split('_')
-                        .map(
-                          (word) =>
-                            word.charAt(0).toUpperCase() +
-                            word.slice(1).toLowerCase()
-                        )
-                        .join(' ')
-                    : 'Select Action'}
+                  {data.config?.conditions?.length
+                    ? `${data.config.conditions.length} condition${data.config.conditions.length > 1 ? 's' : ''}`
+                    : 'Configure'}
                 </p>
               </div>
             </div>
 
-            {/* Connection handles */}
+            {/* Input Handle */}
             <Handle
               type='target'
               position={Position.Left}
@@ -365,31 +277,73 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
               }}
             />
 
-            {/* Right handle - Conditional styling based on connection state */}
+            {/* True Output Handle - Top */}
             <Handle
+              id='true'
+              type='source'
+              position={Position.Right}
               className='bg-muted-foreground! border-muted-foreground!'
               style={{
                 width: 14,
                 height: 14,
-                cursor: isSourceConnected ? 'crosshair' : 'pointer'
+                top: '20%',
+                cursor: trueHandleConnected ? 'crosshair' : 'pointer'
               }}
-              type='source'
-              position={Position.Right}
             >
-              {!isSourceConnected && (
+              <span className='absolute -left-8 text-[10px] font-medium text-muted-foreground whitespace-nowrap'>
+                True
+              </span>
+              {!trueHandleConnected && (
                 <div className='flex items-center -translate-y-3'>
                   <div className='min-w-12 ml-1 border-t-2 border-muted-foreground' />
-
-                  <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                  <Sheet open={trueSheetOpen} onOpenChange={setTrueSheetOpen}>
                     <SheetTrigger asChild>
                       <div className='border-2 p-1 rounded border-muted-foreground'>
                         <Plus className='text-muted-foreground' size={24} />
                       </div>
                     </SheetTrigger>
-
                     <AddNodeSheetContent
-                      onOpenChange={setSheetOpen}
-                      onAddNode={addNode}
+                      onOpenChange={setTrueSheetOpen}
+                      onAddNode={(nodeType) =>
+                        addNodeFromHandle(nodeType, 'true')
+                      }
+                      showOnlyActions
+                    />
+                  </Sheet>
+                </div>
+              )}
+            </Handle>
+
+            {/* False Output Handle - Bottom */}
+            <Handle
+              id='false'
+              type='source'
+              position={Position.Right}
+              className='bg-muted-foreground! border-muted-foreground!'
+              style={{
+                width: 14,
+                height: 14,
+                top: '80%',
+                cursor: falseHandleConnected ? 'crosshair' : 'pointer'
+              }}
+            >
+              <span className='absolute -left-8 text-[10px] font-medium text-muted-foreground whitespace-nowrap'>
+                False
+              </span>
+              {!falseHandleConnected && (
+                <div className='flex items-center -translate-y-3'>
+                  <div className='min-w-12 ml-1 border-t-2 border-muted-foreground' />
+                  <Sheet open={falseSheetOpen} onOpenChange={setFalseSheetOpen}>
+                    <SheetTrigger asChild>
+                      <div className='border-2 p-1 rounded border-muted-foreground'>
+                        <Plus className='text-muted-foreground' size={24} />
+                      </div>
+                    </SheetTrigger>
+                    <AddNodeSheetContent
+                      onOpenChange={setFalseSheetOpen}
+                      onAddNode={(nodeType) =>
+                        addNodeFromHandle(nodeType, 'false')
+                      }
                       showOnlyActions
                     />
                   </Sheet>
@@ -401,24 +355,6 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
       </ContextMenuTrigger>
 
       <ContextMenuContent className='w-44'>
-        <ContextMenuItem
-          className='gap-3'
-          onClick={handleExecuteNode}
-          disabled={
-            !data.actionId ||
-            !data.config ||
-            executeNodeMutation.isPending ||
-            isAnyOperationPending
-          }
-        >
-          {executeNodeMutation.isPending ? (
-            <Loader2 className='h-4 w-4 animate-spin' />
-          ) : (
-            <Play className='h-4 w-4' />
-          )}
-          Run
-        </ContextMenuItem>
-
         <ContextMenuItem className='gap-3' onClick={handleConfigure}>
           <Settings className='h-4 w-4' />
           Configure
@@ -438,11 +374,13 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
 }
 
 // Wrap with memo to prevent unnecessary re-renders
-export const BaseNodeMemo = React.memo(BaseNode, (prevProps, nextProps) => {
-  // Only re-render if data or selected state changes
-  return (
-    prevProps.id === nextProps.id &&
-    prevProps.data === nextProps.data &&
-    prevProps.selected === nextProps.selected
-  )
-})
+export const ConditionNodeMemo = React.memo(
+  ConditionNode,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.id === nextProps.id &&
+      prevProps.data === nextProps.data &&
+      prevProps.selected === nextProps.selected
+    )
+  }
+)

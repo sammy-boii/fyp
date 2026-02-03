@@ -117,14 +117,18 @@ export function AddNodeSheetContent({
                 className='flex cursor-pointer w-full items-center justify-between rounded-lg border bg-card p-3 text-left transition hover:bg-muted'
               >
                 <div className='flex items-center gap-3'>
-                  <span className='relative h-12 w-12 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900'>
-                    <Image
-                      src={option.icon}
-                      alt={option.label}
-                      fill
-                      sizes='48px'
-                      className='object-contain p-2'
-                    />
+                  <span className='relative h-12 w-12 overflow-hidden rounded-md bg-white shadow-sm dark:bg-zinc-900 flex items-center justify-center'>
+                    {option.icon ? (
+                      <Image
+                        src={option.icon}
+                        alt={option.label}
+                        fill
+                        sizes='48px'
+                        className='object-contain p-2'
+                      />
+                    ) : option.iconComponent ? (
+                      <option.iconComponent className='size-6 text-foreground' />
+                    ) : null}
                   </span>
                   <div className='flex flex-col'>
                     <span className='text-sm font-semibold'>

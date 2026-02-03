@@ -1,7 +1,8 @@
 export const NODE_TYPES = {
   GMAIL: 'GMAIL',
   GOOGLE_DRIVE: 'GOOGLE_DRIVE',
-  DISCORD: 'DISCORD'
+  DISCORD: 'DISCORD',
+  CONDITION: 'CONDITION'
 } as const
 
 // Trigger node types (nodes that start a workflow)

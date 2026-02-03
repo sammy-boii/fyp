@@ -279,6 +279,7 @@ function WorkflowViewPageInner() {
   )
 
   // Validate connection: prevent self-connections and connections to nodes that already have an incoming edge
+  // Also handle condition nodes which can have multiple outputs (one per handle)
   const isValidConnection = useCallback(
     (connection: Connection | Edge) => {
       // Prevent self-connections
@@ -294,15 +295,42 @@ function WorkflowViewPageInner() {
         return false
       }
 
+      // For condition nodes, check if the specific handle already has a connection
+      if (connection.sourceHandle) {
+        const handleHasConnection = edges.some(
+          (edge) =>
+            edge.source === connection.source &&
+            edge.sourceHandle === connection.sourceHandle
+        )
+        if (handleHasConnection) {
+          return false
+        }
+      } else {
+        // For non-condition nodes (no sourceHandle), check if source already has any outgoing edge
+        const sourceNode = nodes.find((n) => n.id === connection.source)
+        if (sourceNode?.type !== 'condition_node') {
+          const sourceHasOutgoing = edges.some(
+            (edge) => edge.source === connection.source
+          )
+          if (sourceHasOutgoing) {
+            return false
+          }
+        }
+      }
+
       return true
     },
-    [edges]
+    [edges, nodes]
   )
 
   // Handle new connections from manual edge dragging
   const onConnect = useCallback(
     (connection: Connection) => {
       const newEdge = createEdge(connection.source!, connection.target!)
+      // Preserve the sourceHandle for condition nodes
+      if (connection.sourceHandle) {
+        newEdge.sourceHandle = connection.sourceHandle
+      }
       setEdges((eds) => addEdge(newEdge, eds))
     },
     [setEdges]

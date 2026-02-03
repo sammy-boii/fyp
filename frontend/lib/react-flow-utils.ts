@@ -1,5 +1,5 @@
 import type { Node, Edge, XYPosition } from '@xyflow/react'
-import { ALL_NODE_TYPES, TRIGGER_NODE_TYPES } from '@/constants'
+import { ALL_NODE_TYPES, TRIGGER_NODE_TYPES, NODE_TYPES } from '@/constants'
 import { ValueOf } from '@/types/index.types'
 import { TRIGGER_ACTION_ID } from '@shared/constants'
 
@@ -53,9 +53,18 @@ export function isTriggerNodeType(
 }
 
 /**
+ * Check if a node type is a condition node
+ */
+export function isConditionNodeType(nodeType: string): boolean {
+  return nodeType === NODE_TYPES.CONDITION
+}
+
+/**
  * Get the trigger action ID for a trigger node type
  */
-function getTriggerActionId(nodeType: ValueOf<typeof TRIGGER_NODE_TYPES>): string {
+function getTriggerActionId(
+  nodeType: ValueOf<typeof TRIGGER_NODE_TYPES>
+): string {
   switch (nodeType) {
     case TRIGGER_NODE_TYPES.MANUAL_TRIGGER:
       return TRIGGER_ACTION_ID.MANUAL_TRIGGER
@@ -111,9 +120,16 @@ export function createNode(
     type?: string
   }
 ): Node {
-  // Determine the node type based on whether it's a trigger or action
+  // Determine the node type based on whether it's a trigger, condition, or action
   const isTrigger = isTriggerNodeType(nodeType)
-  const reactFlowNodeType = isTrigger ? 'trigger_node' : 'custom_node'
+  const isCondition = isConditionNodeType(nodeType)
+
+  let reactFlowNodeType = 'custom_node'
+  if (isTrigger) {
+    reactFlowNodeType = 'trigger_node'
+  } else if (isCondition) {
+    reactFlowNodeType = 'condition_node'
+  }
 
   // Build node data - auto-configure trigger nodes
   const nodeData: Record<string, any> = {
@@ -122,7 +138,9 @@ export function createNode(
 
   // Auto-configure trigger nodes with their actionId and empty config
   if (isTrigger) {
-    nodeData.actionId = getTriggerActionId(nodeType as ValueOf<typeof TRIGGER_NODE_TYPES>)
+    nodeData.actionId = getTriggerActionId(
+      nodeType as ValueOf<typeof TRIGGER_NODE_TYPES>
+    )
     nodeData.config = {}
   }
 
@@ -171,6 +189,7 @@ export function findRightmostNode(nodes: Node[]): Node | null {
  * @param nodes - Array of existing nodes
  * @param edges - Array of existing edges
  * @param offsetX - Horizontal offset from the previous node (default: 250)
+ * @param offsetY - Vertical offset from the previous node (default: 0)
  * @param baseY - Base Y position when no nodes exist (default: 160)
  * @param baseX - Base X position when no nodes exist (default: 280)
  */
@@ -179,12 +198,14 @@ export function calculateNewNodePosition(
   edges: Edge[],
   options?: {
     offsetX?: number
+    offsetY?: number
     baseY?: number
     baseX?: number
     fromNode?: Node | null
   }
 ): XYPosition {
   const offsetX = options?.offsetX ?? 250
+  const offsetY = options?.offsetY ?? 0
   const baseY = options?.baseY ?? 160
   const baseX = options?.baseX ?? 280
 
@@ -192,7 +213,7 @@ export function calculateNewNodePosition(
   if (options?.fromNode) {
     return {
       x: options.fromNode.position.x + offsetX,
-      y: options.fromNode.position.y
+      y: options.fromNode.position.y + offsetY
     }
   }
 
@@ -201,7 +222,7 @@ export function calculateNewNodePosition(
   if (lastNode) {
     return {
       x: lastNode.position.x + offsetX,
-      y: lastNode.position.y
+      y: lastNode.position.y + offsetY
     }
   }
 
@@ -211,7 +232,7 @@ export function calculateNewNodePosition(
     if (rightmostNode) {
       return {
         x: rightmostNode.position.x + offsetX,
-        y: rightmostNode.position.y
+        y: rightmostNode.position.y + offsetY
       }
     }
   }
@@ -244,10 +265,13 @@ export function formatNodes(nodes: any[]): Node[] {
   return nodes.map((node: any) => {
     // Determine the correct node type based on the data.type
     const nodeDataType = node.data?.type
-    const reactFlowNodeType =
-      nodeDataType && isTriggerNodeType(nodeDataType)
-        ? 'trigger_node'
-        : 'custom_node'
+
+    let reactFlowNodeType = 'custom_node'
+    if (nodeDataType && isTriggerNodeType(nodeDataType)) {
+      reactFlowNodeType = 'trigger_node'
+    } else if (nodeDataType && isConditionNodeType(nodeDataType)) {
+      reactFlowNodeType = 'condition_node'
+    }
 
     return {
       ...node,

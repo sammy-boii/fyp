@@ -4,15 +4,21 @@ import driveIcon from '@/public/google-drive.png'
 import discordIcon from '@/public/discord.png'
 import googleDriveIcon from '@/public/google-drive.png'
 
-import { NodeDefinition, TriggerNodeDefinition } from '@/types/node.types'
+import {
+  NodeDefinition,
+  TriggerNodeDefinition,
+  ConditionNodeDefinition
+} from '@/types/node.types'
 import { BACKEND_URL, NODE_TYPES, TRIGGER_NODE_TYPES } from '.'
-import { TimerReset } from 'lucide-react'
+import { TimerReset, GitBranch } from 'lucide-react'
 
 import { GOOGLE_DRIVE_ACTIONS } from '@/components/editor/custom-nodes/google-drive/GoogleDriveActions'
 
 import { DISCORD_ACTIONS } from '@/components/editor/custom-nodes/discord/DiscordActions'
 
 import { GMAIL_ACTIONS } from '@/components/editor/custom-nodes/gmail/GmailActions'
+
+import { CONDITION_ACTIONS } from '@/components/editor/custom-nodes/condition/ConditionActions'
 
 import {
   MANUAL_TRIGGER_ACTIONS,
@@ -39,6 +45,12 @@ export const NODE_DEFINITIONS: NodeDefinition = {
     actions: DISCORD_ACTIONS,
     description: 'Add a bot to a server to manage interactions',
     icon: discordIcon
+  },
+  [NODE_TYPES.CONDITION]: {
+    label: 'Condition',
+    actions: CONDITION_ACTIONS,
+    description: 'Route workflow based on conditions',
+    iconComponent: GitBranch
   }
 }
 

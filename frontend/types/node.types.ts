@@ -28,7 +28,8 @@ export type SingleNodeDefinition = {
   label: string
   description: string
   actions: NodeAction[]
-  icon: StaticImageData
+  icon?: StaticImageData
+  iconComponent?: LucideIcon
 }
 
 // Trigger node definitions
@@ -45,6 +46,14 @@ export type SingleTriggerNodeDefinition = {
   isTrigger: true
 }
 
+// Condition node definition (uses Lucide icon)
+export type ConditionNodeDefinition = {
+  label: string
+  description: string
+  actions: NodeAction[]
+  iconComponent: LucideIcon
+}
+
 export type BaseNodeProps = Node<{
   type: ValueOf<typeof ALL_NODE_TYPES>
   actionId: TActionID
@@ -57,10 +66,12 @@ export type BaseNodeProps = Node<{
 // custom node types for react flow
 import { BaseNodeMemo } from '@/components/editor/node/BaseNode'
 import { TriggerNodeMemo } from '@/components/editor/node/TriggerNode'
+import { ConditionNodeMemo } from '@/components/editor/custom-nodes/condition/ConditionNode'
 
 export const nodeTypes = {
   custom_node: BaseNodeMemo,
-  trigger_node: TriggerNodeMemo
+  trigger_node: TriggerNodeMemo,
+  condition_node: ConditionNodeMemo
 }
 
 // custom edge types for react flow

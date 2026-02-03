@@ -6,8 +6,7 @@ import {
   executeCreateFile,
   executeDeleteFolder,
   executeListFiles,
-  executeDeleteFile,
-  executeGetFileContent
+  executeDeleteFile
 } from './google-drive-executor'
 import {
   executeSendChannelMessage,
@@ -63,10 +62,6 @@ export const executeNodeLogic = async (
       result = await executeDeleteFile(config)
       break
 
-    case NODE_ACTION_ID['GOOGLE-DRIVE'].GET_FILE_CONTENT:
-      result = await executeGetFileContent(config)
-      break
-
     // Discord actions
     case NODE_ACTION_ID.DISCORD.SEND_CHANNEL_MESSAGE:
       result = await executeSendChannelMessage(config)
@@ -94,4 +89,3 @@ export const executeNodeLogic = async (
 
   return result
 }
-

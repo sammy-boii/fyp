@@ -1,27 +1,18 @@
 'use client'
 
 import { NodeAction } from '@/types/node.types'
-import {
-  FolderPlus,
-  FolderMinus,
-  List,
-  Trash2,
-  FilePlus,
-  FileText
-} from 'lucide-react'
+import { FolderPlus, FolderMinus, List, Trash2, FilePlus } from 'lucide-react'
 import { CreateFolderForm } from './forms/CreateFolderForm'
 import { CreateFileForm } from './forms/CreateFileForm'
 import { DeleteFolderForm } from './forms/DeleteFolderForm'
 import { ListFilesForm } from './forms/ListFilesForm'
 import { DeleteFileForm } from './forms/DeleteFileForm'
-import { GetFileContentForm } from './forms/GetFileContentForm'
 import {
   createFolderFormSchema,
   createFileFormSchema,
   deleteFolderFormSchema,
   listFilesFormSchema,
-  deleteFileFormSchema,
-  getFileContentFormSchema
+  deleteFileFormSchema
 } from '@/schema/nodes/google-drive.schema'
 import { NODE_ACTION_ID } from '@shared/constants'
 
@@ -41,14 +32,6 @@ export const GOOGLE_DRIVE_ACTIONS: NodeAction[] = [
     icon: FilePlus,
     configForm: <CreateFileForm />,
     configFormSchema: createFileFormSchema
-  },
-  {
-    id: NODE_ACTION_ID['GOOGLE-DRIVE'].GET_FILE_CONTENT,
-    label: 'Get File Content',
-    description: 'Read content from a file (docs, sheets, PDFs, images)',
-    icon: FileText,
-    configForm: <GetFileContentForm />,
-    configFormSchema: getFileContentFormSchema
   },
   {
     id: NODE_ACTION_ID['GOOGLE-DRIVE'].LIST_FILES,

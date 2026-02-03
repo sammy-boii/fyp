@@ -11,8 +11,7 @@ export const NODE_ACTION_ID = {
     CREATE_FILE: 'create_file',
     DELETE_FOLDER: 'delete_folder',
     LIST_FILES: 'list_files',
-    DELETE_FILE: 'delete_file',
-    GET_FILE_CONTENT: 'get_file_content'
+    DELETE_FILE: 'delete_file'
   },
 
   // Discord actions
@@ -31,7 +30,8 @@ export const TRIGGER_ACTION_ID = {
   DISCORD_WEBHOOK_TRIGGER: 'discord_webhook'
 } as const
 
-export type TTriggerActionID = typeof TRIGGER_ACTION_ID[keyof typeof TRIGGER_ACTION_ID]
+export type TTriggerActionID =
+  (typeof TRIGGER_ACTION_ID)[keyof typeof TRIGGER_ACTION_ID]
 
 type Values<T> = T[keyof T]
 

@@ -10,6 +10,11 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 import { Controller, useFormContext } from 'react-hook-form'
 import {
   FileText,
@@ -17,7 +22,8 @@ import {
   FileSpreadsheet,
   Folder,
   File,
-  Files
+  Files,
+  Info
 } from 'lucide-react'
 import { DriveItemPicker } from './DriveItemPicker'
 
@@ -118,11 +124,16 @@ export function ListFilesForm() {
         render={({ field }) => (
           <Field>
             <div className='flex items-center justify-between'>
-              <FieldLabel className='text-xs font-medium'>
+              <FieldLabel className='text-xs font-medium flex items-center gap-1'>
                 Include File Content
-                <p className='text-muted-foreground text-[10px] font-normal'>
-                  Fetch content for each file (slower for many files)
-                </p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className='h-3.5 w-3.5 text-muted-foreground cursor-help' />
+                  </TooltipTrigger>
+                  <TooltipContent side='top'>
+                    Not recommended if content is not required
+                  </TooltipContent>
+                </Tooltip>
               </FieldLabel>
               <Switch
                 checked={field.value || false}

@@ -115,7 +115,7 @@ export function SendChannelMessageForm() {
                 Attachments
               </FieldLabel>
               <PlaceholderInput
-                placeholder='Enter the public URL'
+                placeholder='Enter public URL'
                 className='resize-none text-sm h-9'
                 {...field}
                 aria-invalid={fieldState.invalid}

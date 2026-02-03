@@ -14,6 +14,52 @@ import {
   WorkflowExecution
 } from '@shared/prisma/generated/prisma/client'
 import { NodeExecutionResult } from '@/types/index.types'
+import { TRIGGER_ACTION_ID } from '@shared/constants'
+
+type ScheduleConfig = {
+  date?: string
+  time?: string
+  loop?: boolean
+}
+
+function buildScheduleValue(nodes?: any[]): string | null | undefined {
+  if (!nodes) return undefined
+
+  const scheduleTrigger = nodes.find(
+    (node) => node?.data?.actionId === TRIGGER_ACTION_ID.SCHEDULE_TRIGGER
+  )
+
+  if (!scheduleTrigger) return null
+
+  const config = (scheduleTrigger.data?.config || {}) as ScheduleConfig
+  const date = config.date?.trim()
+  const time = config.time?.trim()
+
+  if (!date || !time) return null
+
+  const [rawHour, rawMinute] = time.split(':')
+  const hour = Number(rawHour)
+  const minute = Number(rawMinute)
+
+  if (
+    Number.isNaN(hour) ||
+    Number.isNaN(minute) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return null
+  }
+
+  const normalizedTime = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+
+  if (config.loop) {
+    return `cron:${String(minute).padStart(2, '0')} ${String(hour).padStart(2, '0')} * * *`
+  }
+
+  return `once:${date}T${normalizedTime}:00`
+}
 
 export async function getWorkflows() {
   return tryCatch(async () => {
@@ -146,9 +192,14 @@ export async function updateWorkflow(id: string, data: Partial<Workflow>) {
 
     const parsedData = updateWorkflowSchema.parse(data)
 
+    const schedule = buildScheduleValue(parsedData.nodes as any[] | undefined)
+
     const workflow = await prisma.workflow.update({
       where: { id },
-      data: parsedData
+      data: {
+        ...parsedData,
+        ...(schedule !== undefined ? { schedule } : {})
+      }
     })
 
     // Always refresh the trigger cache when a workflow is updated.

@@ -15,3 +15,10 @@ export const discordWebhookTriggerFormSchema = z.object({
   channelId: z.string().min(1, 'Channel is required'),
   userId: z.string().optional()
 })
+
+// Schedule trigger schema
+export const scheduleTriggerFormSchema = z.object({
+  date: z.string().min(1, 'Date is required'),
+  time: z.string().min(1, 'Time is required'),
+  loop: z.boolean().default(false)
+})

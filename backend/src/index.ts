@@ -6,6 +6,7 @@ import { cors } from 'hono/cors'
 import { websocketHandler } from './lib/websocket'
 import { initDiscordBot } from './lib/discord-bot'
 import { initTriggerCache } from './lib/trigger-cache'
+import { initWorkflowScheduler } from './lib/workflow-scheduler'
 
 export const app = new Hono()
 
@@ -52,7 +53,9 @@ console.log(
   `Server running at PORT ${PORT} & WS at ws://localhost:${PORT}/ws/workflow/:workflowId`
 )
 
-// Initialize trigger cache first, then Discord bot
-initTriggerCache().then(() => {
-  initDiscordBot()
-})
+// Initialize trigger cache first, then scheduled workflows, then Discord bot
+initTriggerCache()
+  .then(() => initWorkflowScheduler())
+  .then(() => {
+    initDiscordBot()
+  })

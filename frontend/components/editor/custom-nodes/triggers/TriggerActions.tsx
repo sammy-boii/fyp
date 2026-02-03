@@ -1,14 +1,16 @@
 'use client'
 
 import { NodeAction } from '@/types/node.types'
-import { Play, Mail, MessageSquare } from 'lucide-react'
+import { Play, Mail, MessageSquare, Clock } from 'lucide-react'
 import { ManualTriggerForm } from './forms/ManualTriggerForm'
 import { GmailWebhookTriggerForm } from './forms/GmailWebhookTriggerForm'
 import { DiscordWebhookTriggerForm } from './forms/DiscordWebhookTriggerForm'
+import { ScheduleTriggerForm } from './forms/ScheduleTriggerForm'
 import {
   manualTriggerFormSchema,
   gmailWebhookTriggerFormSchema,
-  discordWebhookTriggerFormSchema
+  discordWebhookTriggerFormSchema,
+  scheduleTriggerFormSchema
 } from '@/schema/nodes/trigger.schema'
 import { TRIGGER_ACTION_ID } from '@shared/constants'
 
@@ -47,6 +49,18 @@ export const DISCORD_WEBHOOK_TRIGGER_ACTIONS: NodeAction[] = [
     requiresCredential: true,
     configForm: <DiscordWebhookTriggerForm />,
     configFormSchema: discordWebhookTriggerFormSchema
+  }
+]
+
+export const SCHEDULE_TRIGGER_ACTIONS: NodeAction[] = [
+  {
+    id: TRIGGER_NODE_ACTION_ID.SCHEDULE_TRIGGER,
+    label: 'Schedule',
+    description: 'Run on a date/time or repeat daily',
+    icon: Clock,
+    requiresCredential: false,
+    configForm: <ScheduleTriggerForm />,
+    configFormSchema: scheduleTriggerFormSchema
   }
 ]
 

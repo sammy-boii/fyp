@@ -5,7 +5,8 @@ export const createWorkflowSchema = z.object({
   description: z.string().optional(),
   // Allow empty workflows on initial create; nodes/edges will be populated later in the editor
   nodes: z.array(z.any()),
-  edges: z.array(z.any())
+  edges: z.array(z.any()),
+  schedule: z.string().nullable().optional()
 })
 
 // Use partial schema for updates - all fields optional

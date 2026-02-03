@@ -30,6 +30,10 @@ export const executeTriggerNode = async (
       // Discord webhook trigger - validate message matches filter criteria
       return executeDiscordTrigger(config, triggerEventData)
 
+    case TRIGGER_ACTION_ID.SCHEDULE_TRIGGER:
+      // Schedule trigger - no validation, just pass through
+      return executeScheduleTrigger(config, triggerEventData)
+
     default:
       // Unknown trigger, allow through
       return {
@@ -51,6 +55,13 @@ export const isTriggerNode = (actionId: string): boolean => {
  */
 export const isManualTrigger = (actionId: string): boolean => {
   return actionId === TRIGGER_ACTION_ID.MANUAL_TRIGGER
+}
+
+/**
+ * Check if a trigger is a scheduled trigger.
+ */
+export const isScheduledTrigger = (actionId: string): boolean => {
+  return actionId === TRIGGER_ACTION_ID.SCHEDULE_TRIGGER
 }
 
 /**
@@ -129,6 +140,24 @@ const executeDiscordTrigger = (
       triggered: true,
       type: 'discord_webhook',
       message: eventData
+    }
+  }
+}
+
+/**
+ * Execute Schedule trigger - provides schedule metadata.
+ */
+const executeScheduleTrigger = (
+  config: any,
+  eventData?: Record<string, any>
+): TNodeExecutionResult => {
+  return {
+    success: true,
+    data: {
+      triggered: true,
+      type: 'schedule',
+      schedule: config || {},
+      event: eventData || null
     }
   }
 }

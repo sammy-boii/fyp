@@ -3,6 +3,7 @@ import { AppError } from '@/src/types'
 import { tryCatch } from '@/src/lib/utils'
 import { prisma } from '@shared/db/prisma'
 import { triggerCache } from '@/src/lib/trigger-cache'
+import { workflowScheduler } from '@/src/lib/workflow-scheduler'
 
 /**
  * Toggle workflow active status.
@@ -49,9 +50,11 @@ export const updateWorkflowCache = tryCatch(async (c: Context) => {
   // Update trigger cache
   if (isActive) {
     await triggerCache.refreshWorkflow(workflowId)
+    await workflowScheduler.refreshWorkflow(workflowId)
     console.log(`✅ Workflow ${workflowId} activated`)
   } else {
     triggerCache.removeWorkflow(workflowId)
+    workflowScheduler.removeWorkflow(workflowId)
     console.log(`⏸️ Workflow ${workflowId} deactivated`)
   }
 
@@ -105,6 +108,7 @@ export const refreshWorkflowCache = tryCatch(async (c: Context) => {
   // - Removes existing entry first
   // - Re-adds only if workflow is active AND has a properly configured Discord trigger
   await triggerCache.refreshWorkflow(workflowId)
+  await workflowScheduler.refreshWorkflow(workflowId)
 
   // Check if workflow is in cache after refresh
   const isInCache = triggerCache.hasWorkflow(workflowId)
@@ -163,6 +167,7 @@ export const removeWorkflowCache = tryCatch(async (c: Context) => {
 
   // Remove from cache
   triggerCache.removeWorkflow(workflowId)
+  workflowScheduler.removeWorkflow(workflowId)
 
   if (wasInCache) {
     console.log(

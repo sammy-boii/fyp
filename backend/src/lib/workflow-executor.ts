@@ -27,7 +27,8 @@ import {
  */
 export async function executeWorkflowById(
   workflowId: string,
-  triggerData?: Record<string, any>
+  triggerData?: Record<string, any>,
+  triggerType: TriggerType = TriggerType.WEBHOOK
 ): Promise<{ success: boolean; executionId?: string; error?: string }> {
   try {
     const workflow = await prisma.workflow.findUnique({
@@ -45,7 +46,7 @@ export async function executeWorkflowById(
       data: {
         workflowId: workflow.id,
         status: WorkflowExecutionStatus.RUNNING,
-        triggerType: TriggerType.WEBHOOK
+        triggerType
       }
     })
 

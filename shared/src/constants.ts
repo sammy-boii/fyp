@@ -27,7 +27,8 @@ export const NODE_ACTION_ID = {
 export const TRIGGER_ACTION_ID = {
   MANUAL_TRIGGER: 'on_demand',
   GMAIL_WEBHOOK_TRIGGER: 'gmail_webhook',
-  DISCORD_WEBHOOK_TRIGGER: 'discord_webhook'
+  DISCORD_WEBHOOK_TRIGGER: 'discord_webhook',
+  SCHEDULE_TRIGGER: 'schedule_trigger'
 } as const
 
 export type TTriggerActionID =

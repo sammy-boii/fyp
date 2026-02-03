@@ -1,11 +1,12 @@
 import gmailIcon from '@/public/gmail.png'
-import cursor from '@/public/cursor.svg'
+import cursorIcon from '@/public/cursor.svg'
 import driveIcon from '@/public/google-drive.png'
 import discordIcon from '@/public/discord.png'
 import googleDriveIcon from '@/public/google-drive.png'
 
 import { NodeDefinition, TriggerNodeDefinition } from '@/types/node.types'
 import { BACKEND_URL, NODE_TYPES, TRIGGER_NODE_TYPES } from '.'
+import { TimerReset } from 'lucide-react'
 
 import { GOOGLE_DRIVE_ACTIONS } from '@/components/editor/custom-nodes/google-drive/GoogleDriveActions'
 
@@ -16,7 +17,8 @@ import { GMAIL_ACTIONS } from '@/components/editor/custom-nodes/gmail/GmailActio
 import {
   MANUAL_TRIGGER_ACTIONS,
   GMAIL_WEBHOOK_TRIGGER_ACTIONS,
-  DISCORD_WEBHOOK_TRIGGER_ACTIONS
+  DISCORD_WEBHOOK_TRIGGER_ACTIONS,
+  SCHEDULE_TRIGGER_ACTIONS
 } from '@/components/editor/custom-nodes/triggers/TriggerActions'
 
 export const NODE_DEFINITIONS: NodeDefinition = {
@@ -45,7 +47,7 @@ export const TRIGGER_NODE_DEFINITIONS: TriggerNodeDefinition = {
     label: 'Manual Trigger',
     description: 'Start the workflow manually',
     actions: MANUAL_TRIGGER_ACTIONS,
-    icon: cursor,
+    icon: cursorIcon,
     isTrigger: true
   },
   [TRIGGER_NODE_TYPES.GMAIL_WEBHOOK_TRIGGER]: {
@@ -60,6 +62,13 @@ export const TRIGGER_NODE_DEFINITIONS: TriggerNodeDefinition = {
     description: 'Trigger when a new message is sent',
     actions: DISCORD_WEBHOOK_TRIGGER_ACTIONS,
     icon: discordIcon,
+    isTrigger: true
+  },
+  [TRIGGER_NODE_TYPES.SCHEDULE_TRIGGER]: {
+    label: 'Schedule',
+    description: 'Run on a date/time or repeat daily',
+    actions: SCHEDULE_TRIGGER_ACTIONS,
+    iconComponent: TimerReset,
     isTrigger: true
   }
 }

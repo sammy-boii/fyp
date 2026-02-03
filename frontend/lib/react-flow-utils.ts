@@ -63,6 +63,8 @@ function getTriggerActionId(nodeType: ValueOf<typeof TRIGGER_NODE_TYPES>): strin
       return TRIGGER_ACTION_ID.GMAIL_WEBHOOK_TRIGGER
     case TRIGGER_NODE_TYPES.DISCORD_WEBHOOK_TRIGGER:
       return TRIGGER_ACTION_ID.DISCORD_WEBHOOK_TRIGGER
+    case TRIGGER_NODE_TYPES.SCHEDULE_TRIGGER:
+      return TRIGGER_ACTION_ID.SCHEDULE_TRIGGER
     default:
       return ''
   }

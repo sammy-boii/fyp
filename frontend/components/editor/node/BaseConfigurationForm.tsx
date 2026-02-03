@@ -93,6 +93,9 @@ export const BaseConfigurationForm = ({
       hasAttachment: false,
       isUnread: false,
       labelId: '',
+      date: '',
+      time: '',
+      loop: false,
       ...initialConfig
     }
   })

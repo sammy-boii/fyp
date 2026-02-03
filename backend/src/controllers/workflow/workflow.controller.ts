@@ -14,7 +14,11 @@ import {
   WorkflowExecutionStatus
 } from '@shared/prisma/generated/prisma/enums'
 import { executeNodeLogic } from '@/src/executors/node-executor'
-import { isTriggerNode, isManualTrigger } from '@/src/executors/trigger-executor'
+import {
+  isTriggerNode,
+  isManualTrigger,
+  isScheduledTrigger
+} from '@/src/executors/trigger-executor'
 import { replacePlaceholdersInConfig } from '@/src/lib/placeholder'
 
 import {
@@ -143,9 +147,14 @@ const getTriggerInfo = (nodes: TWorkflowNode[]): {
 
   // Determine trigger type based on the trigger node's action
   const isManual = isManualTrigger(triggerNode.data.actionId)
+  const isScheduled = isScheduledTrigger(triggerNode.data.actionId)
 
   return {
-    triggerType: isManual ? TriggerType.MANUAL : TriggerType.WEBHOOK,
+    triggerType: isManual
+      ? TriggerType.MANUAL
+      : isScheduled
+        ? TriggerType.SCHEDULED
+        : TriggerType.WEBHOOK,
     triggerNode
   }
 }

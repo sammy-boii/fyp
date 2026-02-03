@@ -2,13 +2,13 @@ import { z } from 'zod'
 
 export const sendEmailFormSchema = z.object({
   to: z.string().min(1, 'Please enter a recipient'),
-  attachmentType: z.enum(['url', 'drive']).default('url'),
-  driveCredentialId: z.string().optional(),
+  attachmentType: z.enum(['url', 'base64']).default('url'),
   cc: z.string().optional(),
   bcc: z.string().optional(),
   subject: z.string().optional(),
   body: z.string().optional(),
-  attachments: z.string().optional() // URL or Google Drive file ID, comma-separated
+  attachments: z.string().optional(), // URL or base64 data, comma-separated
+  attachmentFilename: z.string().optional()
 })
 
 export const readEmailFormSchema = z.object({

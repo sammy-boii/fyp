@@ -116,10 +116,9 @@ export function SendDMForm() {
               <FieldLabel className='text-xs font-medium'>
                 Attachments
               </FieldLabel>
-              <PlaceholderTextarea
-                placeholder='Paste file URLs (one per line or comma-separated)'
-                rows={3}
-                className='resize-none text-sm'
+              <PlaceholderInput
+                placeholder='Enter public URL'
+                className='resize-none text-sm h-9'
                 {...field}
                 aria-invalid={fieldState.invalid}
               />
@@ -140,10 +139,9 @@ export function SendDMForm() {
                 <FieldLabel className='text-xs font-medium'>
                   File data (Base64)
                 </FieldLabel>
-                <PlaceholderTextarea
-                  placeholder='Paste base64 data or use a placeholder like {{nodeId.attachments}}'
-                  rows={3}
-                  className='resize-none text-sm'
+                <PlaceholderInput
+                  placeholder='Enter base64 data'
+                  className='resize-none text-sm h-9'
                   {...field}
                   aria-invalid={fieldState.invalid}
                 />
@@ -179,46 +177,6 @@ export function SendDMForm() {
           />
         </>
       )}
-
-      <Controller
-        name='embedTitle'
-        control={control}
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel className='text-xs font-medium'>
-              Embed Title (Optional)
-            </FieldLabel>
-            <PlaceholderInput
-              type='text'
-              placeholder='Embed title'
-              className='h-9 text-sm'
-              {...field}
-              aria-invalid={fieldState.invalid}
-            />
-            <FieldError errors={[fieldState.error]} />
-          </Field>
-        )}
-      />
-
-      <Controller
-        name='embedDescription'
-        control={control}
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel className='text-xs font-medium'>
-              Embed Description (Optional)
-            </FieldLabel>
-            <PlaceholderTextarea
-              placeholder='Embed description...'
-              rows={3}
-              className='resize-none text-sm'
-              {...field}
-              aria-invalid={fieldState.invalid}
-            />
-            <FieldError errors={[fieldState.error]} />
-          </Field>
-        )}
-      />
     </div>
   )
 }

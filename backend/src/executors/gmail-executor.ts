@@ -1,15 +1,11 @@
 import { API_ROUTES } from '../constants'
 import { extractGmailMessageContent } from '../helper/gmail-helper'
-import {
-  getValidGmailAccessTokenByCredentialId,
-  getValidGoogleDriveAccessTokenByCredentialId
-} from '../lib/credentials'
+import { getValidGmailAccessTokenByCredentialId } from '../lib/credentials'
 import { TNodeExecutionResult } from '../types/workflow.types'
 
-// Helper to fetch file content from URL or Google Drive
+// Helper to fetch file content from URL
 async function fetchAttachmentContent(
-  source: string,
-  driveToken: string
+  source: string
 ): Promise<{ data: string; filename: string; mimeType: string } | null> {
   try {
     // Check if it's a URL
@@ -29,40 +25,123 @@ async function fetchAttachmentContent(
       return { data: base64, filename, mimeType }
     }
 
-    // Assume it's a Google Drive file ID
-    const metaRes = await fetch(
-      API_ROUTES.GOOGLE_DRIVE.GET_FILE(source) + '?fields=name,mimeType',
-      {
-        headers: { Authorization: `Bearer ${driveToken}` }
-      }
-    )
-
-    if (!metaRes.ok) return null
-
-    const meta = await metaRes.json()
-
-    console.log('NOT WORKING:::', driveToken)
-
-    const contentRes = await fetch(
-      API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(source),
-      {
-        headers: { Authorization: `Bearer ${driveToken}` }
-      }
-    )
-
-    if (!contentRes.ok) return null
-
-    const buffer = await contentRes.arrayBuffer()
-    const base64 = Buffer.from(buffer).toString('base64')
-
-    return {
-      data: base64,
-      filename: meta.name || 'attachment',
-      mimeType: meta.mimeType || 'application/octet-stream'
-    }
+    return null
   } catch {
     return null
   }
+}
+
+function parseDataUrl(
+  value: string
+): { mimeType: string; data: string } | null {
+  if (!value.startsWith('data:')) return null
+  const match = value.match(/^data:([^;]+);base64,(.+)$/)
+  if (!match) return null
+  return { mimeType: match[1], data: match[2] }
+}
+
+function ensureFilenameExtension(filename: string, mimeType: string): string {
+  if (filename.includes('.')) return filename
+  const extension = extensionFromMimeType(mimeType)
+  return extension ? `${filename}.${extension}` : `${filename}.bin`
+}
+
+function extensionFromMimeType(mimeType: string): string | null {
+  const normalized = mimeType.toLowerCase().split(';')[0].trim()
+  const map: Record<string, string> = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+    'application/pdf': 'pdf',
+    'text/plain': 'txt',
+    'text/csv': 'csv',
+    'application/zip': 'zip',
+    'application/json': 'json',
+    'audio/mpeg': 'mp3',
+    'audio/wav': 'wav',
+    'video/mp4': 'mp4'
+  }
+
+  return map[normalized] || null
+}
+
+function detectMimeTypeFromBase64(value: string): string | null {
+  const cleaned = value.includes('base64,')
+    ? value.split('base64,').pop() || ''
+    : value
+  const sample = cleaned.replace(/\s/g, '').slice(0, 120)
+  if (!sample) return null
+
+  let buffer: Buffer
+  try {
+    buffer = Buffer.from(sample, 'base64')
+  } catch {
+    return null
+  }
+
+  const header = buffer.subarray(0, 12)
+
+  if (
+    header.length >= 8 &&
+    header[0] === 0x89 &&
+    header[1] === 0x50 &&
+    header[2] === 0x4e &&
+    header[3] === 0x47
+  ) {
+    return 'image/png'
+  }
+
+  if (header.length >= 3 && header[0] === 0xff && header[1] === 0xd8) {
+    return 'image/jpeg'
+  }
+
+  if (
+    header.length >= 4 &&
+    header[0] === 0x47 &&
+    header[1] === 0x49 &&
+    header[2] === 0x46 &&
+    header[3] === 0x38
+  ) {
+    return 'image/gif'
+  }
+
+  if (
+    header.length >= 4 &&
+    header[0] === 0x25 &&
+    header[1] === 0x50 &&
+    header[2] === 0x44 &&
+    header[3] === 0x46
+  ) {
+    return 'application/pdf'
+  }
+
+  if (
+    header.length >= 4 &&
+    header[0] === 0x50 &&
+    header[1] === 0x4b &&
+    header[2] === 0x03 &&
+    header[3] === 0x04
+  ) {
+    return 'application/zip'
+  }
+
+  if (
+    header.length >= 12 &&
+    header[0] === 0x52 &&
+    header[1] === 0x49 &&
+    header[2] === 0x46 &&
+    header[3] === 0x46 &&
+    header[8] === 0x57 &&
+    header[9] === 0x45 &&
+    header[10] === 0x42 &&
+    header[11] === 0x50
+  ) {
+    return 'image/webp'
+  }
+
+  return null
 }
 
 // Build MIME multipart email with attachments
@@ -124,7 +203,8 @@ export const executeSendEmail = async (
       body,
       attachments,
       credentialId,
-      driveCredentialId
+      attachmentType,
+      attachmentFilename
     } = config
 
     if (!credentialId) {
@@ -148,51 +228,52 @@ export const executeSendEmail = async (
           .filter(Boolean)
       : []
 
-    const isUrl = (value: string) =>
-      value.startsWith('http://') || value.startsWith('https://')
-
-    const driveAttachmentSources = attachmentSources.filter(
-      (s: string) => !isUrl(s)
-    )
-
-    if (driveAttachmentSources.length > 0 && !driveCredentialId) {
-      return {
-        success: false,
-        error:
-          'Drive attachment detected. Please select a Google Drive credential.'
-      }
-    }
-
     if (attachmentSources.length > 0) {
-      // Fetch all attachments
       const fetchedAttachments: {
         data: string
         filename: string
         mimeType: string
       }[] = []
 
-      const driveToken = driveCredentialId
-        ? (
-            await getValidGoogleDriveAccessTokenByCredentialId(
-              driveCredentialId
-            )
-          ).token
-        : token
+      const isUrl = (value: string) =>
+        value.startsWith('http://') || value.startsWith('https://')
 
-      for (const source of attachmentSources) {
-        const att = await fetchAttachmentContent(source, driveToken)
-        if (att) fetchedAttachments.push(att)
+      if (attachmentType === 'base64') {
+        for (const source of attachmentSources) {
+          const parsed = parseDataUrl(source)
+          const mimeType =
+            parsed?.mimeType ||
+            detectMimeTypeFromBase64(source) ||
+            'application/octet-stream'
+          const filename = ensureFilenameExtension(
+            attachmentFilename || 'attachment',
+            mimeType
+          )
+          const data = parsed?.data || source
+          fetchedAttachments.push({
+            data,
+            filename,
+            mimeType
+          })
+        }
+      } else {
+        for (const source of attachmentSources) {
+          if (!isUrl(source)) continue
+          const att = await fetchAttachmentContent(source)
+          if (att) fetchedAttachments.push(att)
+        }
       }
 
       if (fetchedAttachments.length === 0) {
         return {
           success: false,
           error:
-            'Unable to fetch attachments. Check URLs/Drive file IDs and access permissions.'
+            attachmentType === 'base64'
+              ? 'Unable to parse base64 attachments.'
+              : 'Unable to fetch attachments. Check URLs and access permissions.'
         }
       }
 
-      // Build MIME multipart email
       rawEmail = buildMimeEmail({
         to,
         cc,

@@ -100,6 +100,8 @@ export const BaseConfigurationForm = ({
       attachmentMode: 'url',
       attachmentData: '',
       attachmentFilename: '',
+      attachmentType: 'url',
+      attachments: '',
       date: '',
       time: '',
       loop: false,

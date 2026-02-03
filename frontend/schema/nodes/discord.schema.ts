@@ -8,10 +8,7 @@ export const sendChannelMessageFormSchema = z.object({
   attachmentMode: z.enum(['url', 'base64']).default('url'),
   attachmentUrls: z.string().optional(),
   attachmentData: z.string().optional(),
-  attachmentFilename: z.string().optional(),
-  embedTitle: z.string().optional(),
-  embedDescription: z.string().optional(),
-  embedColor: z.string().optional()
+  attachmentFilename: z.string().optional()
 })
 
 // Send DM to a user via bot
@@ -22,9 +19,7 @@ export const sendDMFormSchema = z.object({
   attachmentMode: z.enum(['url', 'base64']).default('url'),
   attachmentUrls: z.string().optional(),
   attachmentData: z.string().optional(),
-  attachmentFilename: z.string().optional(),
-  embedTitle: z.string().optional(),
-  embedDescription: z.string().optional()
+  attachmentFilename: z.string().optional()
 })
 
 // Send message via webhook (doesn't require bot token)

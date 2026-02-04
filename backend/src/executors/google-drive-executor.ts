@@ -70,7 +70,7 @@ export const executeCreateFolder = async (
 
 /**
  * Create a file in Google Drive
- * Supports: text files, HTML, CSV, images (base64), and PDFs (text to PDF)
+ * Supports: text files, images (PNG, JPEG, WebP), PDFs, DOCX, and XLSX
  */
 export const executeCreateFile = async (
   config: any
@@ -195,8 +195,70 @@ export const executeCreateFile = async (
         base64Data
 
       multipartBody = metadataPart + mediaPart + closeDelimiter
+    } else if (
+      mimeType ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      mimeType === 'application/msword' ||
+      mimeType ===
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      mimeType === 'application/vnd.ms-excel'
+    ) {
+      // Office documents (DOCX, DOC, XLSX, XLS) - binary files
+      if (!content) {
+        return {
+          success: false,
+          error: 'Document content (base64) is required'
+        }
+      }
+
+      // Handle both raw base64 and data URL format
+      let base64Data = content
+      if (content.includes(',')) {
+        base64Data = content.split(',')[1]
+      }
+
+      const metadataPart =
+        delimiter +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(fileMetadata)
+
+      const mediaPart =
+        delimiter +
+        'Content-Type: ' +
+        mimeType +
+        '\r\n' +
+        'Content-Transfer-Encoding: base64\r\n\r\n' +
+        base64Data
+
+      multipartBody = metadataPart + mediaPart + closeDelimiter
     } else {
-      // Text-based files (txt, html, csv)
+      // Text-based files (txt)
+      // Check if content is base64 encoded and decode it
+      let textContent = content
+      if (content) {
+        // Check for data URL format
+        if (content.startsWith('data:') && content.includes('base64,')) {
+          const base64Part = content.split('base64,')[1]
+          try {
+            textContent = Buffer.from(base64Part, 'base64').toString('utf-8')
+          } catch {
+            textContent = content
+          }
+        } else if (
+          // Check if it looks like raw base64 (long string with no spaces, base64 chars)
+          content.length > 50 &&
+          !content.includes(' ') &&
+          !content.includes('\n') &&
+          /^[A-Za-z0-9+/=]+$/.test(content.slice(0, 100))
+        ) {
+          try {
+            textContent = Buffer.from(content, 'base64').toString('utf-8')
+          } catch {
+            textContent = content
+          }
+        }
+      }
+
       multipartBody =
         delimiter +
         'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
@@ -205,7 +267,7 @@ export const executeCreateFile = async (
         'Content-Type: ' +
         mimeType +
         '\r\n\r\n' +
-        content +
+        textContent +
         closeDelimiter
     }
 

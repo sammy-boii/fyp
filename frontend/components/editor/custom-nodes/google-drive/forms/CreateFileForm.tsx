@@ -13,14 +13,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Controller, useFormContext } from 'react-hook-form'
-import {
-  FileSpreadsheet,
-  File,
-  Code,
-  Image,
-  FileType,
-  Info
-} from 'lucide-react'
+import { FileSpreadsheet, File, Image, FileType, Info } from 'lucide-react'
 import { DriveItemPicker } from './DriveItemPicker'
 import {
   Tooltip,
@@ -35,33 +28,27 @@ const FILE_TYPES = [
     icon: File,
     category: 'text'
   },
-  {
-    value: 'text/html',
-    label: 'HTML File',
-    icon: Code,
-    category: 'text'
-  },
-  {
-    value: 'text/csv',
-    label: 'CSV File',
-    icon: FileSpreadsheet,
-    category: 'text'
-  },
   { value: 'image/png', label: 'PNG Image', icon: Image, category: 'image' },
   { value: 'image/jpeg', label: 'JPEG Image', icon: Image, category: 'image' },
-  { value: 'image/gif', label: 'GIF Image', icon: Image, category: 'image' },
   { value: 'image/webp', label: 'WebP Image', icon: Image, category: 'image' },
-  {
-    value: 'image/svg+xml',
-    label: 'SVG Image',
-    icon: Image,
-    category: 'image'
-  },
   {
     value: 'application/pdf',
     label: 'PDF Document',
     icon: FileType,
     category: 'pdf'
+  },
+  {
+    value:
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    label: 'Word Document',
+    icon: File,
+    category: 'document'
+  },
+  {
+    value: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    label: 'Excel Spreadsheet',
+    icon: FileSpreadsheet,
+    category: 'document'
   }
 ]
 

@@ -11,14 +11,12 @@ export const createFileFormSchema = z.object({
   mimeType: z
     .enum([
       'text/plain',
-      'text/html',
-      'text/csv',
       'image/png',
       'image/jpeg',
-      'image/gif',
       'image/webp',
-      'image/svg+xml',
-      'application/pdf'
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ])
     .default('text/plain'),
   parentFolderId: z.string().optional()

@@ -54,17 +54,35 @@ async function discordRequest(
 function normalizeAttachmentInputs(
   attachmentInput?: AttachmentInput | AttachmentInput[]
 ): AttachmentInput[] {
+  console.log(
+    '[Discord normalizeAttachmentInputs] Received:',
+    typeof attachmentInput,
+    Array.isArray(attachmentInput) ? 'array' : ''
+  )
+
   if (!attachmentInput) return []
 
   if (Array.isArray(attachmentInput)) {
+    console.log(
+      '[Discord] Input is array with',
+      attachmentInput.length,
+      'items'
+    )
     return attachmentInput.flatMap((item) => normalizeAttachmentInputs(item))
   }
 
   if (typeof attachmentInput === 'string') {
     const trimmed = attachmentInput.trim()
+    console.log(
+      '[Discord] Input is string, length:',
+      trimmed.length,
+      'starts with:',
+      trimmed.slice(0, 50)
+    )
     if (!trimmed) return []
 
     if (isProbablyBase64String(trimmed)) {
+      console.log('[Discord] Detected as base64 string')
       return [{ type: 'base64', value: trimmed }]
     }
 
@@ -74,18 +92,30 @@ function normalizeAttachmentInputs(
     ) {
       try {
         const parsed = JSON.parse(trimmed)
+        console.log('[Discord] Parsed JSON successfully')
         return normalizeAttachmentInputs(parsed as AttachmentInput)
       } catch {
+        console.log('[Discord] JSON parse failed')
         // fallthrough to treat as URLs
       }
     }
 
+    console.log('[Discord] Treating as URL(s)')
     return trimmed
       .split(/\r?\n|,/)
       .map((url) => url.trim())
       .filter(Boolean)
   }
 
+  console.log(
+    '[Discord] Input is object:',
+    JSON.stringify({
+      type: (attachmentInput as any).type,
+      hasData: !!(attachmentInput as any).data,
+      hasFilename: !!(attachmentInput as any).filename,
+      hasMimeType: !!(attachmentInput as any).mimeType
+    })
+  )
   return [attachmentInput]
 }
 
@@ -108,7 +138,25 @@ function normalizeAttachmentSpec(input: AttachmentInput): {
   filename: string
   mimeType: string
 } | null {
+  console.log('[Discord normalizeAttachmentSpec] Input type:', typeof input)
+  console.log(
+    '[Discord normalizeAttachmentSpec] Input:',
+    typeof input === 'string'
+      ? input.slice(0, 100)
+      : JSON.stringify({
+          type: input.type,
+          hasData: !!input.data,
+          hasValue: !!input.value,
+          hasUrl: !!input.url,
+          filename: input.filename,
+          mimeType: input.mimeType,
+          dataLength: input.data?.length,
+          valueLength: input.value?.length
+        })
+  )
+
   if (typeof input === 'string') {
+    console.log('[Discord] Path: string input')
     return {
       type: 'url',
       value: input,
@@ -120,18 +168,25 @@ function normalizeAttachmentSpec(input: AttachmentInput): {
   if (input.data) {
     const parsed = parseDataUrl(input.data)
     if (parsed) {
+      console.log('[Discord] Path: data URL parsed', {
+        mimeType: parsed.mimeType
+      })
       const mimeType =
         input.mimeType || parsed.mimeType || 'application/octet-stream'
       return {
         type: 'base64',
         data: parsed.data,
-        filename: ensureFilenameExtension(input.filename || 'attachment', mimeType),
+        filename: ensureFilenameExtension(
+          input.filename || 'attachment',
+          mimeType
+        ),
         mimeType
       }
     }
   }
 
   if (input.url) {
+    console.log('[Discord] Path: input.url')
     return {
       type: 'url',
       value: input.url,
@@ -144,15 +199,29 @@ function normalizeAttachmentSpec(input: AttachmentInput): {
     const inferredMimeType =
       input.mimeType || detectMimeTypeFromBase64(input.data)
     const mimeType = inferredMimeType || 'application/octet-stream'
+
+    console.log('[Discord] Path: raw base64 data', {
+      hasFilename: !!input.filename,
+      filename: input.filename,
+      hasMimeType: !!input.mimeType,
+      inputMimeType: input.mimeType,
+      inferredMimeType,
+      finalMimeType: mimeType
+    })
+
     return {
       type: 'base64',
       data: input.data,
-      filename: ensureFilenameExtension(input.filename || 'attachment', mimeType),
+      filename: ensureFilenameExtension(
+        input.filename || 'attachment',
+        mimeType
+      ),
       mimeType
     }
   }
 
   if (input.type === 'url' && input.value) {
+    console.log('[Discord] Path: type=url with value')
     return {
       type: 'url',
       value: input.value,
@@ -162,6 +231,7 @@ function normalizeAttachmentSpec(input: AttachmentInput): {
   }
 
   if (input.type === 'base64' && input.value) {
+    console.log('[Discord] Path: type=base64 with value')
     const parsed = parseDataUrl(input.value)
     const inferredMimeType =
       input.mimeType ||
@@ -171,7 +241,10 @@ function normalizeAttachmentSpec(input: AttachmentInput): {
     return {
       type: 'base64',
       data: parsed?.data || input.value,
-      filename: ensureFilenameExtension(input.filename || 'attachment', mimeType),
+      filename: ensureFilenameExtension(
+        input.filename || 'attachment',
+        mimeType
+      ),
       mimeType
     }
   }
@@ -188,7 +261,9 @@ function normalizeAttachmentSpec(input: AttachmentInput): {
   return null
 }
 
-function parseDataUrl(value: string): { mimeType: string; data: string } | null {
+function parseDataUrl(
+  value: string
+): { mimeType: string; data: string } | null {
   if (!value.startsWith('data:')) return null
   const match = value.match(/^data:([^;]+);base64,(.+)$/)
   if (!match) return null
@@ -196,27 +271,38 @@ function parseDataUrl(value: string): { mimeType: string; data: string } | null 
 }
 
 function ensureFilenameExtension(filename: string, mimeType: string): string {
+  // If filename already has an extension, use it as-is
   if (filename.includes('.')) return filename
+
+  // Try to get extension from mimeType
   const extension = extensionFromMimeType(mimeType)
-  return extension ? `${filename}.${extension}` : `${filename}.bin`
+  if (extension) {
+    return `${filename}.${extension}`
+  }
+
+  // Fallback to .bin only if we really can't determine the type
+  return `${filename}.bin`
 }
 
 function extensionFromMimeType(mimeType: string): string | null {
+  if (!mimeType) return null
   const normalized = mimeType.toLowerCase().split(';')[0].trim()
+
+  // Skip generic binary type - let it fall through to .bin
+  if (normalized === 'application/octet-stream') return null
+
   const map: Record<string, string> = {
     'image/png': 'png',
     'image/jpeg': 'jpg',
     'image/jpg': 'jpg',
     'image/webp': 'webp',
-    'image/gif': 'gif',
     'application/pdf': 'pdf',
     'text/plain': 'txt',
-    'text/csv': 'csv',
-    'application/zip': 'zip',
-    'application/json': 'json',
-    'audio/mpeg': 'mp3',
-    'audio/wav': 'wav',
-    'video/mp4': 'mp4'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+      'docx',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'application/vnd.ms-excel': 'xls'
   }
 
   return map[normalized] || null
@@ -226,12 +312,18 @@ function detectMimeTypeFromBase64(value: string): string | null {
   const cleaned = value.includes('base64,')
     ? value.split('base64,').pop() || ''
     : value
-  const sample = cleaned.replace(/\s/g, '').slice(0, 120)
+
+  // For Office documents, we need MORE data to detect the internal structure
+  // ZIP central directory can be further into the file
+  const largeSample = cleaned.replace(/\s/g, '').slice(0, 8000)
+  const sample = largeSample.slice(0, 120)
   if (!sample) return null
 
   let buffer: Buffer
+  let largeBuffer: Buffer
   try {
     buffer = Buffer.from(sample, 'base64')
+    largeBuffer = Buffer.from(largeSample, 'base64')
   } catch {
     return null
   }
@@ -276,7 +368,7 @@ function detectMimeTypeFromBase64(value: string): string | null {
     return 'application/pdf'
   }
 
-  // ZIP: 50 4B 03 04
+  // ZIP-based formats (DOCX, XLSX, etc): PK header (50 4B 03 04)
   if (
     header.length >= 4 &&
     header[0] === 0x50 &&
@@ -284,7 +376,68 @@ function detectMimeTypeFromBase64(value: string): string | null {
     header[2] === 0x03 &&
     header[3] === 0x04
   ) {
-    return 'application/zip'
+    // Check for Office Open XML markers in the file content
+    // Use the full buffer we have available
+    const contentStr = largeBuffer.toString('utf8', 0, largeBuffer.length)
+
+    // Debug: log what we find
+    console.log('[XLSX Debug] Buffer length:', largeBuffer.length)
+    console.log('[XLSX Debug] Has xl/:', contentStr.includes('xl/'))
+    console.log('[XLSX Debug] Has word/:', contentStr.includes('word/'))
+    console.log(
+      '[XLSX Debug] Has [Content_Types]:',
+      contentStr.includes('[Content_Types]')
+    )
+
+    // Also try looking for specific XLSX markers
+    const hasXlWorkbook = contentStr.includes('xl/workbook')
+    const hasXlSharedStrings = contentStr.includes('xl/sharedStrings')
+    const hasXlStyles = contentStr.includes('xl/styles')
+    const hasXlSlash = contentStr.includes('xl/')
+
+    console.log(
+      '[XLSX Debug] xl/workbook:',
+      hasXlWorkbook,
+      'xl/sharedStrings:',
+      hasXlSharedStrings,
+      'xl/styles:',
+      hasXlStyles,
+      'xl/:',
+      hasXlSlash
+    )
+
+    // Check for specific folder markers
+    const hasXl =
+      hasXlSlash || hasXlWorkbook || hasXlSharedStrings || hasXlStyles
+    const hasWord =
+      contentStr.includes('word/') || contentStr.includes('word/document')
+    const hasPpt =
+      contentStr.includes('ppt/') || contentStr.includes('ppt/presentation')
+
+    // Return based on which marker is found - prioritize xl/ for spreadsheets
+    if (hasXl) {
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }
+
+    if (hasPpt) {
+      return 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    }
+
+    if (hasWord) {
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    }
+
+    // Generic Office Open XML (has [Content_Types].xml but couldn't identify specific type)
+    if (
+      contentStr.includes('[Content_Types].xml') ||
+      contentStr.includes('Content_Types')
+    ) {
+      // Default to docx if we can't tell
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    }
+
+    // Regular ZIP file - return null to let it fall back to .bin
+    return null
   }
 
   // WEBP: "RIFF"...."WEBP"

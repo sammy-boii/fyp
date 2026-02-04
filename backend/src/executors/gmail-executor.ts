@@ -53,11 +53,8 @@ function extensionFromMimeType(mimeType: string): string | null {
     'image/jpeg': 'jpg',
     'image/jpg': 'jpg',
     'image/webp': 'webp',
-    'image/gif': 'gif',
     'application/pdf': 'pdf',
     'text/plain': 'txt',
-    'text/csv': 'csv',
-    'application/json': 'json',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
       'docx',
     'application/msword': 'doc',
@@ -72,12 +69,18 @@ function detectMimeTypeFromBase64(value: string): string | null {
   const cleaned = value.includes('base64,')
     ? value.split('base64,').pop() || ''
     : value
-  const sample = cleaned.replace(/\s/g, '').slice(0, 120)
+
+  // For Office documents, we need MORE data to detect the internal structure
+  // ZIP central directory can be further into the file
+  const largeSample = cleaned.replace(/\s/g, '').slice(0, 8000)
+  const sample = largeSample.slice(0, 120)
   if (!sample) return null
 
   let buffer: Buffer
+  let largeBuffer: Buffer
   try {
     buffer = Buffer.from(sample, 'base64')
+    largeBuffer = Buffer.from(largeSample, 'base64')
   } catch {
     return null
   }
@@ -118,9 +121,54 @@ function detectMimeTypeFromBase64(value: string): string | null {
     return 'application/pdf'
   }
 
-  // DOCX, XLSX, and other Office formats are ZIP-based (PK header)
-  // We can't distinguish them by magic bytes alone, so we skip detection here
-  // and rely on the MIME type from Gmail instead
+  // ZIP-based formats (DOCX, XLSX, etc): PK header (50 4B 03 04)
+  if (
+    header.length >= 4 &&
+    header[0] === 0x50 &&
+    header[1] === 0x4b &&
+    header[2] === 0x03 &&
+    header[3] === 0x04
+  ) {
+    // Check for Office Open XML markers in the file content
+    // Use the full buffer we have available
+    const contentStr = largeBuffer.toString('utf8', 0, largeBuffer.length)
+
+    // Check for specific folder markers
+    const hasXlWorkbook = contentStr.includes('xl/workbook')
+    const hasXlSharedStrings = contentStr.includes('xl/sharedStrings')
+    const hasXlStyles = contentStr.includes('xl/styles')
+    const hasXlSlash = contentStr.includes('xl/')
+
+    const hasXl =
+      hasXlSlash || hasXlWorkbook || hasXlSharedStrings || hasXlStyles
+    const hasWord =
+      contentStr.includes('word/') || contentStr.includes('word/document')
+    const hasPpt =
+      contentStr.includes('ppt/') || contentStr.includes('ppt/presentation')
+
+    // Return based on which marker is found - prioritize xl/ for spreadsheets
+    if (hasXl) {
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }
+
+    if (hasPpt) {
+      return 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    }
+
+    if (hasWord) {
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    }
+
+    // Generic Office Open XML
+    if (
+      contentStr.includes('[Content_Types].xml') ||
+      contentStr.includes('Content_Types')
+    ) {
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    }
+
+    return null
+  }
 
   if (
     header.length >= 12 &&

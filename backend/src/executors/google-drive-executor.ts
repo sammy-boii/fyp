@@ -404,8 +404,10 @@ export const executeListFiles = async (
     // Filter by file type
     const mimeTypeFilters: Record<string, string> = {
       folder: "mimeType = 'application/vnd.google-apps.folder'",
-      document: "mimeType = 'application/vnd.google-apps.document'",
-      spreadsheet: "mimeType = 'application/vnd.google-apps.spreadsheet'",
+      document:
+        "(mimeType = 'application/vnd.google-apps.document' or mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or mimeType = 'application/msword')",
+      spreadsheet:
+        "(mimeType = 'application/vnd.google-apps.spreadsheet' or mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or mimeType = 'application/vnd.ms-excel' or mimeType = 'text/csv')",
       pdf: "mimeType = 'application/pdf'",
       image:
         "(mimeType = 'image/jpeg' or mimeType = 'image/png' or mimeType = 'image/gif' or mimeType = 'image/webp' or mimeType = 'image/svg+xml' or mimeType = 'image/bmp')"

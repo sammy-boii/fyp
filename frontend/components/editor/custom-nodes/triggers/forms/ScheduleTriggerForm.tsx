@@ -51,14 +51,14 @@ export function ScheduleTriggerForm() {
                 step={60}
                 value={field.value || ''}
                 onChange={field.onChange}
-                className="text-sm appearance-none [&::-webkit-calendar-picker-indicator]:opacity-40 [&::-webkit-calendar-picker-indicator]:hover:opacity-70 [&::-webkit-datetime-edit]:text-foreground"
+                className='text-sm appearance-none [&::-webkit-calendar-picker-indicator]:opacity-40 [&::-webkit-calendar-picker-indicator]:hover:opacity-70 [&::-webkit-datetime-edit]:text-foreground'
                 style={{ accentColor: 'hsl(var(--primary))' }}
                 aria-invalid={fieldState.invalid}
               />
             </InputGroup>
             <FieldError errors={[fieldState.error]} />
             <p className='text-xs text-muted-foreground mt-1'>
-              This uses your server time zone.
+              Based on server&apos; time zone
             </p>
           </Field>
         )}

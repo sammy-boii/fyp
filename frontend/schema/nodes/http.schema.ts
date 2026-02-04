@@ -13,7 +13,6 @@ export type HTTPMethod = (typeof HTTP_METHODS)[keyof typeof HTTP_METHODS]
 export const CONTENT_TYPES = {
   JSON: 'application/json',
   FORM: 'application/x-www-form-urlencoded',
-  MULTIPART: 'multipart/form-data',
   TEXT: 'text/plain',
   XML: 'application/xml'
 } as const
@@ -39,7 +38,6 @@ export const httpRequestFormSchema = z.object({
     .enum([
       'application/json',
       'application/x-www-form-urlencoded',
-      'multipart/form-data',
       'text/plain',
       'application/xml'
     ])

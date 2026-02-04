@@ -86,12 +86,6 @@ export async function executeHTTPRequest(
       fetchOptions.body = body
     }
 
-    console.log(`[HTTP Request] ${method} ${finalUrl}`)
-    console.log(`[HTTP Request] Headers:`, headersObj)
-    if (fetchOptions.body) {
-      console.log(`[HTTP Request] Body:`, body.substring(0, 500))
-    }
-
     // Make the request
     const startTime = Date.now()
     const response = await fetch(finalUrl, fetchOptions)
@@ -128,10 +122,6 @@ export async function executeHTTPRequest(
     } catch (e) {
       responseBody = null
     }
-
-    console.log(
-      `[HTTP Request] Response: ${response.status} ${response.statusText} (${duration}ms)`
-    )
 
     // Build output
     const output = {

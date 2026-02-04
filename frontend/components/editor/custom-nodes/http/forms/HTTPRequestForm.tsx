@@ -19,7 +19,9 @@ import {
   FileJson,
   Link2,
   FileText,
-  Settings2
+  Settings2,
+  FileCode,
+  FormInput
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -43,12 +45,11 @@ const METHOD_COLORS: Record<HTTPMethod, string> = {
   DELETE: 'bg-red-500/20 text-red-600 dark:text-red-400'
 }
 
-const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
-  'application/json': 'JSON',
-  'application/x-www-form-urlencoded': 'Form URL Encoded',
-  'multipart/form-data': 'Multipart Form',
-  'text/plain': 'Plain Text',
-  'application/xml': 'XML'
+const CONTENT_TYPE_LABELS: Record<ContentType, { label: string; icon: React.ElementType }> = {
+  'application/json': { label: 'JSON', icon: FileJson },
+  'application/x-www-form-urlencoded': { label: 'Form', icon: FormInput },
+  'text/plain': { label: 'Text', icon: FileText },
+  'application/xml': { label: 'XML', icon: FileCode }
 }
 
 export function HTTPRequestForm() {
@@ -286,20 +287,36 @@ export function HTTPRequestForm() {
               name='contentType'
               control={control}
               defaultValue='application/json'
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className='h-7 w-32 text-xs'>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(CONTENT_TYPES).map(([key, value]) => (
-                      <SelectItem key={key} value={value} className='text-xs'>
-                        {CONTENT_TYPE_LABELS[value as ContentType]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              render={({ field }) => {
+                const currentType = CONTENT_TYPE_LABELS[field.value as ContentType]
+                const Icon = currentType?.icon
+                return (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className='h-7 w-28 text-xs'>
+                      <SelectValue>
+                        <span className='flex items-center gap-1.5'>
+                          {Icon && <Icon className='h-3 w-3' />}
+                          {currentType?.label}
+                        </span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(CONTENT_TYPES).map(([key, value]) => {
+                        const typeInfo = CONTENT_TYPE_LABELS[value as ContentType]
+                        const TypeIcon = typeInfo.icon
+                        return (
+                          <SelectItem key={key} value={value} className='text-xs'>
+                            <span className='flex items-center gap-1.5'>
+                              <TypeIcon className='h-3 w-3' />
+                              {typeInfo.label}
+                            </span>
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
+                )
+              }}
             />
           </div>
 
@@ -321,17 +338,6 @@ export function HTTPRequestForm() {
           />
         </div>
       )}
-
-      {/* Tips */}
-      <div className='rounded-md bg-muted/50 p-3 text-xs text-muted-foreground'>
-        <p className='font-medium mb-1 flex items-center gap-1'>
-          <Globe className='h-3 w-3' />
-          Tips:
-        </p>
-        <ul className='list-disc list-inside space-y-0.5'>
-          <li>JSON body will be automatically stringified</li>
-        </ul>
-      </div>
     </div>
   )
 }

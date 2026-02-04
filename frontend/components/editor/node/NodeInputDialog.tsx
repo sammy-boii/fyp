@@ -20,7 +20,10 @@ import {
   List
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { NODE_DEFINITIONS, TRIGGER_NODE_DEFINITIONS } from '@/constants/registry'
+import {
+  NODE_DEFINITIONS,
+  TRIGGER_NODE_DEFINITIONS
+} from '@/constants/registry'
 import { NODE_TYPES, TRIGGER_NODE_TYPES } from '@/constants'
 import { createPlaceholder } from '@/lib/placeholder-utils'
 import { NodeInputSource } from '@/lib/node-execution-store'

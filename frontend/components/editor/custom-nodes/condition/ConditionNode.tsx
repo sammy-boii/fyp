@@ -11,13 +11,16 @@ import {
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-import { Settings, Trash2, Plus, GitBranch } from 'lucide-react'
+import { Settings, Trash2, Plus, GitBranch, Play, Loader2 } from 'lucide-react'
 import React, { useState, useCallback } from 'react'
+import { useParams } from 'next/navigation'
 import { BaseNodeProps } from '@/types/node.types'
 import {
   getAvailableInputsFromNodes,
   NodeOutputData
 } from '@/lib/node-execution-store'
+import { useExecuteNode } from '@/hooks/use-workflows'
+import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 
 import NodeConfigurationDialog from '@/components/editor/node/NodeConfigurationDialog'
 
@@ -51,6 +54,11 @@ import { CONDITION_ACTIONS } from './ConditionActions'
 
 export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
   const { setNodes, setEdges, getEdges, getNodes } = useReactFlow()
+  const params = useParams()
+  const workflowId = params?.id ? String(params.id) : null
+  const executeNodeMutation = useExecuteNode()
+  const { saveIfChanged, isAnyOperationPending, setIsExecutingNode } =
+    useWorkflowEditor()
 
   const [trueSheetOpen, setTrueSheetOpen] = useState(false)
   const [falseSheetOpen, setFalseSheetOpen] = useState(false)
@@ -167,6 +175,62 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
     [id, setNodes]
   )
 
+  const handleExecuteNode = useCallback(async () => {
+    if (!workflowId) {
+      return
+    }
+
+    if (!data.actionId || !data.config) {
+      return
+    }
+
+    // Don't execute if any other operation is pending
+    if (isAnyOperationPending) {
+      return
+    }
+
+    setIsExecutingNode(true)
+    try {
+      // Auto-save workflow if there are changes before executing
+      await saveIfChanged()
+
+      const result = await executeNodeMutation.mutateAsync({
+        workflowId,
+        nodeId: id
+      })
+
+      // Store the output in the node's data (persisted with workflow)
+      if (result?.data?.output) {
+        setNodes((nds) =>
+          nds.map((n) =>
+            n.id === id
+              ? {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    lastOutput: result.data.output,
+                    lastExecutedAt: new Date().toISOString()
+                  }
+                }
+              : n
+          )
+        )
+      }
+    } finally {
+      setIsExecutingNode(false)
+    }
+  }, [
+    workflowId,
+    data.actionId,
+    data.config,
+    executeNodeMutation,
+    id,
+    setNodes,
+    saveIfChanged,
+    isAnyOperationPending,
+    setIsExecutingNode
+  ])
+
   // Get the condition action (there's only one)
   const conditionAction = CONDITION_ACTIONS[0]
 
@@ -175,6 +239,21 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
       <ContextMenuTrigger>
         <div className='relative group'>
           <div className='absolute -top-5 right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center'>
+            <Button
+              size='icon'
+              variant='outline'
+              className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-green-500/10 hover:border-green-500/60 hover:text-green-500 hover:shadow-md disabled:opacity-40 disabled:hover:bg-background transition-all'
+              onClick={handleExecuteNode}
+              disabled={
+                !data.actionId || !data.config || executeNodeMutation.isPending
+              }
+            >
+              {executeNodeMutation.isPending ? (
+                <Loader2 className='h-3 w-3 animate-spin' />
+              ) : (
+                <Play className='h-3 w-3' />
+              )}
+            </Button>
             <Button
               size='icon'
               variant='outline'

@@ -11,9 +11,14 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Filter, ListChecks, Plus, Trash2 } from 'lucide-react'
+import { Filter, ListChecks, Plus, Trash2, Info } from 'lucide-react'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 import {
   CONDITION_OPERATORS,
   OPERATOR_LABELS,
@@ -98,10 +103,20 @@ export function ConditionForm() {
 
       {/* Conditions List */}
       <div className='space-y-4 mt-8'>
-        <FieldLabel className='text-xs font-medium flex items-center gap-1.5'>
-          <ListChecks className='h-3 w-3' />
-          Conditions
-        </FieldLabel>
+        <div className='flex items-center gap-1.5'>
+          <FieldLabel className='text-xs font-medium flex items-center gap-1.5 mb-0'>
+            <ListChecks className='h-3 w-3' />
+            Conditions
+          </FieldLabel>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className='h-3 w-3 text-muted-foreground cursor-help' />
+            </TooltipTrigger>
+            <TooltipContent side='right' className='w-max'>
+              <p className='text-xs'>ISO and MDY format dates are supported</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
 
         {fields.map((item, index) => (
           <ConditionRow

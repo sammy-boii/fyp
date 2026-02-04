@@ -259,13 +259,9 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
                 <Info className='h-3.5 w-3.5' />
               </button>
             </TooltipTrigger>
-            <TooltipContent side='bottom' className='max-w-64'>
+            <TooltipContent side='bottom' className='w-36'>
               <p className='text-xs'>
-                Click any field to copy its placeholder. Use{' '}
-                <code className='font-mono text-[10px] px-1 py-0.5 rounded bg-muted'>
-                  {'{{nodeId.path}}'}
-                </code>{' '}
-                in subsequent nodes.
+                Click any field to copy its placeholder nodes.
               </p>
             </TooltipContent>
           </Tooltip>

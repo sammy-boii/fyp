@@ -135,7 +135,7 @@ export function GmailWebhookTriggerForm() {
                   Include Attachments
                 </label>
                 <p className='text-xs text-muted-foreground'>
-                  Download attachment data (base64)
+                  Supports images, PDF, docx and xlsx files
                 </p>
               </div>
               <Switch

@@ -57,11 +57,12 @@ function extensionFromMimeType(mimeType: string): string | null {
     'application/pdf': 'pdf',
     'text/plain': 'txt',
     'text/csv': 'csv',
-    'application/zip': 'zip',
     'application/json': 'json',
-    'audio/mpeg': 'mp3',
-    'audio/wav': 'wav',
-    'video/mp4': 'mp4'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+      'docx',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'application/vnd.ms-excel': 'xls'
   }
 
   return map[normalized] || null
@@ -117,15 +118,9 @@ function detectMimeTypeFromBase64(value: string): string | null {
     return 'application/pdf'
   }
 
-  if (
-    header.length >= 4 &&
-    header[0] === 0x50 &&
-    header[1] === 0x4b &&
-    header[2] === 0x03 &&
-    header[3] === 0x04
-  ) {
-    return 'application/zip'
-  }
+  // DOCX, XLSX, and other Office formats are ZIP-based (PK header)
+  // We can't distinguish them by magic bytes alone, so we skip detection here
+  // and rely on the MIME type from Gmail instead
 
   if (
     header.length >= 12 &&

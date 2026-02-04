@@ -64,7 +64,7 @@ export async function executeWorkflowById(
       )
       if (triggerNode) {
         nodeOutputs.set(triggerNode.id, triggerData)
-        
+
         // Create NodeExecution record for the trigger node
         await prisma.nodeExecution.create({
           data: {
@@ -97,6 +97,7 @@ export async function executeWorkflowById(
     try {
       // Build execution order
       const executionOrder = buildExecutionOrder(nodes, edges)
+      console.log('[Workflow] Execution order:', executionOrder)
 
       // Track nodes to skip (nodes in non-taken branches)
       const skippedNodes = new Set<string>()
@@ -134,10 +135,16 @@ export async function executeWorkflowById(
 
         if (!result.success) {
           const duration = Date.now() - startTime
-          
+
           // Emit node error event
-          emitNodeError(workflowId, execution.id, nodeId, result.error || 'Unknown error', progress)
-          
+          emitNodeError(
+            workflowId,
+            execution.id,
+            nodeId,
+            result.error || 'Unknown error',
+            progress
+          )
+
           await prisma.workflowExecution.update({
             where: { id: execution.id },
             data: {
@@ -147,10 +154,15 @@ export async function executeWorkflowById(
               completedAt: new Date()
             }
           })
-          
+
           // Emit workflow error event
-          emitWorkflowError(workflowId, execution.id, result.error || 'Unknown error', duration)
-          
+          emitWorkflowError(
+            workflowId,
+            execution.id,
+            result.error || 'Unknown error',
+            duration
+          )
+
           return {
             success: false,
             executionId: execution.id,
@@ -159,30 +171,50 @@ export async function executeWorkflowById(
         }
 
         // Emit node complete event
-        emitNodeComplete(workflowId, execution.id, nodeId, result.data, progress)
+        emitNodeComplete(
+          workflowId,
+          execution.id,
+          nodeId,
+          result.data,
+          progress
+        )
 
         // Store the output for use by subsequent nodes
         if (result.data) {
           nodeOutputs.set(nodeId, result.data)
         }
 
-        // Handle conditional branching
-        if (
-          node.data?.actionId === NODE_ACTION_ID.CONDITION.EVALUATE_CONDITION &&
-          result.data?.branchTaken
-        ) {
+        // Handle conditional branching - must happen after storing output
+        const isConditionNode =
+          node.data?.actionId === NODE_ACTION_ID.CONDITION.EVALUATE_CONDITION
+        console.log('[Node Executed]', {
+          nodeId,
+          actionId: node.data?.actionId,
+          isConditionNode,
+          resultData: result.data,
+          hasBranchTaken: !!result.data?.branchTaken
+        })
+
+        if (isConditionNode && result.data?.branchTaken) {
           const branchTaken = result.data.branchTaken // 'true' or 'false'
-          const branchNotTaken = branchTaken === 'true' ? 'false' : 'true'
 
           // Find edges from this condition node
           const conditionEdges = edges.filter((e) => e.source === nodeId)
 
           // Mark nodes in the non-taken branch as skipped
           for (const edge of conditionEdges) {
-            if (edge.sourceHandle === branchNotTaken) {
-              // Recursively mark all descendants in the non-taken branch
-              markDescendantsAsSkipped(edge.target, edges, skippedNodes)
+            // Skip edges that match the taken branch
+            if (edge.sourceHandle === branchTaken) {
+              continue
             }
+
+            // Also handle case where sourceHandle might be undefined for legacy edges
+            if (!edge.sourceHandle) {
+              continue
+            }
+
+            // Mark the target and all its descendants as skipped
+            markDescendantsAsSkipped(edge.target, edges, skippedNodes)
           }
         }
       }

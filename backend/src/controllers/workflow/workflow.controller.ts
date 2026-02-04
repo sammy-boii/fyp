@@ -20,6 +20,7 @@ import {
   isScheduledTrigger
 } from '@/src/executors/trigger-executor'
 import { replacePlaceholdersInConfig } from '@/src/lib/placeholder'
+import { NODE_ACTION_ID } from '@shared/constants'
 
 import {
   emitWorkflowStart,
@@ -60,7 +61,9 @@ const executeNode = async (
 
   const result: TNodeExecutionResult = await executeNodeLogic(
     node,
-    resolvedConfig
+    resolvedConfig,
+    undefined,
+    nodeOutputs
   )
 
   await prisma.nodeExecution.update({
@@ -131,14 +134,15 @@ const buildExecutionOrder = (
 /**
  * Detect trigger node and determine trigger type from workflow nodes.
  */
-const getTriggerInfo = (nodes: TWorkflowNode[]): {
+const getTriggerInfo = (
+  nodes: TWorkflowNode[]
+): {
   triggerType: TriggerType
   triggerNode: TWorkflowNode | null
 } => {
   // Find the trigger node (the one with a trigger action ID)
-  const triggerNode = nodes.find((node) =>
-    isTriggerNode(node.data.actionId)
-  ) || null
+  const triggerNode =
+    nodes.find((node) => isTriggerNode(node.data.actionId)) || null
 
   if (!triggerNode) {
     // No trigger node found, default to manual
@@ -156,6 +160,24 @@ const getTriggerInfo = (nodes: TWorkflowNode[]): {
         ? TriggerType.SCHEDULED
         : TriggerType.WEBHOOK,
     triggerNode
+  }
+}
+
+/**
+ * Recursively mark all descendants of a node as skipped
+ */
+const markDescendantsAsSkipped = (
+  nodeId: string,
+  edges: TWorkflowEdge[],
+  skippedNodes: Set<string>
+): void => {
+  if (skippedNodes.has(nodeId)) return
+  skippedNodes.add(nodeId)
+
+  // Find all outgoing edges from this node
+  const outgoingEdges = edges.filter((e) => e.source === nodeId)
+  for (const edge of outgoingEdges) {
+    markDescendantsAsSkipped(edge.target, edges, skippedNodes)
   }
 }
 
@@ -209,9 +231,17 @@ export const runWorkflow = tryCatch(async (c: Context) => {
     // Build execution order
     const executionOrder = buildExecutionOrder(nodes, edges)
 
+    // Track nodes to skip (nodes in non-taken branches)
+    const skippedNodes = new Set<string>()
+
     // Execute nodes in order, passing outputs between nodes
     let currentNodeIndex = 0
     for (const nodeId of executionOrder) {
+      // Skip nodes in non-taken branches
+      if (skippedNodes.has(nodeId)) {
+        continue
+      }
+
       const node = nodes.find((n) => n.id === nodeId)
       if (!node) continue
 
@@ -277,6 +307,28 @@ export const runWorkflow = tryCatch(async (c: Context) => {
 
       // Emit node complete event
       emitNodeComplete(workflowId, execution.id, nodeId, result.data, progress)
+
+      // Handle conditional branching
+      if (
+        node.data?.actionId === NODE_ACTION_ID.CONDITION.EVALUATE_CONDITION &&
+        result.data?.branchTaken
+      ) {
+        const branchTaken = result.data.branchTaken // 'true' or 'false'
+
+        // Find edges from this condition node
+        const conditionEdges = edges.filter((e) => e.source === nodeId)
+
+        // Mark nodes in the non-taken branch as skipped
+        for (const edge of conditionEdges) {
+          // Skip edges that match the taken branch
+          if (edge.sourceHandle === branchTaken) {
+            continue
+          }
+
+          // Mark the target and all its descendants as skipped
+          markDescendantsAsSkipped(edge.target, edges, skippedNodes)
+        }
+      }
     }
 
     const duration = Date.now() - startTime

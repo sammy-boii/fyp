@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "@hono/oauth-providers": "^0.8.5",
+    "@huggingface/inference": "^4.13.11",
     "@types/pdfkit": "^0.17.4",
     "arctic": "^3.7.0",
     "discord.js": "^14.25.1",

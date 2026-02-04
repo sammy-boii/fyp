@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 
 import { Settings, Trash2, Plus, Play, Loader2 } from 'lucide-react'
 import Image from 'next/image'
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, memo } from 'react'
 import { useParams } from 'next/navigation'
 import { BaseNodeProps } from '@/types/node.types'
 import {
@@ -53,7 +53,7 @@ import { AddNodeSheetContent } from '@/app/(main)/workflows/[id]/_components/Add
 import { ValueOf } from '@/types/index.types'
 import { TActionID } from '@shared/constants'
 
-export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
+export function AINode({ data, id }: NodeProps<BaseNodeProps>) {
   const { setNodes, setEdges, getEdges, getNodes } = useReactFlow()
   const params = useParams()
   const workflowId = params?.id ? String(params.id) : null
@@ -61,8 +61,7 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
   const { saveIfChanged, isAnyOperationPending, setIsExecutingNode } =
     useWorkflowEditor()
 
-  const [trueSheetOpen, setTrueSheetOpen] = useState(false)
-  const [falseSheetOpen, setFalseSheetOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
 
@@ -98,49 +97,29 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
     return undefined
   })
 
-  // Check if each handle has outgoing edges
-  const trueHandleConnected = useStore((state) =>
-    state.edges.some((e) => e.source === id && e.sourceHandle === 'true')
-  )
-  const falseHandleConnected = useStore((state) =>
-    state.edges.some((e) => e.source === id && e.sourceHandle === 'false')
+  // Check if this node has outgoing edges
+  const isSourceConnected = useStore((state) =>
+    state.edges.some((e) => e.source === id)
   )
 
-  const addNodeFromHandle = (
-    nodeType: ValueOf<typeof ALL_NODE_TYPES>,
-    handleType: 'true' | 'false'
-  ) => {
+  const addNode = (nodeType: ValueOf<typeof ALL_NODE_TYPES>) => {
     const nodes = getNodes()
     const edges = getEdges()
     const currentNode = nodes.find((n) => n.id === id)
     if (!currentNode) return
 
-    // Calculate offset based on handle type
-    const yOffset = handleType === 'true' ? -60 : 60
-
-    // Calculate position for the new node
     const newPosition = calculateNewNodePosition(nodes, edges, {
       fromNode: currentNode,
-      offsetX: 250,
-      offsetY: yOffset
+      offsetX: 250
     })
 
-    // Create the new node
     const newNode = createNode(nodeType, newPosition)
-
-    // Add the new node
     setNodes((nds) => [...nds, newNode])
 
-    // Create an edge from the condition node to the new node with the handle
     const newEdge = createEdge(id, newNode.id)
-    newEdge.sourceHandle = handleType
     setEdges((eds) => addEdge(newEdge, eds))
 
-    if (handleType === 'true') {
-      setTrueSheetOpen(false)
-    } else {
-      setFalseSheetOpen(false)
-    }
+    setSheetOpen(false)
   }
 
   const handleConfigure = useCallback(() => {
@@ -185,14 +164,12 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
       return
     }
 
-    // Don't execute if any other operation is pending
     if (isAnyOperationPending) {
       return
     }
 
     setIsExecutingNode(true)
     try {
-      // Auto-save workflow if there are changes before executing
       await saveIfChanged()
 
       const result = await executeNodeMutation.mutateAsync({
@@ -200,7 +177,6 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
         nodeId: id
       })
 
-      // Store the output in the node's data (persisted with workflow)
       if (result?.data?.output) {
         setNodes((nds) =>
           nds.map((n) =>
@@ -232,9 +208,9 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
     setIsExecutingNode
   ])
 
-  // Get the condition node definition from registry
-  const node = NODE_DEFINITIONS[NODE_TYPES.CONDITION]
-  const conditionAction = node.actions[0]
+  // Get the AI node definition from registry
+  const node = NODE_DEFINITIONS[NODE_TYPES.AI]
+  const aiAction = node.actions[0]
 
   return (
     <ContextMenu>
@@ -265,7 +241,7 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
               <Settings className='h-3 w-3' />
             </Button>
             <NodeConfigurationDialog
-              action={conditionAction}
+              action={aiAction}
               isOpen={configDialogOpen}
               setIsOpen={setConfigDialogOpen}
               nodeId={id}
@@ -293,8 +269,8 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
                     Delete Node
                   </DialogTitle>
                   <DialogDescription>
-                    Are you sure you want to delete this condition node? This
-                    action cannot be undone and will remove all connections.
+                    Are you sure you want to delete this AI node? This action
+                    cannot be undone and will remove all connections.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
@@ -346,8 +322,10 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
                   {node.label}
                 </h3>
                 <p className='text-xs text-muted-foreground font-medium truncate'>
-                  {data.config?.conditions?.length
-                    ? `${data.config.conditions.length} condition${data.config.conditions.length > 1 ? 's' : ''}`
+                  {data.config?.prompt
+                    ? data.config.prompt.length > 20
+                      ? `${data.config.prompt.substring(0, 20)}...`
+                      : data.config.prompt
                     : 'Configure'}
                 </p>
               </div>
@@ -367,73 +345,31 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
               }}
             />
 
-            {/* True Output Handle - Top */}
+            {/* Output Handle */}
             <Handle
-              id='true'
-              type='source'
-              position={Position.Right}
               className='bg-muted-foreground! border-muted-foreground!'
               style={{
                 width: 14,
                 height: 14,
-                top: '20%',
-                cursor: trueHandleConnected ? 'crosshair' : 'pointer'
+                cursor: isSourceConnected ? 'crosshair' : 'pointer'
               }}
+              type='source'
+              position={Position.Right}
             >
-              <span className='absolute -left-8 text-[10px] font-medium text-muted-foreground whitespace-nowrap'>
-                True
-              </span>
-              {!trueHandleConnected && (
+              {!isSourceConnected && (
                 <div className='flex items-center -translate-y-3'>
                   <div className='min-w-12 ml-1 border-t-2 border-muted-foreground' />
-                  <Sheet open={trueSheetOpen} onOpenChange={setTrueSheetOpen}>
-                    <SheetTrigger asChild>
-                      <div className='border-2 p-1 rounded border-muted-foreground'>
-                        <Plus className='text-muted-foreground' size={24} />
-                      </div>
-                    </SheetTrigger>
-                    <AddNodeSheetContent
-                      onOpenChange={setTrueSheetOpen}
-                      onAddNode={(nodeType) =>
-                        addNodeFromHandle(nodeType, 'true')
-                      }
-                      showOnlyActions
-                    />
-                  </Sheet>
-                </div>
-              )}
-            </Handle>
 
-            {/* False Output Handle - Bottom */}
-            <Handle
-              id='false'
-              type='source'
-              position={Position.Right}
-              className='bg-muted-foreground! border-muted-foreground!'
-              style={{
-                width: 14,
-                height: 14,
-                top: '80%',
-                cursor: falseHandleConnected ? 'crosshair' : 'pointer'
-              }}
-            >
-              <span className='absolute -left-8 text-[10px] font-medium text-muted-foreground whitespace-nowrap'>
-                False
-              </span>
-              {!falseHandleConnected && (
-                <div className='flex items-center -translate-y-3'>
-                  <div className='min-w-12 ml-1 border-t-2 border-muted-foreground' />
-                  <Sheet open={falseSheetOpen} onOpenChange={setFalseSheetOpen}>
+                  <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                     <SheetTrigger asChild>
                       <div className='border-2 p-1 rounded border-muted-foreground'>
                         <Plus className='text-muted-foreground' size={24} />
                       </div>
                     </SheetTrigger>
+
                     <AddNodeSheetContent
-                      onOpenChange={setFalseSheetOpen}
-                      onAddNode={(nodeType) =>
-                        addNodeFromHandle(nodeType, 'false')
-                      }
+                      onOpenChange={setSheetOpen}
+                      onAddNode={addNode}
                       showOnlyActions
                     />
                   </Sheet>
@@ -443,19 +379,16 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
           </Card>
         </div>
       </ContextMenuTrigger>
-
-      <ContextMenuContent className='w-44'>
-        <ContextMenuItem className='gap-3' onClick={handleConfigure}>
-          <Settings className='h-4 w-4' />
+      <ContextMenuContent>
+        <ContextMenuItem onClick={handleConfigure}>
+          <Settings className='h-4 w-4 mr-2' />
           Configure
         </ContextMenuItem>
-
         <ContextMenuItem
-          className='gap-3'
-          variant='destructive'
           onClick={() => setDeleteDialogOpen(true)}
+          className='text-destructive focus:text-destructive'
         >
-          <Trash2 className='h-4 w-4' />
+          <Trash2 className='h-4 w-4 mr-2' />
           Delete
         </ContextMenuItem>
       </ContextMenuContent>
@@ -463,14 +396,4 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
   )
 }
 
-// Wrap with memo to prevent unnecessary re-renders
-export const ConditionNodeMemo = React.memo(
-  ConditionNode,
-  (prevProps, nextProps) => {
-    return (
-      prevProps.id === nextProps.id &&
-      prevProps.data === nextProps.data &&
-      prevProps.selected === nextProps.selected
-    )
-  }
-)
+export const AINodeMemo = memo(AINode)

@@ -21,6 +21,7 @@ import {
 } from './discord-executor'
 import { executeTriggerNode, isTriggerNode } from './trigger-executor'
 import { executeCondition } from './condition-executor'
+import { executeAskAI } from './ai-executor'
 
 export const executeNodeLogic = async (
   node: TWorkflowNode,
@@ -96,6 +97,11 @@ export const executeNodeLogic = async (
     // Condition actions
     case NODE_ACTION_ID.CONDITION.EVALUATE_CONDITION:
       result = await executeCondition(config, nodeOutputs || new Map())
+      break
+
+    // AI actions
+    case NODE_ACTION_ID.AI.ASK_AI:
+      result = await executeAskAI(config, nodeOutputs || new Map())
       break
 
     default:

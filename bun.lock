@@ -9,6 +9,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@hono/oauth-providers": "^0.8.5",
+        "@huggingface/inference": "^4.13.11",
         "@types/pdfkit": "^0.17.4",
         "arctic": "^3.7.0",
         "discord.js": "^14.25.1",
@@ -191,6 +192,12 @@
     "@hono/oauth-providers": ["@hono/oauth-providers@0.8.5", "", { "peerDependencies": { "hono": ">=3.0.0" } }, "sha512-hgEDH/gUmB/opman9jvT8dLItZsSC9M9yFiaam0b6InK7WQkdzIcaRAkdda47QpixnK9S1Ah2vjDB2U16LkMnA=="],
 
     "@hookform/resolvers": ["@hookform/resolvers@5.2.2", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "react-hook-form": "^7.55.0" } }, "sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA=="],
+
+    "@huggingface/inference": ["@huggingface/inference@4.13.11", "", { "dependencies": { "@huggingface/jinja": "^0.5.4", "@huggingface/tasks": "^0.19.82" } }, "sha512-wygYsdlDIVNTBPyaGTuzqtotZOP6C9jsZ4AmXC06B5nGEs3IrwSQ9xp1Aa2cJylQYs3/y2BGN4gudsS+HV2v5w=="],
+
+    "@huggingface/jinja": ["@huggingface/jinja@0.5.5", "", {}, "sha512-xRlzazC+QZwr6z4ixEqYHo9fgwhTZ3xNSdljlKfUFGZSdlvt166DljRELFUfFytlYOYvo3vTisA/AFOuOAzFQQ=="],
+
+    "@huggingface/tasks": ["@huggingface/tasks@0.19.83", "", {}, "sha512-nBt3S6x+MWUTmfey1drQZRMuEopEbz2aEMUsoddfpCuzIYAMCsJDX7xeNuJnzvbVGis3gXXCRcLHVhFtHaaiyA=="],
 
     "@humanfs/core": ["@humanfs/core@0.19.1", "", {}, "sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA=="],
 

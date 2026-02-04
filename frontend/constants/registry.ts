@@ -3,12 +3,9 @@ import cursorIcon from '@/public/cursor.svg'
 import driveIcon from '@/public/google-drive.png'
 import discordIcon from '@/public/discord.png'
 import googleDriveIcon from '@/public/google-drive.png'
+import aiIcon from '@/public/ai.svg'
 
-import {
-  NodeDefinition,
-  TriggerNodeDefinition,
-  ConditionNodeDefinition
-} from '@/types/node.types'
+import { NodeDefinition, TriggerNodeDefinition } from '@/types/node.types'
 import { BACKEND_URL, NODE_TYPES, TRIGGER_NODE_TYPES } from '.'
 import { TimerReset, GitBranch } from 'lucide-react'
 
@@ -19,6 +16,8 @@ import { DISCORD_ACTIONS } from '@/components/editor/custom-nodes/discord/Discor
 import { GMAIL_ACTIONS } from '@/components/editor/custom-nodes/gmail/GmailActions'
 
 import { CONDITION_ACTIONS } from '@/components/editor/custom-nodes/condition/ConditionActions'
+
+import { AI_ACTIONS } from '@/components/editor/custom-nodes/ai/AIActions'
 
 import {
   MANUAL_TRIGGER_ACTIONS,
@@ -51,6 +50,12 @@ export const NODE_DEFINITIONS: NodeDefinition = {
     actions: CONDITION_ACTIONS,
     description: 'Route workflow based on conditions',
     iconComponent: GitBranch
+  },
+  [NODE_TYPES.AI]: {
+    label: 'AI',
+    actions: AI_ACTIONS,
+    description: 'Ask AI anything and get intelligent responses',
+    icon: aiIcon
   }
 }
 

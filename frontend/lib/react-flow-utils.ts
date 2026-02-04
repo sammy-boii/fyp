@@ -60,6 +60,13 @@ export function isConditionNodeType(nodeType: string): boolean {
 }
 
 /**
+ * Check if a node type is an AI node
+ */
+export function isAINodeType(nodeType: string): boolean {
+  return nodeType === NODE_TYPES.AI
+}
+
+/**
  * Get the trigger action ID for a trigger node type
  */
 function getTriggerActionId(
@@ -120,15 +127,18 @@ export function createNode(
     type?: string
   }
 ): Node {
-  // Determine the node type based on whether it's a trigger, condition, or action
+  // Determine the node type based on whether it's a trigger, condition, ai, or action
   const isTrigger = isTriggerNodeType(nodeType)
   const isCondition = isConditionNodeType(nodeType)
+  const isAI = isAINodeType(nodeType)
 
   let reactFlowNodeType = 'custom_node'
   if (isTrigger) {
     reactFlowNodeType = 'trigger_node'
   } else if (isCondition) {
     reactFlowNodeType = 'condition_node'
+  } else if (isAI) {
+    reactFlowNodeType = 'ai_node'
   }
 
   // Build node data - auto-configure trigger nodes

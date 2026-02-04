@@ -27,6 +27,11 @@ export const NODE_ACTION_ID = {
   // Condition actions
   CONDITION: {
     EVALUATE_CONDITION: 'evaluate_condition'
+  },
+
+  // AI actions
+  AI: {
+    ASK_AI: 'ask_ai'
   }
 } as const
 

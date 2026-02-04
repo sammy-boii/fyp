@@ -67,11 +67,13 @@ export type BaseNodeProps = Node<{
 import { BaseNodeMemo } from '@/components/editor/node/BaseNode'
 import { TriggerNodeMemo } from '@/components/editor/node/TriggerNode'
 import { ConditionNodeMemo } from '@/components/editor/custom-nodes/condition/ConditionNode'
+import { AINodeMemo } from '@/components/editor/custom-nodes/ai/AINode'
 
 export const nodeTypes = {
   custom_node: BaseNodeMemo,
   trigger_node: TriggerNodeMemo,
-  condition_node: ConditionNodeMemo
+  condition_node: ConditionNodeMemo,
+  ai_node: AINodeMemo
 }
 
 // custom edge types for react flow

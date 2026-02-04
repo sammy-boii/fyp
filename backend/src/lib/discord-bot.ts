@@ -29,34 +29,40 @@ client.on(Events.MessageCreate, async (message) => {
   // Ignore DMs
   if (!message.guild) return
 
-
   const guildId = message.guild.id
   const channelId = message.channel.id
   const authorId = message.author.id
 
-  console.log("🔍 Cache stats:", triggerCache.getStats())
-  console.log(`📍 Looking for triggers: guildId=${guildId}, channelId=${channelId}`)
-  
+  console.log('🔍 Cache stats:', triggerCache.getStats())
+  console.log(
+    `📍 Looking for triggers: guildId=${guildId}, channelId=${channelId}`
+  )
+
   // Look up matching triggers from cache
   const matchingTriggers = triggerCache.getTriggersForMessage(
     guildId,
     channelId,
     authorId
   )
-  
-  console.log("🎯 Matching triggers:", matchingTriggers.map(t => t.workflowId))
-  
+
+  console.log(
+    '🎯 Matching triggers:',
+    matchingTriggers.map((t) => t.workflowId)
+  )
+
   // Check for duplicates
-  const uniqueWorkflowIds = new Set(matchingTriggers.map(t => t.workflowId))
+  const uniqueWorkflowIds = new Set(matchingTriggers.map((t) => t.workflowId))
   if (uniqueWorkflowIds.size !== matchingTriggers.length) {
-    console.warn("⚠️ DUPLICATE TRIGGERS DETECTED!")
+    console.warn('⚠️ DUPLICATE TRIGGERS DETECTED!')
   }
 
   if (matchingTriggers.length === 0) {
     return // No workflows to trigger
   }
 
-  console.log(`📩 Discord message matched ${matchingTriggers.length} workflow(s)`)
+  console.log(
+    `📩 Discord message matched ${matchingTriggers.length} workflow(s)`
+  )
 
   // Build trigger data to pass to workflows
   const triggerData = {
@@ -80,14 +86,18 @@ client.on(Events.MessageCreate, async (message) => {
   // Execute each matching workflow
   for (const trigger of matchingTriggers) {
     console.log(`🚀 Executing workflow ${trigger.workflowId}...`)
-    
+
     try {
       const result = await executeWorkflowById(trigger.workflowId, triggerData)
-      
+
       if (result.success) {
-        console.log(`✅ Workflow ${trigger.workflowId} executed successfully (execution: ${result.executionId})`)
+        console.log(
+          `✅ Workflow ${trigger.workflowId} executed successfully (execution: ${result.executionId})`
+        )
       } else {
-        console.error(`❌ Workflow ${trigger.workflowId} failed: ${result.error}`)
+        console.error(
+          `❌ Workflow ${trigger.workflowId} failed: ${result.error}`
+        )
       }
     } catch (error) {
       console.error(`❌ Error executing workflow ${trigger.workflowId}:`, error)
@@ -100,7 +110,9 @@ export async function initDiscordBot() {
   const token = process.env.DISCORD_BOT_TOKEN
 
   if (!token) {
-    console.warn('⚠️ DISCORD_BOT_TOKEN not found in environment variables. Discord bot will not start.')
+    console.warn(
+      '⚠️ DISCORD_BOT_TOKEN not found in environment variables. Discord bot will not start.'
+    )
     return
   }
 

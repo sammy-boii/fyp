@@ -234,9 +234,17 @@ export async function executeCondition(
   nodeOutputs: Map<string, Record<string, any>>
 ): Promise<TNodeExecutionResult> {
   try {
+    // Handle unconfigured condition node
+    if (!config || typeof config !== 'object') {
+      return {
+        success: false,
+        error: 'Condition node not configured'
+      }
+    }
+
     const { matchType, conditions } = config
 
-    if (!conditions || conditions.length === 0) {
+    if (!conditions || !Array.isArray(conditions) || conditions.length === 0) {
       return {
         success: false,
         error: 'No conditions configured'

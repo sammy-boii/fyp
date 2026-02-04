@@ -242,6 +242,10 @@ export async function executeWorkflowById(
       return { success: true, executionId: execution.id }
     } catch (error: any) {
       const duration = Date.now() - startTime
+
+      // Emit workflow error event so frontend knows execution failed
+      emitWorkflowError(workflowId, execution.id, error.message, duration)
+
       await prisma.workflowExecution.update({
         where: { id: execution.id },
         data: {

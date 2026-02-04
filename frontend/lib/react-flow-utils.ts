@@ -67,6 +67,13 @@ export function isAINodeType(nodeType: string): boolean {
 }
 
 /**
+ * Check if a node type is an HTTP node
+ */
+export function isHTTPNodeType(nodeType: string): boolean {
+  return nodeType === NODE_TYPES.HTTP
+}
+
+/**
  * Get the trigger action ID for a trigger node type
  */
 function getTriggerActionId(
@@ -127,10 +134,11 @@ export function createNode(
     type?: string
   }
 ): Node {
-  // Determine the node type based on whether it's a trigger, condition, ai, or action
+  // Determine the node type based on whether it's a trigger, condition, ai, http, or action
   const isTrigger = isTriggerNodeType(nodeType)
   const isCondition = isConditionNodeType(nodeType)
   const isAI = isAINodeType(nodeType)
+  const isHTTP = isHTTPNodeType(nodeType)
 
   let reactFlowNodeType = 'custom_node'
   if (isTrigger) {
@@ -139,6 +147,8 @@ export function createNode(
     reactFlowNodeType = 'condition_node'
   } else if (isAI) {
     reactFlowNodeType = 'ai_node'
+  } else if (isHTTP) {
+    reactFlowNodeType = 'http_node'
   }
 
   // Build node data - auto-configure trigger nodes

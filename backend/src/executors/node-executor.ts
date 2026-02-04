@@ -22,6 +22,7 @@ import {
 import { executeTriggerNode, isTriggerNode } from './trigger-executor'
 import { executeCondition } from './condition-executor'
 import { executeAskAI } from './ai-executor'
+import { executeHTTPRequest } from './http-executor'
 
 export const executeNodeLogic = async (
   node: TWorkflowNode,
@@ -102,6 +103,11 @@ export const executeNodeLogic = async (
     // AI actions
     case NODE_ACTION_ID.AI.ASK_AI:
       result = await executeAskAI(config, nodeOutputs || new Map())
+      break
+
+    // HTTP actions
+    case NODE_ACTION_ID.HTTP.HTTP_REQUEST:
+      result = await executeHTTPRequest(config, nodeOutputs || new Map())
       break
 
     default:

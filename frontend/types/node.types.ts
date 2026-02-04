@@ -68,12 +68,14 @@ import { BaseNodeMemo } from '@/components/editor/node/BaseNode'
 import { TriggerNodeMemo } from '@/components/editor/node/TriggerNode'
 import { ConditionNodeMemo } from '@/components/editor/custom-nodes/condition/ConditionNode'
 import { AINodeMemo } from '@/components/editor/custom-nodes/ai/AINode'
+import { HTTPNodeMemo } from '@/components/editor/custom-nodes/http/HTTPNode'
 
 export const nodeTypes = {
   custom_node: BaseNodeMemo,
   trigger_node: TriggerNodeMemo,
   condition_node: ConditionNodeMemo,
-  ai_node: AINodeMemo
+  ai_node: AINodeMemo,
+  http_node: HTTPNodeMemo
 }
 
 // custom edge types for react flow

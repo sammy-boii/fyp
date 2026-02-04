@@ -32,6 +32,11 @@ export const NODE_ACTION_ID = {
   // AI actions
   AI: {
     ASK_AI: 'ask_ai'
+  },
+
+  // HTTP actions
+  HTTP: {
+    HTTP_REQUEST: 'http_request'
   }
 } as const
 

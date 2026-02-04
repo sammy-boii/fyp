@@ -7,7 +7,7 @@ import aiIcon from '@/public/ai.svg'
 
 import { NodeDefinition, TriggerNodeDefinition } from '@/types/node.types'
 import { BACKEND_URL, NODE_TYPES, TRIGGER_NODE_TYPES } from '.'
-import { TimerReset, GitBranch } from 'lucide-react'
+import { TimerReset, GitBranch, Globe } from 'lucide-react'
 
 import { GOOGLE_DRIVE_ACTIONS } from '@/components/editor/custom-nodes/google-drive/GoogleDriveActions'
 
@@ -18,6 +18,8 @@ import { GMAIL_ACTIONS } from '@/components/editor/custom-nodes/gmail/GmailActio
 import { CONDITION_ACTIONS } from '@/components/editor/custom-nodes/condition/ConditionActions'
 
 import { AI_ACTIONS } from '@/components/editor/custom-nodes/ai/AIActions'
+
+import { HTTP_ACTIONS } from '@/components/editor/custom-nodes/http/HTTPActions'
 
 import {
   MANUAL_TRIGGER_ACTIONS,
@@ -56,6 +58,12 @@ export const NODE_DEFINITIONS: NodeDefinition = {
     actions: AI_ACTIONS,
     description: 'Ask AI anything and get intelligent responses',
     icon: aiIcon
+  },
+  [NODE_TYPES.HTTP]: {
+    label: 'HTTP',
+    actions: HTTP_ACTIONS,
+    description: 'Make HTTP requests to external APIs',
+    iconComponent: Globe
   }
 }
 

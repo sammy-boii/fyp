@@ -3,7 +3,8 @@ export const NODE_TYPES = {
   GOOGLE_DRIVE: 'GOOGLE_DRIVE',
   DISCORD: 'DISCORD',
   CONDITION: 'CONDITION',
-  AI: 'AI'
+  AI: 'AI',
+  HTTP: 'HTTP'
 } as const
 
 // Trigger node types (nodes that start a workflow)

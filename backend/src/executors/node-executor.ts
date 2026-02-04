@@ -20,11 +20,13 @@ import {
   executeCreateChannel
 } from './discord-executor'
 import { executeTriggerNode, isTriggerNode } from './trigger-executor'
+import { executeCondition } from './condition-executor'
 
 export const executeNodeLogic = async (
   node: TWorkflowNode,
   config: any,
-  triggerEventData?: Record<string, any>
+  triggerEventData?: Record<string, any>,
+  nodeOutputs?: Map<string, Record<string, any>>
 ): Promise<TNodeExecutionResult> => {
   const { actionId } = node.data
 
@@ -89,6 +91,11 @@ export const executeNodeLogic = async (
 
     case NODE_ACTION_ID.DISCORD.CREATE_CHANNEL:
       result = await executeCreateChannel(config)
+      break
+
+    // Condition actions
+    case NODE_ACTION_ID.CONDITION.EVALUATE_CONDITION:
+      result = await executeCondition(config, nodeOutputs || new Map())
       break
 
     default:

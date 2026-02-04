@@ -370,7 +370,8 @@ function WorkflowViewPageInner() {
     setNodes((nds) => [...nds, newNode])
 
     // If there's a last node, create an edge from it to the new node
-    if (lastNode) {
+    // Skip auto-connect for condition nodes since they have true/false handles
+    if (lastNode && lastNode.type !== 'condition_node') {
       const newEdge = createEdge(lastNode.id, newNode.id)
       setEdges((eds) => addEdge(newEdge, eds))
     }

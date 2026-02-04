@@ -22,6 +22,11 @@ export const NODE_ACTION_ID = {
     LIST_GUILDS: 'list_guilds',
     LIST_CHANNELS: 'list_channels',
     CREATE_CHANNEL: 'create_channel'
+  },
+
+  // Condition actions
+  CONDITION: {
+    EVALUATE_CONDITION: 'evaluate_condition'
   }
 } as const
 

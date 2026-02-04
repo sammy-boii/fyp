@@ -12,6 +12,7 @@ import {
 import { executeNodeLogic } from '@/src/executors/node-executor'
 import { replacePlaceholdersInConfig } from '@/src/lib/placeholder'
 import { AppError } from '@/src/types'
+import { NODE_ACTION_ID } from '@shared/constants'
 import {
   emitWorkflowStart,
   emitNodeStart,
@@ -97,9 +98,17 @@ export async function executeWorkflowById(
       // Build execution order
       const executionOrder = buildExecutionOrder(nodes, edges)
 
+      // Track nodes to skip (nodes in non-taken branches)
+      const skippedNodes = new Set<string>()
+
       // Execute nodes in order
       let nodeIndex = triggerData ? 1 : 0 // Start from 1 if trigger already counted
       for (const nodeId of executionOrder) {
+        // Skip nodes in non-taken branches
+        if (skippedNodes.has(nodeId)) {
+          continue
+        }
+
         const node = nodes.find((n) => n.id === nodeId)
         if (!node) continue
 
@@ -155,6 +164,26 @@ export async function executeWorkflowById(
         // Store the output for use by subsequent nodes
         if (result.data) {
           nodeOutputs.set(nodeId, result.data)
+        }
+
+        // Handle conditional branching
+        if (
+          node.data?.actionId === NODE_ACTION_ID.CONDITION.EVALUATE_CONDITION &&
+          result.data?.branchTaken
+        ) {
+          const branchTaken = result.data.branchTaken // 'true' or 'false'
+          const branchNotTaken = branchTaken === 'true' ? 'false' : 'true'
+
+          // Find edges from this condition node
+          const conditionEdges = edges.filter((e) => e.source === nodeId)
+
+          // Mark nodes in the non-taken branch as skipped
+          for (const edge of conditionEdges) {
+            if (edge.sourceHandle === branchNotTaken) {
+              // Recursively mark all descendants in the non-taken branch
+              markDescendantsAsSkipped(edge.target, edges, skippedNodes)
+            }
+          }
         }
       }
 
@@ -232,7 +261,9 @@ const executeNode = async (
 
   const result: TNodeExecutionResult = await executeNodeLogic(
     node,
-    resolvedConfig
+    resolvedConfig,
+    undefined,
+    nodeOutputs
   )
 
   await prisma.nodeExecution.update({
@@ -298,4 +329,22 @@ const buildExecutionOrder = (
   }
 
   return executionOrder
+}
+
+/**
+ * Recursively mark all descendants of a node as skipped
+ */
+const markDescendantsAsSkipped = (
+  nodeId: string,
+  edges: TWorkflowEdge[],
+  skippedNodes: Set<string>
+): void => {
+  if (skippedNodes.has(nodeId)) return
+  skippedNodes.add(nodeId)
+
+  // Find all outgoing edges from this node
+  const outgoingEdges = edges.filter((e) => e.source === nodeId)
+  for (const edge of outgoingEdges) {
+    markDescendantsAsSkipped(edge.target, edges, skippedNodes)
+  }
 }

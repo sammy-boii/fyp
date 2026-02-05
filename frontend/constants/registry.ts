@@ -57,13 +57,38 @@ export const NODE_DEFINITIONS: NodeDefinition = {
     label: 'AI',
     actions: AI_ACTIONS,
     description: 'Ask AI anything and get intelligent responses',
-    icon: aiIcon
+    icon: aiIcon,
+    getSubtitle: ({ config }) => {
+      const prompt =
+        typeof config?.prompt === 'string' ? config.prompt.trim() : ''
+      if (!prompt) {
+        return 'Configure'
+      }
+
+      return prompt.length > 24 ? `${prompt.slice(0, 24)}...` : prompt
+    }
   },
   [NODE_TYPES.HTTP]: {
     label: 'HTTP',
     actions: HTTP_ACTIONS,
     description: 'Make HTTP requests to external APIs',
-    iconComponent: Globe
+    iconComponent: Globe,
+    getSubtitle: ({ config }) => {
+      const url = typeof config?.url === 'string' ? config.url.trim() : ''
+      if (!url) {
+        return 'Configure'
+      }
+
+      const method =
+        typeof config?.method === 'string'
+          ? config.method.toUpperCase()
+          : 'GET'
+      const displayUrl = url.replace(/^https?:\/\//, '')
+      const truncated =
+        displayUrl.length > 22 ? `${displayUrl.slice(0, 22)}...` : displayUrl
+
+      return `${method} ${truncated}`
+    }
   }
 }
 

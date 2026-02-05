@@ -23,7 +23,7 @@ import {
 import { useExecuteNode } from '@/hooks/use-workflows'
 import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 
-import NodeConfigurationDialog from '@/components/editor/node/NodeConfigurationDialog'
+import { NodeActionsSheet } from '@/components/editor/node/NodeActionsSheet'
 
 import {
   ContextMenu,
@@ -65,6 +65,9 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
   const [falseSheetOpen, setFalseSheetOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
+
+  // Get the condition node definition from registry
+  const node = NODE_DEFINITIONS[NODE_TYPES.CONDITION]
 
   // Get available inputs from predecessor nodes
   const availableInputs = useStore((state) => {
@@ -176,6 +179,16 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
     [id, setNodes]
   )
 
+  // Check if node has existing config and find the action
+  const getPreSelectedAction = () => {
+    if (!data.actionId || !data.config) {
+      return undefined
+    }
+
+    const action = node.actions.find((act) => act.id === data.actionId)
+    return action
+  }
+
   const handleExecuteNode = useCallback(async () => {
     if (!workflowId) {
       return
@@ -232,10 +245,6 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
     setIsExecutingNode
   ])
 
-  // Get the condition node definition from registry
-  const node = NODE_DEFINITIONS[NODE_TYPES.CONDITION]
-  const conditionAction = node.actions[0]
-
   return (
     <ContextMenu>
       <ContextMenuTrigger>
@@ -256,21 +265,14 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
                 <Play className='h-3 w-3' />
               )}
             </Button>
-            <Button
-              size='icon'
-              variant='outline'
-              className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-muted hover:border-border hover:shadow-md transition-all'
-              onClick={handleConfigure}
-            >
-              <Settings className='h-3 w-3' />
-            </Button>
-            <NodeConfigurationDialog
-              action={conditionAction}
-              isOpen={configDialogOpen}
-              setIsOpen={setConfigDialogOpen}
+            <NodeActionsSheet
+              node={node}
               nodeId={id}
               onSaveConfig={handleSaveConfig}
+              preSelectedAction={getPreSelectedAction()}
               initialConfig={data.config}
+              open={configDialogOpen}
+              onOpenChange={setConfigDialogOpen}
               availableInputs={availableInputs}
               nodeOutput={nodeOutput}
             />

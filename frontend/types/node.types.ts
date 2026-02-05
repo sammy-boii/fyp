@@ -4,6 +4,7 @@ import type { Node } from '@xyflow/react'
 import { LucideIcon } from 'lucide-react'
 import type { StaticImageData } from 'next/image'
 import { type ZodObject } from 'zod'
+import { ValueOf } from './index.types'
 
 // shared node types
 
@@ -18,6 +19,12 @@ export interface NodeAction {
   configFormSchema: ZodObject<any>
 }
 
+export type NodeSubtitleContext = {
+  actionId?: TActionID
+  config?: any
+  type?: ValueOf<typeof ALL_NODE_TYPES>
+}
+
 // the key for NodeDefinition must be a key of NODE_TYPES
 
 export type NodeDefinition = {
@@ -30,6 +37,7 @@ export type SingleNodeDefinition = {
   actions: NodeAction[]
   icon?: StaticImageData
   iconComponent?: LucideIcon
+  getSubtitle?: (context: NodeSubtitleContext) => string | null
 }
 
 // Trigger node definitions
@@ -67,20 +75,18 @@ export type BaseNodeProps = Node<{
 import { BaseNodeMemo } from '@/components/editor/node/BaseNode'
 import { TriggerNodeMemo } from '@/components/editor/node/TriggerNode'
 import { ConditionNodeMemo } from '@/components/editor/custom-nodes/condition/ConditionNode'
-import { AINodeMemo } from '@/components/editor/custom-nodes/ai/AINode'
-import { HTTPNodeMemo } from '@/components/editor/custom-nodes/http/HTTPNode'
 
 export const nodeTypes = {
   custom_node: BaseNodeMemo,
   trigger_node: TriggerNodeMemo,
   condition_node: ConditionNodeMemo,
-  ai_node: AINodeMemo,
-  http_node: HTTPNodeMemo
+  // Legacy node types mapped to BaseNode for backward compatibility
+  ai_node: BaseNodeMemo,
+  http_node: BaseNodeMemo
 }
 
 // custom edge types for react flow
 import { CurvyEdge } from '@/components/editor/edge/CurvyEdge'
-import { ValueOf } from './index.types'
 
 export const edgeTypes = {
   curvy: CurvyEdge

@@ -41,9 +41,6 @@ function tryParseDate(value: string): Date | null {
   // Try parsing as ISO date first
   const isoDate = new Date(value)
 
-  console.log(isoDate)
-  console.log(isoDate.getTime())
-  console.log(!isNaN(isoDate.getTime()))
   if (!isNaN(isoDate.getTime())) {
     return isoDate
   }
@@ -134,8 +131,6 @@ function evaluateCondition(condition: Condition): boolean {
 
     case CONDITION_OPERATORS.GREATER_THAN: {
       const compType = getComparisonType(fieldValue, compareValue)
-
-      console.log('COMP TYPE:', compType)
 
       if (compType === 'number') {
         return parseFloat(fieldValue) > parseFloat(compareValue)

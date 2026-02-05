@@ -4,14 +4,14 @@ import { NodeAction } from '@/types/node.types'
 import { GitBranch } from 'lucide-react'
 import { ConditionForm } from './forms/ConditionForm'
 import { conditionFormSchema } from '@/schema/nodes/condition.schema'
+import { NODE_ACTION_ID } from '@shared/constants'
 
-export const CONDITION_NODE_ACTION_ID = {
-  EVALUATE_CONDITION: 'evaluate_condition'
-} as const
+// Re-export for backwards compatibility with existing code
+export const CONDITION_NODE_ACTION_ID = NODE_ACTION_ID.CONDITION
 
 export const CONDITION_ACTIONS: NodeAction[] = [
   {
-    id: CONDITION_NODE_ACTION_ID.EVALUATE_CONDITION,
+    id: NODE_ACTION_ID.CONDITION.EVALUATE_CONDITION,
     label: 'Evaluate Condition',
     description: 'Evaluate conditions and route to different paths',
     icon: GitBranch,

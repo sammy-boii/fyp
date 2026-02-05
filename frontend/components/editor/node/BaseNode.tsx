@@ -129,6 +129,15 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     setSheetOpen(false)
   }
 
+  const formatActionId = (actionId: string) =>
+    actionId
+      .split('_')
+      .map(
+        (word) =>
+          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      )
+      .join(' ')
+
   const handleExecuteNode = useCallback(async () => {
     if (!workflowId) {
       return
@@ -232,6 +241,21 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     const action = node.actions.find((act) => act.id === data.actionId)
     return action
   }
+
+  const action =
+    data.actionId && node.actions
+      ? node.actions.find((act) => act.id === data.actionId)
+      : undefined
+  const customSubtitle = data.actionId
+    ? node.getSubtitle?.({
+        actionId: data.actionId,
+        config: data.config,
+        type: data.type
+      })
+    : null
+  const subtitleText = data.actionId
+    ? customSubtitle || action?.label || formatActionId(data.actionId)
+    : 'Select Action'
 
   return (
     <ContextMenu>
@@ -337,16 +361,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
                   {node.label}
                 </h3>
                 <p className='text-xs text-muted-foreground font-medium truncate'>
-                  {data.actionId
-                    ? data.actionId
-                        .split('_')
-                        .map(
-                          (word) =>
-                            word.charAt(0).toUpperCase() +
-                            word.slice(1).toLowerCase()
-                        )
-                        .join(' ')
-                    : 'Select Action'}
+                  {subtitleText}
                 </p>
               </div>
             </div>

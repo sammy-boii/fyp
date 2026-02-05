@@ -36,6 +36,9 @@ export const NodeActionsSheet = ({
   isTrigger?: boolean
 }) => {
   const defaultTriggerAction = isTrigger ? (node.actions[0] ?? null) : null
+  const singleAction = !isTrigger && node.actions.length === 1
+    ? node.actions[0]
+    : null
 
   const [openActionsSheet, setOpenActionsSheet] = useState(false)
   const [selectedAction, setSelectedAction] = useState<NodeAction | null>(
@@ -62,6 +65,14 @@ export const NodeActionsSheet = ({
       return
     }
 
+    if (!preSelectedAction && singleAction) {
+      // If there's only one action, open its config directly
+      setSelectedAction(singleAction)
+      setOpenConfigDialog(true)
+      onOpenChange?.(true)
+      return
+    }
+
     if (preSelectedAction) {
       // If node already has configuration, open config dialog directly without showing action sheet
       setSelectedAction(preSelectedAction)
@@ -83,11 +94,15 @@ export const NodeActionsSheet = ({
       } else if (preSelectedAction) {
         setSelectedAction(preSelectedAction)
         setOpenConfigDialog(open)
+      } else if (singleAction) {
+        setSelectedAction(singleAction)
+        setOpenConfigDialog(open)
+        setOpenActionsSheet(false)
       } else {
         setOpenActionsSheet(open)
       }
     }
-  }, [open, preSelectedAction, isTrigger, node.actions])
+  }, [open, preSelectedAction, isTrigger, node.actions, singleAction])
 
   const handleConfigDialogChange = (isOpen: boolean) => {
     setOpenConfigDialog(isOpen)

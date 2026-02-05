@@ -60,20 +60,6 @@ export function isConditionNodeType(nodeType: string): boolean {
 }
 
 /**
- * Check if a node type is an AI node
- */
-export function isAINodeType(nodeType: string): boolean {
-  return nodeType === NODE_TYPES.AI
-}
-
-/**
- * Check if a node type is an HTTP node
- */
-export function isHTTPNodeType(nodeType: string): boolean {
-  return nodeType === NODE_TYPES.HTTP
-}
-
-/**
  * Get the trigger action ID for a trigger node type
  */
 function getTriggerActionId(
@@ -134,21 +120,15 @@ export function createNode(
     type?: string
   }
 ): Node {
-  // Determine the node type based on whether it's a trigger, condition, ai, http, or action
+  // Determine the node type based on whether it's a trigger, condition, or action
   const isTrigger = isTriggerNodeType(nodeType)
   const isCondition = isConditionNodeType(nodeType)
-  const isAI = isAINodeType(nodeType)
-  const isHTTP = isHTTPNodeType(nodeType)
 
   let reactFlowNodeType = 'custom_node'
   if (isTrigger) {
     reactFlowNodeType = 'trigger_node'
   } else if (isCondition) {
     reactFlowNodeType = 'condition_node'
-  } else if (isAI) {
-    reactFlowNodeType = 'ai_node'
-  } else if (isHTTP) {
-    reactFlowNodeType = 'http_node'
   }
 
   // Build node data - auto-configure trigger nodes
@@ -293,9 +273,14 @@ export function formatNodes(nodes: any[]): Node[] {
       reactFlowNodeType = 'condition_node'
     }
 
+    const normalizedType =
+      node.type === 'ai_node' || node.type === 'http_node'
+        ? 'custom_node'
+        : node.type
+
     return {
       ...node,
-      type: node.type || reactFlowNodeType
+      type: normalizedType || reactFlowNodeType
     }
   })
 }

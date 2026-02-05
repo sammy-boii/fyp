@@ -11,11 +11,12 @@ import {
   addEdge,
   Connection,
   useReactFlow,
-  ReactFlowProvider
+  ReactFlowProvider,
+  useOnSelectionChange
 } from '@xyflow/react'
 
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, Plus } from 'lucide-react'
+import { ArrowLeft, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import type { Node, OnEdgesChange, OnNodesChange } from '@xyflow/react'
@@ -50,6 +51,14 @@ import {
 import { ValueOf } from '@/types/index.types'
 import { ALL_NODE_TYPES } from '@/constants'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import WorkflowExecutionTab from './_components/WorkflowExecutionTab'
 import { useWorkflowWebSocket } from '@/hooks/use-workflow-websocket'
 import { WorkflowEditorProvider } from './_context/WorkflowEditorContext'
@@ -84,6 +93,13 @@ function WorkflowViewPageInner() {
   const [isExecuting, setIsExecuting] = useState(false)
   const [isExecutingNode, setIsExecutingNode] = useState(false)
   const [isTogglingActive, setIsTogglingActive] = useState(false)
+  const [selectedNodes, setSelectedNodes] = useState<Node[]>([])
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+  } | null>(null)
+  const [deleteSelectedDialogOpen, setDeleteSelectedDialogOpen] =
+    useState(false)
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const hasInitialized = useRef(false)
   const initialStateRef = useRef<{
@@ -92,6 +108,56 @@ function WorkflowViewPageInner() {
     name: string
     description: string
   } | null>(null)
+
+  // Track selected nodes
+  useOnSelectionChange({
+    onChange: ({ nodes: selectedNodesList }) => {
+      setSelectedNodes(selectedNodesList)
+    }
+  })
+
+  // Handle pane context menu (right-click on canvas)
+  const onPaneContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      // Only show context menu if there are selected nodes (excluding trigger nodes)
+      const deletableNodes = selectedNodes.filter(
+        (n) => n.type !== 'trigger_node'
+      )
+      if (deletableNodes.length > 0) {
+        event.preventDefault()
+        setContextMenu({ x: event.clientX, y: event.clientY })
+      }
+    },
+    [selectedNodes]
+  )
+
+  // Close context menu when clicking elsewhere
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null)
+    if (contextMenu) {
+      document.addEventListener('click', handleClick)
+      return () => document.removeEventListener('click', handleClick)
+    }
+  }, [contextMenu])
+
+  // Delete selected nodes
+  const handleDeleteSelectedNodes = useCallback(() => {
+    // Filter out trigger nodes - they shouldn't be deleted
+    const nodesToDelete = selectedNodes.filter((n) => n.type !== 'trigger_node')
+    const nodeIdsToDelete = new Set(nodesToDelete.map((n) => n.id))
+
+    // Remove nodes
+    setNodes((nds) => nds.filter((n) => !nodeIdsToDelete.has(n.id)))
+
+    // Remove edges connected to deleted nodes
+    setEdges((eds) =>
+      eds.filter(
+        (e) => !nodeIdsToDelete.has(e.source) && !nodeIdsToDelete.has(e.target)
+      )
+    )
+
+    setContextMenu(null)
+  }, [selectedNodes, setNodes, setEdges])
 
   // Helper to extract comparable node data (excludes transient properties)
   const getNodesHash = useCallback((nodes: Node[]) => {
@@ -610,9 +676,97 @@ function WorkflowViewPageInner() {
                 nodesDraggable={true}
                 nodesConnectable={true}
                 elementsSelectable={true}
+                onPaneContextMenu={onPaneContextMenu}
               >
                 <Background gap={40} />
               </ReactFlow>
+
+              {/* Context menu for selected nodes */}
+              {contextMenu &&
+                selectedNodes.filter((n) => n.type !== 'trigger_node').length >
+                  0 && (
+                  <div
+                    className='fixed z-50 min-w-40 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95'
+                    style={{ left: contextMenu.x, top: contextMenu.y }}
+                  >
+                    <button
+                      className='relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground text-destructive'
+                      onClick={() => {
+                        setDeleteSelectedDialogOpen(true)
+                        setContextMenu(null)
+                      }}
+                    >
+                      <Trash2 className='h-4 w-4 mr-2' />
+                      Delete{' '}
+                      {
+                        selectedNodes.filter((n) => n.type !== 'trigger_node')
+                          .length
+                      }{' '}
+                      node
+                      {selectedNodes.filter((n) => n.type !== 'trigger_node')
+                        .length > 1
+                        ? 's'
+                        : ''}
+                    </button>
+                  </div>
+                )}
+
+              {/* Delete selected nodes confirmation dialog */}
+              <Dialog
+                open={deleteSelectedDialogOpen}
+                onOpenChange={setDeleteSelectedDialogOpen}
+              >
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className='flex items-center gap-2'>
+                      <div className='p-2 rounded-md bg-destructive/20'>
+                        <Trash2 className='size-5 text-destructive' />
+                      </div>
+                      Delete{' '}
+                      {
+                        selectedNodes.filter((n) => n.type !== 'trigger_node')
+                          .length
+                      }{' '}
+                      Node
+                      {selectedNodes.filter((n) => n.type !== 'trigger_node')
+                        .length > 1
+                        ? 's'
+                        : ''}
+                    </DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to delete{' '}
+                      {selectedNodes.filter((n) => n.type !== 'trigger_node')
+                        .length > 1
+                        ? 'these nodes'
+                        : 'this node'}
+                      ? This action cannot be undone and will remove all
+                      connections to{' '}
+                      {selectedNodes.filter((n) => n.type !== 'trigger_node')
+                        .length > 1
+                        ? 'these nodes'
+                        : 'this node'}
+                      .
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant='outline'
+                      onClick={() => setDeleteSelectedDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant='destructive'
+                      onClick={() => {
+                        handleDeleteSelectedNodes()
+                        setDeleteSelectedDialogOpen(false)
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </TabsContent>
           <TabsContent value='executions' className='flex-1'>

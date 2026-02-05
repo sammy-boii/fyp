@@ -445,6 +445,23 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
       </ContextMenuTrigger>
 
       <ContextMenuContent className='w-44'>
+        <ContextMenuItem
+          className='gap-3'
+          onClick={handleExecuteNode}
+          disabled={
+            !data.actionId ||
+            !data.config ||
+            executeNodeMutation.isPending ||
+            isAnyOperationPending
+          }
+        >
+          {executeNodeMutation.isPending ? (
+            <Loader2 className='h-4 w-4 animate-spin' />
+          ) : (
+            <Play className='h-4 w-4' />
+          )}
+          Run
+        </ContextMenuItem>
         <ContextMenuItem className='gap-3' onClick={handleConfigure}>
           <Settings className='h-4 w-4' />
           Configure

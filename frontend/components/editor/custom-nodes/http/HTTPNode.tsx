@@ -393,6 +393,22 @@ export function HTTPNode({ data, id }: NodeProps<BaseNodeProps>) {
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
+        <ContextMenuItem
+          onClick={handleExecuteNode}
+          disabled={
+            !data.actionId ||
+            !data.config ||
+            executeNodeMutation.isPending ||
+            isAnyOperationPending
+          }
+        >
+          {executeNodeMutation.isPending ? (
+            <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+          ) : (
+            <Play className='h-4 w-4 mr-2' />
+          )}
+          Run
+        </ContextMenuItem>
         <ContextMenuItem onClick={handleConfigure}>
           <Settings className='h-4 w-4 mr-2' />
           Configure

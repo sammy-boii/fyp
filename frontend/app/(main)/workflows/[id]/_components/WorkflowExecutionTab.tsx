@@ -23,7 +23,10 @@ import {
 } from 'lucide-react'
 import { useMemo } from 'react'
 import type { TimelineElement } from '@/types/index.types'
-import { NODE_DEFINITIONS, TRIGGER_NODE_DEFINITIONS } from '@/constants/registry'
+import {
+  NODE_DEFINITIONS,
+  TRIGGER_NODE_DEFINITIONS
+} from '@/constants/registry'
 import type { NodeAction } from '@/types/node.types'
 
 interface WorkflowExecutionTabProps {
@@ -382,7 +385,7 @@ const WorkflowExecutionTab = ({
 
       {/* Progress Bar for current execution */}
       {currentExecution && showProgress && currentExecution.progress && (
-        <Card className='mb-6 border-primary/20 bg-gradient-to-r from-primary/5 via-transparent to-transparent'>
+        <Card className='mb-6 bg-linear-to-r from-primary/5 via-transparent to-transparent'>
           <CardContent className='p-4'>
             <div className='flex flex-wrap items-center justify-between gap-3 mb-3'>
               <div className='flex items-center gap-2'>
@@ -408,8 +411,8 @@ const WorkflowExecutionTab = ({
       )}
 
       {/* Execution Groups */}
-      <div className='relative flex-1'>
-        <ScrollArea className='h-full pr-4'>
+      <div className='flex-1 relative'>
+        <ScrollArea className='h-full'>
           {executionGroups.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-20 text-muted-foreground'>
               <Clock className='h-16 w-16 mb-4 opacity-30 animate-pulse' />
@@ -422,7 +425,7 @@ const WorkflowExecutionTab = ({
             <div className='space-y-6 pb-6'>
               {executionGroups.map((group) => (
                 <Card key={group.executionId} className='overflow-hidden'>
-                  <CardHeader className='pb-4 bg-muted/30'>
+                  <CardHeader className='pb-4'>
                     <div className='flex flex-wrap items-center justify-between gap-3'>
                       <div className='flex items-center gap-3'>
                         <CardTitle className='text-base font-semibold'>
@@ -459,8 +462,6 @@ const WorkflowExecutionTab = ({
             </div>
           )}
         </ScrollArea>
-        <div className='pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-background to-transparent' />
-        <div className='pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-background to-transparent' />
       </div>
     </div>
   )

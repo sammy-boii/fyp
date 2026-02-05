@@ -78,7 +78,7 @@ export function ProfileRadarChart() {
         ) : (
           <ChartContainer
             config={chartConfig}
-            className='mx-auto aspect-square max-h-[280px]'
+            className='mx-auto w-full aspect-square max-h-[280px]'
           >
             <RadarChart data={chartData} cx='50%' cy='50%' outerRadius='65%'>
               <ChartTooltip cursor={false} content={<ChartTooltipContent />} />

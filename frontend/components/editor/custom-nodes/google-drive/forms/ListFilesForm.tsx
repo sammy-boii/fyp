@@ -131,7 +131,7 @@ export function ListFilesForm() {
                     <Info className='h-3.5 w-3.5 text-muted-foreground cursor-help' />
                   </TooltipTrigger>
                   <TooltipContent side='top'>
-                    Not recommended if content is not required
+                    Not recommended unless absolutely required
                   </TooltipContent>
                 </Tooltip>
               </FieldLabel>

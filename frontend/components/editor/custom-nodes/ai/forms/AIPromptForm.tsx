@@ -36,7 +36,10 @@ export function AIPromptForm() {
       />
 
       <div className='rounded-md bg-muted/50 p-3 text-xs text-muted-foreground'>
-        <p className='font-medium mb-1'>Tips:</p>
+        <p className='flex items-center gap-2 font-medium mb-1'>
+          <Sparkles className='size-3' />
+          Tips:
+        </p>
         <ul className='list-disc list-inside space-y-0.5'>
           <li>Be specific and clear in your prompt</li>
           <li>The AI will return a structured JSON response</li>

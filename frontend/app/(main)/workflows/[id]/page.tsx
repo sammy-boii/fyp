@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import {
   ReactFlow,
   Background,
@@ -92,6 +92,8 @@ function WorkflowViewPageInner() {
   const [, setExecutingNodeId] = useState<string | null>(null)
   const [isExecuting, setIsExecuting] = useState(false)
   const [isExecutingNode, setIsExecutingNode] = useState(false)
+  const [activeTab, setActiveTab] = useState<'editor' | 'executions'>('editor')
+  const [hasNewExecution, setHasNewExecution] = useState(false)
   const [isTogglingActive, setIsTogglingActive] = useState(false)
   const [selectedNodes, setSelectedNodes] = useState<Node[]>([])
   const [contextMenu, setContextMenu] = useState<{
@@ -101,6 +103,7 @@ function WorkflowViewPageInner() {
   const [deleteSelectedDialogOpen, setDeleteSelectedDialogOpen] =
     useState(false)
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
+  const lastExecutionIdRef = useRef<string | null>(null)
   const hasInitialized = useRef(false)
   const initialStateRef = useRef<{
     nodesHash: string
@@ -261,6 +264,27 @@ function WorkflowViewPageInner() {
         )
       }
     })
+
+  const nodeActionIdById = useMemo(() => {
+    const map: Record<string, string> = {}
+    nodes.forEach((node) => {
+      if (node?.id && node.data?.actionId) {
+        map[node.id] = node.data.actionId
+      }
+    })
+    return map
+  }, [nodes])
+
+  useEffect(() => {
+    if (!currentExecution?.id) return
+
+    if (currentExecution.id !== lastExecutionIdRef.current) {
+      lastExecutionIdRef.current = currentExecution.id
+      if (activeTab !== 'executions') {
+        setHasNewExecution(true)
+      }
+    }
+  }, [currentExecution?.id, activeTab])
 
   // Prevent backspace from deleting nodes
   useEffect(() => {
@@ -624,10 +648,31 @@ function WorkflowViewPageInner() {
           onDescriptionChange={setWorkflowDescription}
         />
 
-        <Tabs defaultValue='editor'>
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => {
+            setActiveTab(value as 'editor' | 'executions')
+            if (value === 'executions') {
+              setHasNewExecution(false)
+            }
+          }}
+        >
           <TabsList className='absolute left-1/2 top-8 -translate-x-1/2 z-10'>
             <TabsTrigger value='editor'>Editor</TabsTrigger>
-            <TabsTrigger value='executions'>Executions</TabsTrigger>
+            <TabsTrigger value='executions' className='relative'>
+              Executions
+              {hasNewExecution && activeTab !== 'executions' ? (
+                <>
+                  <span
+                    aria-hidden='true'
+                    className='absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_0_2px] shadow-background animate-pulse'
+                  />
+                  <span className='sr-only'>
+                    New execution in progress
+                  </span>
+                </>
+              ) : null}
+            </TabsTrigger>
           </TabsList>
           <TabsContent value='editor' className='flex-1'>
             <div
@@ -775,6 +820,7 @@ function WorkflowViewPageInner() {
               executionLogs={executionLogs}
               currentExecution={currentExecution}
               clearLogs={clearLogs}
+              nodeActionIdById={nodeActionIdById}
             />
           </TabsContent>
         </Tabs>

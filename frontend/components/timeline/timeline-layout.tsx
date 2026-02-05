@@ -26,7 +26,7 @@ export const TimelineLayout = ({
 }: TimelineLayoutProps) => {
   return (
     <Timeline size={size} className={className}>
-      {[...items].reverse().map((item, index) => (
+      {items.map((item, index) => (
         <motion.div
           key={index}
           initial={animate ? { opacity: 0, y: 20 } : false}

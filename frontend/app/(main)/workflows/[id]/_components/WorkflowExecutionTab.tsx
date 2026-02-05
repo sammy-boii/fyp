@@ -7,11 +7,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { TimelineLayout } from '@/components/timeline'
+import { cn } from '@/lib/utils'
 import {
+  BadgeCheck,
+  Activity,
   Trash2,
-  CheckCircle2,
   XCircle,
   Play,
+  Loader2,
   Wifi,
   WifiOff,
   Clock,
@@ -20,6 +23,8 @@ import {
 } from 'lucide-react'
 import { useMemo } from 'react'
 import type { TimelineElement } from '@/types/index.types'
+import { NODE_DEFINITIONS, TRIGGER_NODE_DEFINITIONS } from '@/constants/registry'
+import type { NodeAction } from '@/types/node.types'
 
 interface WorkflowExecutionTabProps {
   isConnected: boolean
@@ -30,14 +35,19 @@ interface WorkflowExecutionTabProps {
     progress?: { current: number; total: number }
   } | null
   clearLogs: () => void
+  nodeActionIdById?: Record<string, string>
 }
 
 const formatNodeName = (nodeId?: string, nodeName?: string) => {
-  if (nodeName) return nodeName
-  if (!nodeId) return 'Unknown Node'
+  const raw = nodeName || nodeId
+  if (!raw) return 'Unknown Node'
 
-  return nodeId
-    .split('_')
+  return raw
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
 }
@@ -63,6 +73,12 @@ const formatDateTime = (timestamp: string) => {
   })
 }
 
+const formatDurationSeconds = (durationMs?: number) => {
+  if (!durationMs && durationMs !== 0) return null
+  const seconds = durationMs / 1000
+  return `${seconds.toFixed(2).replace(/\.00$/, '')}s`
+}
+
 // Group logs by execution
 interface ExecutionGroup {
   executionId: string
@@ -77,8 +93,57 @@ const WorkflowExecutionTab = ({
   isConnected,
   executionLogs,
   currentExecution,
-  clearLogs
+  clearLogs,
+  nodeActionIdById
 }: WorkflowExecutionTabProps) => {
+  const actionLabelMap = useMemo(() => {
+    const map = new Map<string, string>()
+
+    const addActions = (actions?: NodeAction[]) => {
+      if (!actions) return
+      actions.forEach((action) => {
+        if (action?.id && action.label) {
+          map.set(action.id, action.label)
+        }
+      })
+    }
+
+    Object.values(NODE_DEFINITIONS).forEach((definition) =>
+      addActions(definition.actions)
+    )
+    Object.values(TRIGGER_NODE_DEFINITIONS).forEach((definition) =>
+      addActions(definition.actions)
+    )
+
+    return map
+  }, [])
+
+  const getActionLabel = (actionId?: string) => {
+    if (!actionId) return null
+    return actionLabelMap.get(actionId) ?? null
+  }
+
+  const getActiveNodeId = (logs: ExecutionLog[]) => {
+    const finished = new Set<string>()
+
+    for (let index = logs.length - 1; index >= 0; index -= 1) {
+      const log = logs[index]
+      const nodeId = log.data?.nodeId
+      if (!nodeId) continue
+
+      if (log.type === 'node:complete' || log.type === 'node:error') {
+        finished.add(nodeId)
+        continue
+      }
+
+      if (log.type === 'node:start' && !finished.has(nodeId)) {
+        return nodeId
+      }
+    }
+
+    return null
+  }
+
   // Group logs by execution ID
   const executionGroups: ExecutionGroup[] = useMemo(() => {
     const groups: Map<string, ExecutionGroup> = new Map()
@@ -113,24 +178,42 @@ const WorkflowExecutionTab = ({
   }, [executionLogs])
 
   // Convert execution group logs to timeline items
-  const convertLogsToTimeline = (logs: ExecutionLog[]): TimelineElement[] => {
+  const convertLogsToTimeline = (
+    logs: ExecutionLog[],
+    activeNodeId: string | null
+  ): TimelineElement[] => {
     return logs.map((log, index) => {
       const hasOutput =
         log.data?.output && Object.keys(log.data.output).length > 0
       const hasError = !!log.data?.error
+      const actionId =
+        log.data?.actionId ?? nodeActionIdById?.[log.data?.nodeId || '']
+      const actionLabel = getActionLabel(actionId)
+      const fallbackNodeLabel = formatNodeName(
+        log.data?.nodeId,
+        log.data?.nodeName
+      )
+      const resolvedActionLabel = actionLabel || fallbackNodeLabel
 
       const getIcon = () => {
         switch (log.type) {
           case 'workflow:start':
-            return <Play className='h-5 w-5' />
+            return <Play className='h-5 w-5 animate-pulse' />
           case 'node:start':
-            return <Cog className='h-5 w-5' />
+            return (
+              <Cog
+                className={cn(
+                  'h-5 w-5',
+                  log.data?.nodeId === activeNodeId && 'animate-spin'
+                )}
+              />
+            )
           case 'node:complete':
-            return <CheckCircle2 className='h-5 w-5' />
+            return <BadgeCheck className='h-5 w-5' />
           case 'node:error':
             return <XCircle className='h-5 w-5' />
           case 'workflow:complete':
-            return <CheckCircle2 className='h-5 w-5' />
+            return <BadgeCheck className='h-5 w-5' />
           case 'workflow:error':
             return <XCircle className='h-5 w-5' />
           default:
@@ -157,11 +240,14 @@ const WorkflowExecutionTab = ({
           case 'workflow:start':
             return 'Workflow Started'
           case 'node:start':
-            return `Executing: ${formatNodeName(log.data?.nodeId, log.data?.nodeName)}`
+            return `Executing: ${formatNodeName(
+              log.data?.nodeId,
+              log.data?.nodeName
+            )} Node`
           case 'node:complete':
-            return `Completed: ${formatNodeName(log.data?.nodeId, log.data?.nodeName)}`
+            return `Completed: ${resolvedActionLabel}`
           case 'node:error':
-            return `Failed: ${formatNodeName(log.data?.nodeId, log.data?.nodeName)}`
+            return `Failed: ${resolvedActionLabel}`
           case 'workflow:complete':
             return 'Workflow Completed'
           case 'workflow:error':
@@ -174,7 +260,8 @@ const WorkflowExecutionTab = ({
       // Build description
       const buildDescription = () => {
         if (log.data?.duration) {
-          return `Completed in ${log.data.duration}ms`
+          const duration = formatDurationSeconds(log.data.duration)
+          return duration ? `Completed in ${duration}` : ''
         }
         return ''
       }
@@ -249,19 +336,30 @@ const WorkflowExecutionTab = ({
     ? (currentExecution.progress.current / currentExecution.progress.total) *
       100
     : 0
+  const clampedProgress = Math.min(Math.max(progressValue, 0), 100)
+  const showProgress = currentExecution?.status === 'running'
 
   return (
     <div className='h-[90vh] flex flex-col p-6'>
       {/* Header */}
-      <div className='flex items-center justify-between mb-6'>
+      <div className='flex flex-wrap items-center justify-between gap-3 mb-6'>
         <div className='flex items-center gap-4'>
-          <h2 className='text-xl font-semibold'>Execution History</h2>
+          <div className='flex items-center gap-2'>
+            <h2 className='text-xl font-semibold'>Execution History</h2>
+            <Badge variant='secondary' className='text-xs'>
+              {executionGroups.length} runs
+            </Badge>
+          </div>
           {isConnected ? (
             <Badge
               variant='outline'
-              className='text-green-600 border-green-600'
+              className='text-green-600 border-green-600 gap-1.5'
             >
-              <Wifi className='h-3 w-3 mr-1' />
+              <span className='relative flex size-2'>
+                <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500/60' />
+                <span className='relative inline-flex h-2 w-2 rounded-full bg-green-500' />
+              </span>
+              <Wifi className='h-3 w-3' />
               Live
             </Badge>
           ) : (
@@ -283,76 +381,87 @@ const WorkflowExecutionTab = ({
       </div>
 
       {/* Progress Bar for current execution */}
-      {currentExecution &&
-        currentExecution.status === 'running' &&
-        currentExecution.progress && (
-          <Card className='mb-6 border-primary/20'>
-            <CardContent className='p-4'>
-              <div className='flex items-center justify-between mb-3'>
-                <div className='flex items-center gap-2'>
-                  <div className='h-2 w-2 rounded-full bg-primary animate-pulse' />
-                  <span className='text-sm font-medium'>
-                    Executing workflow
-                  </span>
+      {currentExecution && showProgress && currentExecution.progress && (
+        <Card className='mb-6 border-primary/20 bg-gradient-to-r from-primary/5 via-transparent to-transparent'>
+          <CardContent className='p-4'>
+            <div className='flex flex-wrap items-center justify-between gap-3 mb-3'>
+              <div className='flex items-center gap-2'>
+                <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/15'>
+                  <Loader2 className='h-4 w-4 text-primary animate-spin' />
                 </div>
-                <span className='text-sm text-muted-foreground font-mono'>
-                  {currentExecution.progress.current} /{' '}
-                  {currentExecution.progress.total} steps
-                </span>
+                <div>
+                  <p className='text-sm font-medium'>Executing workflow</p>
+                  <p className='text-xs text-muted-foreground flex items-center gap-1'>
+                    <Activity className='h-3 w-3' />
+                    Live updates streaming
+                  </p>
+                </div>
               </div>
-              <Progress value={progressValue} className='h-2' />
-            </CardContent>
-          </Card>
-        )}
+              <span className='text-sm text-muted-foreground font-mono'>
+                {currentExecution.progress.current} /{' '}
+                {currentExecution.progress.total} steps
+              </span>
+            </div>
+            <Progress value={clampedProgress} className='h-2' />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Execution Groups */}
-      <ScrollArea className='flex-1'>
-        {executionGroups.length === 0 ? (
-          <div className='flex flex-col items-center justify-center py-20 text-muted-foreground'>
-            <Clock className='h-16 w-16 mb-4 opacity-30' />
-            <p className='text-base font-medium'>No execution history</p>
-            <p className='text-sm mt-1'>
-              Run your workflow to see execution logs here
-            </p>
-          </div>
-        ) : (
-          <div className='space-y-6 pr-4'>
-            {executionGroups.map((group) => (
-              <Card key={group.executionId} className='overflow-hidden'>
-                <CardHeader className='pb-4 bg-muted/30'>
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center gap-3'>
-                      <CardTitle className='text-base font-semibold'>
-                        Workflow Execution
-                      </CardTitle>
-                      {getStatusBadge(group.status)}
+      <div className='relative flex-1'>
+        <ScrollArea className='h-full pr-4'>
+          {executionGroups.length === 0 ? (
+            <div className='flex flex-col items-center justify-center py-20 text-muted-foreground'>
+              <Clock className='h-16 w-16 mb-4 opacity-30 animate-pulse' />
+              <p className='text-base font-medium'>No execution history</p>
+              <p className='text-sm mt-1'>
+                Run your workflow to see execution logs here
+              </p>
+            </div>
+          ) : (
+            <div className='space-y-6 pb-6'>
+              {executionGroups.map((group) => (
+                <Card key={group.executionId} className='overflow-hidden'>
+                  <CardHeader className='pb-4 bg-muted/30'>
+                    <div className='flex flex-wrap items-center justify-between gap-3'>
+                      <div className='flex items-center gap-3'>
+                        <CardTitle className='text-base font-semibold'>
+                          Workflow Execution
+                        </CardTitle>
+                        {getStatusBadge(group.status)}
+                      </div>
+                      <div className='flex items-center gap-4 text-xs text-muted-foreground'>
+                        <span className='font-medium'>
+                          {formatDateTime(group.startTime)}
+                        </span>
+                        {group.duration && (
+                          <Badge variant='secondary' className='font-mono'>
+                            <Timer className='h-3 w-3 mr-1' />
+                            {formatDurationSeconds(group.duration)}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <div className='flex items-center gap-4 text-xs text-muted-foreground'>
-                      <span className='font-medium'>
-                        {formatDateTime(group.startTime)}
-                      </span>
-                      {group.duration && (
-                        <Badge variant='secondary' className='font-mono'>
-                          <Timer className='h-3 w-3 mr-1' />
-                          {group.duration}ms
-                        </Badge>
+                  </CardHeader>
+                  <CardContent className='pt-6 pb-4'>
+                    <TimelineLayout
+                      animate
+                      items={convertLogsToTimeline(
+                        group.logs,
+                        getActiveNodeId(group.logs)
                       )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className='pt-6 pb-4'>
-                  <TimelineLayout
-                    animate
-                    items={convertLogsToTimeline(group.logs)}
-                    size='md'
-                    className='mx-0 max-w-none'
-                  />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </ScrollArea>
+                      size='md'
+                      className='mx-0 max-w-none'
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+        <div className='pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-background to-transparent' />
+        <div className='pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-background to-transparent' />
+      </div>
     </div>
   )
 }

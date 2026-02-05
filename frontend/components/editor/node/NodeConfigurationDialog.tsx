@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { BaseConfigurationForm } from './BaseConfigurationForm'
 import { NodeInputSource, NodeOutputData } from '@/lib/node-execution-store'
+import { cn } from '@/lib/utils'
 
 const NodeConfigurationDialog = ({
   action: action,
@@ -25,7 +26,8 @@ const NodeConfigurationDialog = ({
   onSaveConfig,
   initialConfig,
   availableInputs = [],
-  nodeOutput
+  nodeOutput,
+  nodeColor
 }: {
   action: NodeAction
   isOpen: boolean
@@ -35,7 +37,12 @@ const NodeConfigurationDialog = ({
   initialConfig?: any
   availableInputs?: NodeInputSource[]
   nodeOutput?: NodeOutputData
+  nodeColor?: string
 }) => {
+  const headerIconWrapperStyle = nodeColor
+    ? { backgroundColor: `${nodeColor}1a` }
+    : undefined
+  const headerIconStyle = nodeColor ? { color: nodeColor } : undefined
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -47,8 +54,17 @@ const NodeConfigurationDialog = ({
             <Card className='h-full rounded-none border-r border-b-0 border-l-0 border-t-0'>
               <CardHeader className='pb-3'>
                 <CardTitle className='flex items-center gap-2 text-sm font-medium'>
-                  <div className='bg-muted rounded p-1'>
-                    <ArchiveRestore className='h-4 rotate-180 w-4 text-primary bg-muted rounded' />
+                  <div
+                    className={cn('rounded p-1', !nodeColor && 'bg-muted')}
+                    style={headerIconWrapperStyle}
+                  >
+                    <ArchiveRestore
+                      className={cn(
+                        'h-4 w-4 rotate-180',
+                        !nodeColor && 'text-primary'
+                      )}
+                      style={headerIconStyle}
+                    />
                   </div>
                   Input Configuration
                 </CardTitle>
@@ -70,6 +86,7 @@ const NodeConfigurationDialog = ({
               onSaveConfig={onSaveConfig}
               onClose={() => setIsOpen(false)}
               initialConfig={initialConfig}
+              nodeColor={nodeColor}
             />
           </ResizablePanel>
 
@@ -80,8 +97,14 @@ const NodeConfigurationDialog = ({
             <Card className='h-full rounded-none border-b-0 border-l-0 border-r-0 border-t-0'>
               <CardHeader className='pb-3'>
                 <CardTitle className='flex items-center gap-2 text-sm font-medium'>
-                  <div className='bg-muted rounded p-1'>
-                    <ArchiveRestore className='h-4 w-4 text-primary' />
+                  <div
+                    className={cn('rounded p-1', !nodeColor && 'bg-muted')}
+                    style={headerIconWrapperStyle}
+                  >
+                    <ArchiveRestore
+                      className={cn('h-4 w-4', !nodeColor && 'text-primary')}
+                      style={headerIconStyle}
+                    />
                   </div>
                   Output Preview
                 </CardTitle>

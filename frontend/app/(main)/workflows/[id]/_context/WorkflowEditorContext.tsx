@@ -69,7 +69,7 @@ export function WorkflowEditorProvider({
   isTogglingActive,
   setIsTogglingActive
 }: WorkflowEditorProviderProps) {
-  const { getNodes, getEdges } = useReactFlow()
+  const { getNodes, getEdges, setNodes } = useReactFlow()
   const updateWorkflow = useUpdateWorkflow()
   const isSavingRef = useRef(false)
 
@@ -77,13 +77,44 @@ export function WorkflowEditorProvider({
   const isAnyOperationPending =
     isSaving || isExecutingWorkflow || isExecutingNode || isTogglingActive
 
+  const stripTransientNodeState = useCallback((nodesToStrip: Node[]) => {
+    let didChange = false
+    const sanitized = nodesToStrip.map((node) => {
+      if (!node?.data) {
+        return node
+      }
+      if (
+        node.data.lastStatus === undefined &&
+        node.data.isExecuting === undefined
+      ) {
+        return node
+      }
+      didChange = true
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          lastStatus: undefined,
+          isExecuting: undefined
+        }
+      }
+    })
+
+    return { sanitized, didChange }
+  }, [])
+
   const saveIfChanged = useCallback(async () => {
     if (isSavingRef.current || isExecutingWorkflow) return
 
     const nodes = getNodes()
     const edges = getEdges()
+    const { sanitized, didChange } = stripTransientNodeState(nodes)
 
-    const currentNodesHash = getNodesHash(nodes)
+    if (didChange) {
+      setNodes(sanitized)
+    }
+
+    const currentNodesHash = getNodesHash(sanitized)
     const currentEdgesHash = getEdgesHash(edges)
     const hasChanges =
       !initialStateRef.current ||
@@ -100,7 +131,7 @@ export function WorkflowEditorProvider({
           data: {
             name: workflowName,
             description: workflowDescription,
-            nodes: nodes as unknown as any[],
+            nodes: sanitized as unknown as any[],
             edges: edges as unknown as any[]
           }
         })
@@ -125,7 +156,9 @@ export function WorkflowEditorProvider({
     getEdgesHash,
     initialStateRef,
     updateWorkflow,
-    isExecutingWorkflow
+    isExecutingWorkflow,
+    stripTransientNodeState,
+    setNodes
   ])
 
   return (

@@ -51,6 +51,7 @@ import {
 import { ValueOf } from '@/types/index.types'
 import { ALL_NODE_TYPES } from '@/constants'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
+import { NODE_DEFINITIONS, TRIGGER_NODE_DEFINITIONS } from '@/constants/registry'
 import {
   Dialog,
   DialogContent,
@@ -89,7 +90,7 @@ function WorkflowViewPageInner() {
   const [workflowName, setWorkflowName] = useState('')
   const [workflowDescription, setWorkflowDescription] = useState('')
   const [isActive, setIsActive] = useState(false)
-  const [, setExecutingNodeId] = useState<string | null>(null)
+  const [executingNodeId, setExecutingNodeId] = useState<string | null>(null)
   const [isExecuting, setIsExecuting] = useState(false)
   const [isExecutingNode, setIsExecutingNode] = useState(false)
   const [activeTab, setActiveTab] = useState<'editor' | 'executions'>('editor')
@@ -121,7 +122,7 @@ function WorkflowViewPageInner() {
 
   // Handle pane context menu (right-click on canvas)
   const onPaneContextMenu = useCallback(
-    (event: React.MouseEvent) => {
+    (event: MouseEvent | React.MouseEvent<Element, MouseEvent>) => {
       // Only show context menu if there are selected nodes (excluding trigger nodes)
       const deletableNodes = selectedNodes.filter(
         (n) => n.type !== 'trigger_node'
@@ -200,7 +201,8 @@ function WorkflowViewPageInner() {
             ...n,
             data: {
               ...n.data,
-              isExecuting: n.id === nodeId
+              isExecuting: n.id === nodeId,
+              lastStatus: n.id === nodeId ? undefined : n.data.lastStatus
             }
           }))
         )
@@ -214,6 +216,7 @@ function WorkflowViewPageInner() {
             data: {
               ...n.data,
               isExecuting: false,
+              lastStatus: n.id === nodeId ? 'completed' : n.data.lastStatus,
               ...(n.id === nodeId && output
                 ? {
                     lastOutput: output,
@@ -224,7 +227,7 @@ function WorkflowViewPageInner() {
           }))
         )
       },
-      onNodeError: () => {
+      onNodeError: (nodeId) => {
         setExecutingNodeId(null)
         // Clear executing state on error
         setNodes((nds) =>
@@ -232,7 +235,8 @@ function WorkflowViewPageInner() {
             ...n,
             data: {
               ...n.data,
-              isExecuting: false
+              isExecuting: false,
+              lastStatus: n.id === nodeId ? 'failed' : n.data.lastStatus
             }
           }))
         )
@@ -268,12 +272,125 @@ function WorkflowViewPageInner() {
   const nodeActionIdById = useMemo(() => {
     const map: Record<string, string> = {}
     nodes.forEach((node) => {
-      if (node?.id && node.data?.actionId) {
-        map[node.id] = node.data.actionId
+      const actionId = (node as any)?.data?.actionId
+      if (node?.id && typeof actionId === 'string' && actionId) {
+        map[node.id] = actionId
       }
     })
     return map
   }, [nodes])
+
+  const stripTransientNodeState = useCallback((nodesToStrip: Node[]) => {
+    let didChange = false
+    const sanitized = nodesToStrip.map((node) => {
+      if (!node?.data) {
+        return node
+      }
+      if (
+        node.data.lastStatus === undefined &&
+        node.data.isExecuting === undefined
+      ) {
+        return node
+      }
+      didChange = true
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          lastStatus: undefined,
+          isExecuting: undefined
+        }
+      }
+    })
+
+    return { sanitized, didChange }
+  }, [])
+
+  const validateWorkflowForPersist = useCallback(
+    (nodesToValidate: Node[], edgesToValidate: Edge[]) => {
+      const connectedNodeIds = new Set<string>()
+      edgesToValidate.forEach((edge) => {
+        if (edge.source) connectedNodeIds.add(edge.source)
+        if (edge.target) connectedNodeIds.add(edge.target)
+      })
+
+      const getNodeLabel = (node: Node) => {
+        const type = (node as any)?.data?.type as string | undefined
+        if (!type) return node.id
+
+        if (node.type === 'trigger_node') {
+          return (TRIGGER_NODE_DEFINITIONS as any)[type]?.label ?? type
+        }
+
+        return (NODE_DEFINITIONS as any)[type]?.label ?? type
+      }
+
+      const missingActionNodes: string[] = []
+      const standaloneNodes: string[] = []
+
+      nodesToValidate.forEach((node) => {
+        const label = getNodeLabel(node)
+        const actionId = (node as any)?.data?.actionId as string | undefined
+
+        if (!actionId) {
+          missingActionNodes.push(label)
+        }
+
+        if (!connectedNodeIds.has(node.id)) {
+          standaloneNodes.push(label)
+        }
+      })
+
+      const formatNodeList = (items: string[]) => {
+        const unique = Array.from(new Set(items))
+        const maxItems = 3
+        if (unique.length <= maxItems) {
+          return unique.join(', ')
+        }
+        return `${unique.slice(0, maxItems).join(', ')} (+${unique.length - maxItems} more)`
+      }
+
+      if (missingActionNodes.length > 0) {
+        return {
+          ok: false,
+          message: `Select an action for: ${formatNodeList(missingActionNodes)}`
+        } as const
+      }
+
+      if (standaloneNodes.length > 0) {
+        return {
+          ok: false,
+          message: `Connect or delete standalone nodes: ${formatNodeList(standaloneNodes)}`
+        } as const
+      }
+
+      return { ok: true } as const
+    },
+    []
+  )
+
+  const displayEdges = useMemo(() => {
+    if (!executingNodeId) {
+      return edges
+    }
+
+    return edges.map((edge) => {
+      const isActive = edge.source === executingNodeId
+
+      if (!isActive) {
+        return edge
+      }
+
+      const className = edge.className
+        ? `${edge.className} edge-flowing`
+        : 'edge-flowing'
+
+      return {
+        ...edge,
+        className
+      }
+    })
+  }, [edges, executingNodeId])
 
   useEffect(() => {
     if (!currentExecution?.id) return
@@ -325,8 +442,10 @@ function WorkflowViewPageInner() {
       // Format nodes and edges using utility functions
       const formattedNodes: Node[] = formatNodes(workflowNodes)
       const formattedEdges: Edge[] = formatEdges(workflowEdges)
+      const { sanitized: sanitizedNodes } =
+        stripTransientNodeState(formattedNodes)
 
-      setNodes(formattedNodes)
+      setNodes(sanitizedNodes)
       setEdges(formattedEdges)
       setWorkflowName(workflow.name || '')
       setWorkflowDescription(workflow.description || '')
@@ -335,7 +454,7 @@ function WorkflowViewPageInner() {
       // Store initial state hashes for change detection
       initialStateRef.current = {
         nodesHash: JSON.stringify(
-          formattedNodes.map((n) => ({
+          sanitizedNodes.map((n) => ({
             id: n.id,
             type: n.type,
             position: n.position,
@@ -357,7 +476,7 @@ function WorkflowViewPageInner() {
         description: workflow.description || ''
       }
     }
-  }, [data])
+  }, [data, stripTransientNodeState])
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
     setNodes((nds) => applyNodeChanges(changes, nds))
@@ -479,10 +598,23 @@ function WorkflowViewPageInner() {
     )
       return
 
+    const { toast } = await import('sonner')
+
+    const { sanitized, didChange } = stripTransientNodeState(nodes)
+    if (didChange) {
+      setNodes(sanitized)
+    }
+
+    const validation = validateWorkflowForPersist(sanitized, edges)
+    if (!validation.ok) {
+      toast.error(validation.message)
+      return
+    }
+
     setIsExecuting(true)
     try {
       // Check if workflow has changed before auto-saving
-      const currentNodesHash = getNodesHash(nodes)
+      const currentNodesHash = getNodesHash(sanitized)
       const currentEdgesHash = getEdgesHash(edges)
       const hasChanges =
         !initialStateRef.current ||
@@ -498,7 +630,7 @@ function WorkflowViewPageInner() {
           data: {
             name: workflowName,
             description: workflowDescription,
-            nodes: nodes as unknown as any[],
+            nodes: sanitized as unknown as any[],
             edges: edges as unknown as any[]
           }
         })
@@ -526,13 +658,26 @@ function WorkflowViewPageInner() {
     isExecuting,
     isExecutingNode,
     getNodesHash,
-    getEdgesHash
+    getEdgesHash,
+    stripTransientNodeState,
+    validateWorkflowForPersist
   ])
 
   const handleSaveWorkflow = useCallback(async () => {
     if (!workflowId) return
 
     const { toast } = await import('sonner')
+    const { sanitized, didChange } = stripTransientNodeState(nodes)
+
+    if (didChange) {
+      setNodes(sanitized)
+    }
+
+    const validation = validateWorkflowForPersist(sanitized, edges)
+    if (!validation.ok) {
+      toast.error(validation.message)
+      return
+    }
 
     try {
       // Save workflow data (including isActive - updateWorkflow will handle cache update)
@@ -541,7 +686,7 @@ function WorkflowViewPageInner() {
         data: {
           name: workflowName,
           description: workflowDescription,
-          nodes: nodes as unknown as any[],
+          nodes: sanitized as unknown as any[],
           edges: edges as unknown as any[],
           isActive
         }
@@ -558,7 +703,9 @@ function WorkflowViewPageInner() {
     nodes,
     edges,
     isActive,
-    updateWorkflow
+    updateWorkflow,
+    stripTransientNodeState,
+    validateWorkflowForPersist
   ])
 
   const handleToggleActive = useCallback((active: boolean) => {
@@ -711,7 +858,7 @@ function WorkflowViewPageInner() {
                 onConnect={onConnect}
                 isValidConnection={isValidConnection}
                 nodes={nodes}
-                edges={edges}
+                edges={displayEdges}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
                 className='bg-background'

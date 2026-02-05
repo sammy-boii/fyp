@@ -11,11 +11,12 @@ import {
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-import { Play, Settings, RefreshCw, Plus } from 'lucide-react'
+import { Check, Play, Settings, RefreshCw, Plus, X } from 'lucide-react'
 import Image from 'next/image'
 import React, { useState, useCallback } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
 import { TRIGGER_NODE_DEFINITIONS } from '@/constants/registry'
+import { cn } from '@/lib/utils'
 import { useParams } from 'next/navigation'
 import { useExecuteNode } from '@/hooks/use-workflows'
 import {
@@ -191,6 +192,20 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
     return null
   }
 
+  const nodeColor = node.color
+  const iconBackgroundStyle = nodeColor
+    ? { backgroundColor: `${nodeColor}1a` }
+    : undefined
+  const iconColorStyle = nodeColor ? { color: nodeColor } : undefined
+  const isRunning = data.isExecuting || executeNodeMutation.isPending
+  const statusBorderClass = isRunning
+    ? 'border-border/50'
+    : data.lastStatus === 'completed'
+      ? 'border-2 border-green-500/70'
+      : data.lastStatus === 'failed'
+        ? 'border-2 border-red-500/70'
+        : 'border-border/50'
+
   // Render icon - either from StaticImageData or LucideIcon component
   const renderIcon = () => {
     if (node.icon) {
@@ -198,15 +213,17 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
     }
     if (node.iconComponent) {
       const IconComponent = node.iconComponent
-      return <IconComponent className='size-6' />
+      return (
+        <IconComponent className='size-6 text-foreground' style={iconColorStyle} />
+      )
     }
-    return <Play className='size-6' />
+    return <Play className='size-6 text-foreground' style={iconColorStyle} />
   }
 
   return (
     <ContextMenu>
       <ContextMenuTrigger>
-        <div className='relative group'>
+        <div className='relative group z-0'>
           <div className='absolute -top-5 right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center'>
             {!isManualTrigger && (
               <NodeActionsSheet
@@ -240,21 +257,32 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
             </Sheet>
           </div>
 
+          {isRunning && (
+            <div aria-hidden='true' className='executing-ring-container'>
+              <div className='executing-ring-spin' />
+            </div>
+          )}
+
           <Card
-            className={`relative w-48 p-4 rounded-lg border transition-all duration-300 bg-card ${
-              data.isExecuting || executeNodeMutation.isPending
-                ? 'border-transparent animate-executing-border'
-                : 'border-border/50'
-            }`}
+            className={cn(
+              'relative z-10 w-48 p-4 rounded-lg border transition-all duration-300 bg-card',
+              statusBorderClass
+            )}
           >
+            {!isRunning && data.lastStatus === 'completed' && (
+              <Check className='absolute top-2 right-2 z-10 h-4 w-4 text-green-600' />
+            )}
+            {!isRunning && data.lastStatus === 'failed' && (
+              <X className='absolute top-2 right-2 z-10 h-4 w-4 text-red-600' />
+            )}
             {/* Content */}
             <div className='flex items-center gap-3'>
               <div
-                className={`p-3 rounded-xl 
-      bg-linear-to-br from-white/10 to-white/5 
-      shadow-lg shadow-black/10 ring-1 ring-black/5
-      aspect-square relative overflow-hidden
-    `}
+                className={cn(
+                  'p-3 rounded-xl bg-linear-to-br from-white/10 to-white/5 shadow-lg shadow-black/10 ring-1 ring-black/5',
+                  'aspect-square relative overflow-hidden transition-colors'
+                )}
+                style={iconBackgroundStyle}
               >
                 <div className='relative z-10'>{renderIcon()}</div>
               </div>

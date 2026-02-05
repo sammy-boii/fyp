@@ -33,30 +33,35 @@ export const NODE_DEFINITIONS: NodeDefinition = {
     label: 'Gmail',
     description: 'Connect your Gmail and manage emails',
     actions: GMAIL_ACTIONS,
+    color: '#FB7185',
     icon: gmailIcon
   },
   [NODE_TYPES.GOOGLE_DRIVE]: {
     label: 'Google Drive',
     actions: GOOGLE_DRIVE_ACTIONS,
     description: 'Access and manage files from your Google Drive',
+    color: '#1A73E8',
     icon: driveIcon
   },
   [NODE_TYPES.DISCORD]: {
     label: 'Discord',
     actions: DISCORD_ACTIONS,
     description: 'Add a bot to a server to manage interactions',
+    color: '#5865F2',
     icon: discordIcon
   },
   [NODE_TYPES.CONDITION]: {
     label: 'Condition',
     actions: CONDITION_ACTIONS,
     description: 'Route workflow based on conditions',
+    color: '#F59E0B',
     iconComponent: GitBranch
   },
   [NODE_TYPES.AI]: {
     label: 'AI',
     actions: AI_ACTIONS,
     description: 'Ask AI anything and get intelligent responses',
+    color: '#ed248f',
     icon: aiIcon,
     getSubtitle: ({ config }) => {
       const prompt =
@@ -72,6 +77,7 @@ export const NODE_DEFINITIONS: NodeDefinition = {
     label: 'HTTP',
     actions: HTTP_ACTIONS,
     description: 'Make HTTP requests to external APIs',
+    color: '#06B6D4',
     iconComponent: Globe,
     getSubtitle: ({ config }) => {
       const url = typeof config?.url === 'string' ? config.url.trim() : ''
@@ -80,9 +86,7 @@ export const NODE_DEFINITIONS: NodeDefinition = {
       }
 
       const method =
-        typeof config?.method === 'string'
-          ? config.method.toUpperCase()
-          : 'GET'
+        typeof config?.method === 'string' ? config.method.toUpperCase() : 'GET'
       const displayUrl = url.replace(/^https?:\/\//, '')
       const truncated =
         displayUrl.length > 22 ? `${displayUrl.slice(0, 22)}...` : displayUrl
@@ -97,6 +101,7 @@ export const TRIGGER_NODE_DEFINITIONS: TriggerNodeDefinition = {
     label: 'Manual Trigger',
     description: 'Start the workflow manually',
     actions: MANUAL_TRIGGER_ACTIONS,
+    color: '#8505ff',
     icon: cursorIcon,
     isTrigger: true
   },
@@ -104,6 +109,7 @@ export const TRIGGER_NODE_DEFINITIONS: TriggerNodeDefinition = {
     label: 'New Gmail',
     description: 'Trigger when a new email arrives',
     actions: GMAIL_WEBHOOK_TRIGGER_ACTIONS,
+    color: '#FB7185',
     icon: gmailIcon,
     isTrigger: true
   },
@@ -111,6 +117,7 @@ export const TRIGGER_NODE_DEFINITIONS: TriggerNodeDefinition = {
     label: 'New Message',
     description: 'Trigger when a new message is sent',
     actions: DISCORD_WEBHOOK_TRIGGER_ACTIONS,
+    color: '#5865F2',
     icon: discordIcon,
     isTrigger: true
   },
@@ -118,6 +125,7 @@ export const TRIGGER_NODE_DEFINITIONS: TriggerNodeDefinition = {
     label: 'Schedule',
     description: 'Run on a date/time or repeat daily',
     actions: SCHEDULE_TRIGGER_ACTIONS,
+    color: '#F97316',
     iconComponent: TimerReset,
     isTrigger: true
   }

@@ -11,6 +11,7 @@ import { ChevronRight, Settings } from 'lucide-react'
 import React, { useState } from 'react'
 import NodeConfigurationDialog from './NodeConfigurationDialog'
 import { NodeInputSource, NodeOutputData } from '@/lib/node-execution-store'
+import { cn } from '@/lib/utils'
 
 export const NodeActionsSheet = ({
   node,
@@ -39,6 +40,12 @@ export const NodeActionsSheet = ({
   const singleAction = !isTrigger && node.actions.length === 1
     ? node.actions[0]
     : null
+
+  const nodeColor = node.color
+  const iconWrapperStyle = nodeColor
+    ? { backgroundColor: `${nodeColor}1a` }
+    : undefined
+  const iconStyle = nodeColor ? { color: nodeColor } : undefined
 
   const [openActionsSheet, setOpenActionsSheet] = useState(false)
   const [selectedAction, setSelectedAction] = useState<NodeAction | null>(
@@ -122,6 +129,7 @@ export const NodeActionsSheet = ({
           initialConfig={initialConfig}
           availableInputs={availableInputs}
           nodeOutput={nodeOutput}
+          nodeColor={nodeColor}
         />
       )}
 
@@ -149,8 +157,14 @@ export const NodeActionsSheet = ({
                   >
                     <div className='flex items-center justify-between'>
                       <div className='flex items-center gap-3 flex-1'>
-                        <div className='p-1.5 rounded-md bg-primary/10 text-primary'>
-                          <Icon className='size-5' />
+                        <div
+                          className={cn(
+                            'p-1.5 rounded-md',
+                            !nodeColor && 'bg-primary/10 text-primary'
+                          )}
+                          style={iconWrapperStyle}
+                        >
+                          <Icon className='size-5' style={iconStyle} />
                         </div>
                         <div className='flex-1'>
                           <h4 className='font-medium text-sm text-foreground group-hover:text-accent-foreground'>

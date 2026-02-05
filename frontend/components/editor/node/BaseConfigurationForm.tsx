@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { CREDENTIALS_OPTIONS } from '@/constants/registry'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 
 function ProviderIcon({ provider }: { provider: string }) {
   const base = provider.toLowerCase()
@@ -57,13 +58,15 @@ export const BaseConfigurationForm = ({
   nodeId,
   onSaveConfig,
   onClose,
-  initialConfig
+  initialConfig,
+  nodeColor
 }: NodeAction & {
   configFormSchema?: z.ZodSchema
   nodeId?: string
   onSaveConfig?: (data: any) => void
   onClose?: () => void
   initialConfig?: any
+  nodeColor?: string
 }) => {
   const { data: credentialsData, isLoading: isLoadingCredentials } =
     useGetCredentials()
@@ -100,7 +103,6 @@ export const BaseConfigurationForm = ({
       attachmentMode: 'url',
       attachmentData: '',
       attachmentFilename: '',
-      attachmentType: 'url',
       attachments: '',
       date: '',
       time: '',
@@ -129,8 +131,14 @@ export const BaseConfigurationForm = ({
     <Card className='h-full pr-2 rounded-none border-r border-b-0 border-l-0 border-t-0 flex flex-col'>
       <CardHeader>
         <CardTitle className='flex items-center gap-2 text-sm font-medium'>
-          <div className='bg-muted rounded p-1'>
-            <ActionIcon className='h-4 w-4 text-primary' />
+          <div
+            className={cn('rounded p-1', !nodeColor && 'bg-muted')}
+            style={nodeColor ? { backgroundColor: `${nodeColor}1a` } : undefined}
+          >
+            <ActionIcon
+              className={cn('h-4 w-4', !nodeColor && 'text-primary')}
+              style={nodeColor ? { color: nodeColor } : undefined}
+            />
           </div>
           {label}
         </CardTitle>
@@ -157,9 +165,6 @@ export const BaseConfigurationForm = ({
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
-                          disabled={
-                            isLoadingCredentials || credentials.length === 0
-                          }
                         >
                           <SelectTrigger
                             className='py-6 cursor-pointer w-full border-muted-foreground/20 bg-background hover:border-muted-foreground/40'

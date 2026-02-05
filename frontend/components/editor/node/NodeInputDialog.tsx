@@ -344,6 +344,12 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
               ? (nodeDef as any).iconComponent
               : null
 
+          const nodeColor = (nodeDef as any)?.color as string | undefined
+          const nodeIconWrapperStyle = nodeColor
+            ? { backgroundColor: `${nodeColor}1a` }
+            : undefined
+          const nodeIconStyle = nodeColor ? { color: nodeColor } : undefined
+
           return (
             <Collapsible
               key={source.nodeId}
@@ -362,7 +368,10 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
                     />
                   </div>
                   {nodeDef?.icon && (
-                    <div className='p-1.5 rounded-md bg-background shadow-sm ring-1 ring-border/50'>
+                    <div
+                      className='p-1.5 rounded-md bg-background shadow-sm ring-1 ring-border/50'
+                      style={nodeIconWrapperStyle}
+                    >
                       <Image
                         src={nodeDef.icon}
                         alt={nodeDef.label}
@@ -372,9 +381,13 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
                     </div>
                   )}
                   {!nodeDef?.icon && iconComponent && (
-                    <div className='p-1.5 rounded-md bg-background shadow-sm ring-1 ring-border/50'>
+                    <div
+                      className='p-1.5 rounded-md bg-background shadow-sm ring-1 ring-border/50'
+                      style={nodeIconWrapperStyle}
+                    >
                       {React.createElement(iconComponent, {
-                        className: 'h-4 w-4 text-foreground'
+                        className: 'h-4 w-4 text-foreground',
+                        style: nodeIconStyle
                       })}
                     </div>
                   )}

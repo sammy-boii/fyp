@@ -11,11 +11,12 @@ import {
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-import { Settings, Trash2, Plus, Play, Loader2 } from 'lucide-react'
+import { Check, Settings, Trash2, Plus, Play, Loader2, X } from 'lucide-react'
 import Image from 'next/image'
 import React, { useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { BaseNodeProps } from '@/types/node.types'
+import { cn } from '@/lib/utils'
 import {
   getAvailableInputsFromNodes,
   NodeOutputData
@@ -223,13 +224,45 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
                   data: {
                     ...n.data,
                     lastOutput: result.data.output,
-                    lastExecutedAt: new Date().toISOString()
+                    lastExecutedAt: new Date().toISOString(),
+                    lastStatus: 'completed'
+                  }
+                }
+              : n
+          )
+        )
+      } else {
+        setNodes((nds) =>
+          nds.map((n) =>
+            n.id === id
+              ? {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    lastExecutedAt: new Date().toISOString(),
+                    lastStatus: 'completed'
                   }
                 }
               : n
           )
         )
       }
+    } catch (error) {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === id
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  lastExecutedAt: new Date().toISOString(),
+                  lastStatus: 'failed'
+                }
+              }
+            : n
+        )
+      )
+      throw error
     } finally {
       setIsExecutingNode(false)
     }
@@ -244,11 +277,24 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
     isAnyOperationPending,
     setIsExecutingNode
   ])
+  const nodeColor = node.color
+  const iconBackgroundStyle = nodeColor
+    ? { backgroundColor: `${nodeColor}1a` }
+    : undefined
+  const iconColorStyle = nodeColor ? { color: nodeColor } : undefined
+  const isRunning = data.isExecuting || executeNodeMutation.isPending
+  const statusBorderClass = isRunning
+    ? 'border-border/50'
+    : data.lastStatus === 'completed'
+      ? 'border-2 border-green-500/70'
+      : data.lastStatus === 'failed'
+        ? 'border-2 border-red-500/70'
+        : 'border-border/50'
 
   return (
     <ContextMenu>
       <ContextMenuTrigger>
-        <div className='relative group'>
+        <div className='relative group z-0'>
           <div className='absolute -top-5 right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center'>
             <Button
               size='icon'
@@ -314,21 +360,32 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
             </Dialog>
           </div>
 
+          {isRunning && (
+            <div aria-hidden='true' className='executing-ring-container'>
+              <div className='executing-ring-spin' />
+            </div>
+          )}
+
           <Card
-            className={`relative w-48 p-4 rounded-lg border transition-all duration-300 bg-card ${
-              data.isExecuting
-                ? 'border-transparent animate-executing-border'
-                : 'border-border/50'
-            }`}
+            className={cn(
+              'relative z-10 w-48 p-4 rounded-lg border transition-all duration-300 bg-card',
+              statusBorderClass
+            )}
           >
+            {!isRunning && data.lastStatus === 'completed' && (
+              <Check className='absolute top-2 right-2 z-10 h-4 w-4 text-green-600' />
+            )}
+            {!isRunning && data.lastStatus === 'failed' && (
+              <X className='absolute top-2 right-2 z-10 h-4 w-4 text-red-600' />
+            )}
             {/* Content */}
             <div className='flex items-center gap-3'>
               <div
-                className={`p-3 rounded-xl 
-                  bg-linear-to-br from-white/10 to-white/5 
-                  shadow-lg shadow-black/10 ring-1 ring-black/5
-                  aspect-square relative overflow-hidden flex items-center justify-center
-                `}
+                className={cn(
+                  'p-3 rounded-xl bg-linear-to-br from-white/10 to-white/5 shadow-lg shadow-black/10 ring-1 ring-black/5',
+                  'aspect-square relative overflow-hidden flex items-center justify-center transition-colors'
+                )}
+                style={iconBackgroundStyle}
               >
                 <div className='relative z-10'>
                   {node.icon ? (
@@ -339,7 +396,10 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
                       height={24}
                     />
                   ) : node.iconComponent ? (
-                    <node.iconComponent className='h-6 w-6 text-foreground' />
+                    <node.iconComponent
+                      className='h-6 w-6 text-foreground'
+                      style={iconColorStyle}
+                    />
                   ) : null}
                 </div>
               </div>

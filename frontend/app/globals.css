@@ -128,24 +128,51 @@
   }
 }
 
-/* Executing node animation - Pulsating primary border */
-@keyframes pulse-border {
-
-  0%,
-  100% {
-    border-color: oklch(0.835 0.239 147.17);
-    box-shadow: 0 0 0 0 oklch(0.835 0.239 147.17 / 0.4);
-  }
-
-  50% {
-    border-color: oklch(0.835 0.239 147.17);
-    box-shadow: 0 0 0 4px oklch(0.835 0.239 147.17 / 0);
+/* Executing node animation - Orbiting primary segment behind the node */
+@keyframes executing-ring-rotate {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
   }
 }
 
-.animate-executing-border {
-  border: 2px solid oklch(0.835 0.239 147.17);
-  animation: pulse-border 1.5s ease-in-out infinite;
+.executing-ring-container {
+  position: absolute;
+  inset: -2px;
+  border-radius: calc(var(--radius) + 2px);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.executing-ring-spin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 240%;
+  height: 240%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 300deg,
+    var(--primary) 300deg 355deg,
+    transparent 355deg 360deg
+  );
+  animation: executing-ring-rotate 2s linear infinite;
+  opacity: 0.9;
+  filter: blur(0.2px);
+}
+
+/* Active edge animation - Flowing dashed line */
+@keyframes edge-flow {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
+.react-flow__edge.edge-flowing .react-flow__edge-path {
+  stroke-dasharray: 6 6;
+  stroke-linecap: round;
+  animation: edge-flow 0.8s linear infinite;
 }
 
 /* Custom Scrollbar - Minimal thin line */

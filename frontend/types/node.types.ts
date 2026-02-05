@@ -37,6 +37,7 @@ export type SingleNodeDefinition = {
   actions: NodeAction[]
   icon?: StaticImageData
   iconComponent?: LucideIcon
+  color?: string
   getSubtitle?: (context: NodeSubtitleContext) => string | null
 }
 
@@ -51,6 +52,7 @@ export type SingleTriggerNodeDefinition = {
   actions: NodeAction[]
   icon?: StaticImageData
   iconComponent?: LucideIcon
+  color?: string
   isTrigger: true
 }
 
@@ -69,6 +71,7 @@ export type BaseNodeProps = Node<{
   lastOutput?: Record<string, any>
   lastExecutedAt?: string
   isExecuting?: boolean
+  lastStatus?: 'completed' | 'failed'
 }>
 
 // custom node types for react flow

@@ -415,7 +415,7 @@ export function HTTPNode({ data, id }: NodeProps<BaseNodeProps>) {
         </ContextMenuItem>
         <ContextMenuItem
           onClick={() => setDeleteDialogOpen(true)}
-          className='text-destructive focus:text-destructive'
+          variant='destructive'
         >
           <Trash2 className='h-4 w-4 mr-2' />
           Delete

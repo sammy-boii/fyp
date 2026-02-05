@@ -90,7 +90,9 @@ export const nodeTypes = {
 
 // custom edge types for react flow
 import { CurvyEdge } from '@/components/editor/edge/CurvyEdge'
+import { AdaptiveEdge } from '@/components/editor/edge/AdaptiveEdge'
 
 export const edgeTypes = {
-  curvy: CurvyEdge
+  curvy: CurvyEdge,
+  adaptive: AdaptiveEdge
 }

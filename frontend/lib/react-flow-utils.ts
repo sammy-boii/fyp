@@ -22,7 +22,7 @@ export const DEFAULT_EDGE_MARKER_END = {
  * Default edge options for ReactFlow component
  */
 export const DEFAULT_EDGE_OPTIONS = {
-  type: 'bezier' as const,
+  type: 'adaptive' as const,
   style: DEFAULT_EDGE_STYLE,
   markerEnd: DEFAULT_EDGE_MARKER_END
 } as const
@@ -96,7 +96,7 @@ export function createEdge(
     id: options?.id || generateEdgeId(sourceId, targetId),
     source: sourceId,
     target: targetId,
-    type: options?.type || 'default',
+    type: options?.type || 'adaptive',
     style: {
       ...DEFAULT_EDGE_STYLE,
       ...options?.style
@@ -247,6 +247,10 @@ export function calculateNewNodePosition(
 export function formatEdges(edges: any[]): Edge[] {
   return edges.map((edge: any) => ({
     ...edge,
+    type:
+      edge.type && edge.type !== 'default'
+        ? edge.type
+        : ('adaptive' as const),
     style: {
       ...DEFAULT_EDGE_STYLE,
       ...edge.style

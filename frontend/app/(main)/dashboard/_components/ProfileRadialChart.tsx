@@ -15,6 +15,7 @@ import * as Recharts from 'recharts'
 import { useGetDashboardStats } from '@/hooks/use-user'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMemo } from 'react'
+import AtomicLoader from '@/components/animation/AtomicLoader'
 
 type RechartsComponents = {
   RadialBarChart: React.ComponentType<any>
@@ -58,13 +59,9 @@ export function ProfileRadialChart() {
 
   if (isLoading) {
     return (
-      <Card className='flex flex-col'>
-        <CardHeader className='items-center pb-0'>
-          <CardTitle>Success Rate</CardTitle>
-          <CardDescription>Loading...</CardDescription>
-        </CardHeader>
-        <CardContent className='flex-1 pb-0'>
-          <Skeleton className='mx-auto aspect-square max-h-[250px] w-full' />
+      <Card className='py-0 h-[300px]'>
+        <CardContent className='p-0 h-full'>
+          <AtomicLoader />
         </CardContent>
       </Card>
     )

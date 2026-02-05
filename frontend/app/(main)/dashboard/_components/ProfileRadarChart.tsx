@@ -20,6 +20,7 @@ import {
 import { useGetDashboardStats } from '@/hooks/use-user'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMemo } from 'react'
+import AtomicLoader from '@/components/animation/AtomicLoader'
 
 const chartConfig = {
   count: {
@@ -42,16 +43,9 @@ export function ProfileRadarChart() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader className='items-center'>
-          <CardTitle className='flex items-center gap-2'>
-            <Activity className='h-4 w-4 text-muted-foreground' />
-            Action Usage
-          </CardTitle>
-          <CardDescription>Loading action data...</CardDescription>
-        </CardHeader>
-        <CardContent className='pb-0'>
-          <Skeleton className='mx-auto aspect-square max-h-[250px] w-full' />
+      <Card className='py-0 h-[300px]'>
+        <CardContent className='p-0 h-full'>
+          <AtomicLoader />
         </CardContent>
       </Card>
     )

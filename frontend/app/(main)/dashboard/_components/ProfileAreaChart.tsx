@@ -26,6 +26,7 @@ import {
 import { BarChart3 } from 'lucide-react'
 import { useGetDashboardStats } from '@/hooks/use-user'
 import { Skeleton } from '@/components/ui/skeleton'
+import AtomicLoader from '@/components/animation/AtomicLoader'
 
 const chartConfig = {
   executions: {
@@ -80,18 +81,9 @@ export function ProfileAreaChart() {
 
   if (isLoading) {
     return (
-      <Card className='pt-0'>
-        <CardHeader className='flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row'>
-          <div className='grid flex-1 gap-1'>
-            <CardTitle className='flex items-center gap-2'>
-              <BarChart3 className='h-4 w-4 text-muted-foreground' />
-              Activity chart
-            </CardTitle>
-            <CardDescription>Loading execution data...</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className='px-2 pt-4 sm:px-6 sm:pt-6'>
-          <Skeleton className='h-[250px] w-full' />
+      <Card className='py-0 h-[400px]'>
+        <CardContent className='p-0 h-full'>
+          <AtomicLoader />
         </CardContent>
       </Card>
     )

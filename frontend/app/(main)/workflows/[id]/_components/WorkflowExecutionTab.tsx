@@ -385,8 +385,8 @@ const WorkflowExecutionTab = ({
 
       {/* Progress Bar for current execution */}
       {currentExecution && showProgress && currentExecution.progress && (
-        <Card className='mb-6 bg-linear-to-r from-primary/5 via-transparent to-transparent'>
-          <CardContent className='p-4'>
+        <Card className='mb-6 bg-linear-to-r from-primary/5  border-none outline-0 via-transparent to-transparent'>
+          <CardContent className='px-4'>
             <div className='flex flex-wrap items-center justify-between gap-3 mb-3'>
               <div className='flex items-center gap-2'>
                 <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/15'>

@@ -1,5 +1,11 @@
+'use client'
+
+import AtomicLoader from '@/components/animation/AtomicLoader'
+
 export default function TestPage() {
-    return (
-        <button disabled>Test    </button>
-    )
+  return (
+    <div className='size-96'>
+      <AtomicLoader />
+    </div>
+  )
 }

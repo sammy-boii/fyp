@@ -51,7 +51,10 @@ import {
 import { ValueOf } from '@/types/index.types'
 import { ALL_NODE_TYPES } from '@/constants'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
-import { NODE_DEFINITIONS, TRIGGER_NODE_DEFINITIONS } from '@/constants/registry'
+import {
+  NODE_DEFINITIONS,
+  TRIGGER_NODE_DEFINITIONS
+} from '@/constants/registry'
 import {
   Dialog,
   DialogContent,
@@ -63,6 +66,7 @@ import {
 import WorkflowExecutionTab from './_components/WorkflowExecutionTab'
 import { useWorkflowWebSocket } from '@/hooks/use-workflow-websocket'
 import { WorkflowEditorProvider } from './_context/WorkflowEditorContext'
+import DropletLoader from '@/components/animation/DropletLoader'
 
 export default function WorkflowViewPage() {
   return (
@@ -715,10 +719,7 @@ function WorkflowViewPageInner() {
   if (isLoading) {
     return (
       <div className='w-full h-screen flex items-center justify-center'>
-        <div className='flex flex-col items-center gap-4'>
-          <Loader2 className='h-8 w-8 animate-spin text-primary' />
-          <p className='text-sm text-muted-foreground'>Loading workflow...</p>
-        </div>
+        <DropletLoader />
       </div>
     )
   }
@@ -814,9 +815,7 @@ function WorkflowViewPageInner() {
                     aria-hidden='true'
                     className='absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_0_2px] shadow-background animate-pulse'
                   />
-                  <span className='sr-only'>
-                    New execution in progress
-                  </span>
+                  <span className='sr-only'>New execution in progress</span>
                 </>
               ) : null}
             </TabsTrigger>

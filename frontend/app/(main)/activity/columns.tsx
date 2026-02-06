@@ -1,46 +1,93 @@
 'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
+import {
+  AlertTriangle,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Globe,
+  Hand,
+  HelpCircle,
+  Layers,
+  Loader2,
+  Timer,
+  Workflow,
+  XCircle
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { ActivityExecutionRow } from './types'
 
-const statusStyles: Record<
+const statusConfig: Record<
   ActivityExecutionRow['status'],
-  { label: string; className: string }
+  {
+    label: string
+    icon: React.ReactNode
+    className: string
+    bgClass: string
+  }
 > = {
   RUNNING: {
     label: 'Running',
-    className: 'border-yellow-500 text-yellow-600'
+    icon: <Loader2 className='h-3 w-3 animate-spin' />,
+    className: 'text-amber-600 dark:text-amber-400',
+    bgClass: 'bg-amber-500/10 border-amber-500/30'
   },
   COMPLETED: {
     label: 'Completed',
-    className: 'border-emerald-500 text-emerald-600'
+    icon: <CheckCircle2 className='h-3 w-3' />,
+    className: 'text-emerald-600 dark:text-emerald-400',
+    bgClass: 'bg-emerald-500/10 border-emerald-500/30'
   },
   FAILED: {
     label: 'Failed',
-    className: 'border-destructive text-destructive'
+    icon: <XCircle className='h-3 w-3' />,
+    className: 'text-red-600 dark:text-red-400',
+    bgClass: 'bg-red-500/10 border-red-500/30'
   },
   CANCELLED: {
     label: 'Cancelled',
-    className: 'border-muted-foreground text-muted-foreground'
+    icon: <AlertTriangle className='h-3 w-3' />,
+    className: 'text-muted-foreground',
+    bgClass: 'bg-muted/50 border-muted-foreground/30'
   }
 }
 
-const triggerLabels: Record<ActivityExecutionRow['triggerType'], string> = {
-  MANUAL: 'Manual',
-  SCHEDULED: 'Scheduled',
-  WEBHOOK: 'Webhook',
-  UNKNOWN: 'Unknown'
-}
-
-const eventLabels: Record<string, string> = {
-  'workflow:start': 'Workflow started',
-  'node:start': 'Node started',
-  'node:complete': 'Node completed',
-  'node:error': 'Node failed',
-  'workflow:complete': 'Workflow completed',
-  'workflow:error': 'Workflow failed'
+const triggerConfig: Record<
+  ActivityExecutionRow['triggerType'],
+  { label: string; icon: React.ReactNode; className: string }
+> = {
+  MANUAL: {
+    label: 'Manual',
+    icon: <Hand className='h-3 w-3' />,
+    className:
+      'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
+  },
+  SCHEDULED: {
+    label: 'Scheduled',
+    icon: <Calendar className='h-3 w-3' />,
+    className:
+      'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30'
+  },
+  WEBHOOK: {
+    label: 'Webhook',
+    icon: <Globe className='h-3 w-3' />,
+    className:
+      'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30'
+  },
+  UNKNOWN: {
+    label: 'Unknown',
+    icon: <HelpCircle className='h-3 w-3' />,
+    className: 'bg-muted/50 text-muted-foreground border-muted-foreground/30'
+  }
 }
 
 const formatDateTime = (value?: string | null) => {
@@ -55,10 +102,31 @@ const formatDateTime = (value?: string | null) => {
   })
 }
 
+const formatRelativeTime = (value?: string | null) => {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+
+  if (minutes < 1) return 'Just now'
+  if (minutes < 60) return `${minutes}m ago`
+  if (hours < 24) return `${hours}h ago`
+  if (days < 7) return `${days}d ago`
+  return null
+}
+
 const formatDuration = (value?: number | null) => {
   if (value === null || value === undefined) return '—'
   const seconds = value / 1000
-  return `${seconds.toFixed(2).replace(/\.00$/, '')}s`
+  if (seconds < 1) return `${value}ms`
+  if (seconds < 60) return `${seconds.toFixed(1)}s`
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = Math.round(seconds % 60)
+  return `${minutes}m ${remainingSeconds}s`
 }
 
 const multiValueFilter = (
@@ -73,108 +141,204 @@ const multiValueFilter = (
 export const columns: ColumnDef<ActivityExecutionRow>[] = [
   {
     accessorKey: 'workflowName',
-    header: 'Workflow',
+    header: () => (
+      <div className='flex items-center gap-2 font-semibold'>
+        <Workflow className='h-4 w-4 text-muted-foreground' />
+        Workflow
+      </div>
+    ),
     cell: ({ row }) => (
-      <div className='max-w-[220px] truncate font-medium'>
-        {row.getValue('workflowName')}
+      <div className='flex items-center gap-3'>
+        <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-primary/20 to-primary/5 ring-1 ring-primary/10'>
+          <Workflow className='h-4 w-4 text-primary' />
+        </div>
+        <div className='min-w-0'>
+          <p className='truncate font-medium leading-tight'>
+            {row.getValue('workflowName')}
+          </p>
+          <p className='truncate text-xs text-muted-foreground'>
+            {row.original.executionId.slice(0, 8)}...
+          </p>
+        </div>
       </div>
     )
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: () => <span className='font-semibold'>Status</span>,
     filterFn: multiValueFilter,
     cell: ({ row }) => {
       const status = row.getValue('status') as ActivityExecutionRow['status']
-      const style = statusStyles[status]
+      const config = statusConfig[status]
       return (
-        <Badge variant='outline' className={cn('text-xs', style.className)}>
-          {style.label}
+        <Badge
+          variant='outline'
+          className={cn(
+            'gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+            config.className,
+            config.bgClass
+          )}
+        >
+          {config.icon}
+          {config.label}
         </Badge>
       )
     }
   },
   {
     accessorKey: 'triggerType',
-    header: 'Trigger',
+    header: () => <span className='font-semibold'>Trigger</span>,
     filterFn: multiValueFilter,
-    cell: ({ row }) => (
-      <Badge variant='secondary' className='text-xs capitalize'>
-        {triggerLabels[row.getValue('triggerType') as ActivityExecutionRow['triggerType']]}
-      </Badge>
-    )
+    cell: ({ row }) => {
+      const type = row.getValue(
+        'triggerType'
+      ) as ActivityExecutionRow['triggerType']
+      const config = triggerConfig[type]
+      return (
+        <Badge
+          variant='outline'
+          className={cn(
+            'gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+            config.className
+          )}
+        >
+          {config.icon}
+          {config.label}
+        </Badge>
+      )
+    }
   },
   {
     accessorKey: 'nodeCount',
-    header: 'Steps',
+    header: () => (
+      <div className='flex items-center gap-2 font-semibold'>
+        <Layers className='h-4 w-4 text-muted-foreground' />
+        Steps
+      </div>
+    ),
     cell: ({ row }) => {
       const count = row.getValue('nodeCount') as number
       const progress = row.original.progress
-      if (progress?.total) {
+      const status = row.original.status
+
+      if (progress?.total && progress.total > 0) {
+        const percentage = Math.round((progress.current / progress.total) * 100)
         return (
-          <span className='font-mono text-xs'>
-            {progress.current}/{progress.total}
-          </span>
+          <div className='flex flex-col gap-1.5 min-w-20'>
+            <div className='flex items-center justify-between text-xs'>
+              <span className='font-medium tabular-nums'>
+                {progress.current}/{progress.total}
+              </span>
+              <span className='text-muted-foreground'>{percentage}%</span>
+            </div>
+            <Progress
+              value={percentage}
+              className={cn('h-1.5', status === 'RUNNING' && 'animate-pulse')}
+            />
+          </div>
         )
       }
-      return <span className='font-mono text-xs'>{count || 0}</span>
+      return (
+        <span className='inline-flex items-center gap-1 text-sm tabular-nums'>
+          <Layers className='h-3.5 w-3.5 text-muted-foreground' />
+          {count || 0}
+        </span>
+      )
     }
   },
   {
     accessorKey: 'durationMs',
-    header: 'Duration',
-    cell: ({ row }) => (
-      <span className='text-xs text-muted-foreground'>
-        {formatDuration(row.getValue('durationMs') as number | null)}
-      </span>
-    )
+    header: () => (
+      <div className='flex items-center gap-2 font-semibold'>
+        <Timer className='h-4 w-4 text-muted-foreground' />
+        Duration
+      </div>
+    ),
+    cell: ({ row }) => {
+      const ms = row.getValue('durationMs') as number | null
+      const status = row.original.status
+
+      if (status === 'RUNNING') {
+        return (
+          <span className='inline-flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400'>
+            <span className='relative flex h-2 w-2'>
+              <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500/60' />
+              <span className='relative inline-flex h-2 w-2 rounded-full bg-amber-500' />
+            </span>
+            In progress
+          </span>
+        )
+      }
+
+      return (
+        <span className='inline-flex items-center gap-1 text-sm tabular-nums text-muted-foreground'>
+          <Clock className='h-3.5 w-3.5' />
+          {formatDuration(ms)}
+        </span>
+      )
+    }
   },
   {
     accessorKey: 'createdAt',
-    header: 'Started',
-    cell: ({ row }) => (
-      <span className='text-xs'>{formatDateTime(row.getValue('createdAt'))}</span>
-    )
-  },
-  {
-    accessorKey: 'completedAt',
-    header: 'Completed',
-    cell: ({ row }) => (
-      <span className='text-xs'>{formatDateTime(row.getValue('completedAt'))}</span>
-    )
-  },
-  {
-    accessorKey: 'lastEventType',
-    header: 'Last Event',
+    header: () => (
+      <div className='flex items-center gap-2 font-semibold'>
+        <Calendar className='h-4 w-4 text-muted-foreground' />
+        Started
+      </div>
+    ),
     cell: ({ row }) => {
-      const value = row.getValue('lastEventType') as string | undefined
+      const value = row.getValue('createdAt') as string
+      const relative = formatRelativeTime(value)
+      const absolute = formatDateTime(value)
+
       return (
-        <span className='text-xs text-muted-foreground'>
-          {value ? eventLabels[value] ?? value : '—'}
-        </span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className='flex flex-col'>
+                <span className='text-sm'>{absolute}</span>
+                {relative && (
+                  <span className='text-xs text-muted-foreground'>
+                    {relative}
+                  </span>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{new Date(value).toLocaleString()}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )
     }
   },
   {
     accessorKey: 'error',
-    header: 'Error',
+    header: () => <span className='font-semibold'>Error</span>,
     cell: ({ row }) => {
       const value = row.getValue('error') as string | null
-      if (!value) return <span className='text-xs text-muted-foreground'>—</span>
+      if (!value)
+        return <span className='text-sm text-muted-foreground'>—</span>
+
       return (
-        <span className='max-w-[220px] truncate text-xs text-destructive'>
-          {value}
-        </span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className='flex items-center gap-2 max-w-[180px]'>
+                <div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-500/10'>
+                  <AlertTriangle className='h-3.5 w-3.5 text-red-500' />
+                </div>
+                <span className='truncate text-sm text-red-600 dark:text-red-400'>
+                  {value}
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side='left' className='max-w-sm'>
+              <p className='text-sm wrap-break-word'>{value}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )
     }
-  },
-  {
-    accessorKey: 'executionId',
-    header: 'Execution',
-    cell: ({ row }) => (
-      <span className='font-mono text-xs' title={row.getValue('executionId')}>
-        {String(row.getValue('executionId')).slice(0, 10)}
-      </span>
-    )
   }
 ]

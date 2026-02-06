@@ -45,7 +45,10 @@ const METHOD_COLORS: Record<HTTPMethod, string> = {
   DELETE: 'bg-red-500/20 text-red-600 dark:text-red-400'
 }
 
-const CONTENT_TYPE_LABELS: Record<ContentType, { label: string; icon: React.ElementType }> = {
+const CONTENT_TYPE_LABELS: Record<
+  ContentType,
+  { label: string; icon: React.ElementType }
+> = {
   'application/json': { label: 'JSON', icon: FileJson },
   'application/x-www-form-urlencoded': { label: 'Form', icon: FormInput },
   'text/plain': { label: 'Text', icon: FileText },
@@ -288,7 +291,8 @@ export function HTTPRequestForm() {
               control={control}
               defaultValue='application/json'
               render={({ field }) => {
-                const currentType = CONTENT_TYPE_LABELS[field.value as ContentType]
+                const currentType =
+                  CONTENT_TYPE_LABELS[field.value as ContentType]
                 const Icon = currentType?.icon
                 return (
                   <Select value={field.value} onValueChange={field.onChange}>
@@ -302,10 +306,15 @@ export function HTTPRequestForm() {
                     </SelectTrigger>
                     <SelectContent>
                       {Object.entries(CONTENT_TYPES).map(([key, value]) => {
-                        const typeInfo = CONTENT_TYPE_LABELS[value as ContentType]
+                        const typeInfo =
+                          CONTENT_TYPE_LABELS[value as ContentType]
                         const TypeIcon = typeInfo.icon
                         return (
-                          <SelectItem key={key} value={value} className='text-xs'>
+                          <SelectItem
+                            key={key}
+                            value={value}
+                            className='text-xs'
+                          >
                             <span className='flex items-center gap-1.5'>
                               <TypeIcon className='h-3 w-3' />
                               {typeInfo.label}
@@ -331,7 +340,7 @@ export function HTTPRequestForm() {
                     ? '{\n  "key": "value"\n}'
                     : 'Enter request body...'
                 }
-                className='min-h-[100px] text-xs font-mono'
+                className='min-h-[100px] text-xs'
                 {...field}
               />
             )}

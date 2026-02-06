@@ -81,7 +81,7 @@ const InputField = ({
         return (
           <Badge
             variant='secondary'
-            className='text-[10px] font-mono px-1.5 py-0 h-5 gap-1'
+            className='text-[10px] px-1.5 py-0 h-5 gap-1'
           >
             <List className='h-3 w-3' />
             {field.arrayLength}
@@ -91,28 +91,24 @@ const InputField = ({
         return (
           <Badge
             variant='secondary'
-            className='text-[10px] font-mono px-1.5 py-0 h-5 gap-1'
+            className='text-[10px] px-1.5 py-0 h-5 gap-1'
           >
             <Braces className='h-3 w-3' />
           </Badge>
         )
       case 'null':
         return (
-          <span className='text-muted-foreground/60 font-mono text-[10px]'>
-            null
-          </span>
+          <span className='text-muted-foreground/60 text-[10px]'>null</span>
         )
       case 'boolean':
         return (
-          <span className='text-xs font-mono text-muted-foreground'>
+          <span className='text-xs text-muted-foreground'>
             {String(field.value)}
           </span>
         )
       case 'number':
         return (
-          <span className='font-mono text-xs text-muted-foreground'>
-            {field.value}
-          </span>
+          <span className='text-xs text-muted-foreground'>{field.value}</span>
         )
       case 'string':
         const displayValue =
@@ -120,7 +116,7 @@ const InputField = ({
             ? `${field.value.substring(0, 35)}...`
             : field.value
         return (
-          <span className='text-xs text-muted-foreground font-mono truncate max-w-[150px] block'>
+          <span className='text-xs text-muted-foreground truncate max-w-[150px] block'>
             {displayValue}
           </span>
         )
@@ -145,7 +141,7 @@ const InputField = ({
       >
         <GripVertical className='h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0' />
         <div className='flex-1 min-w-0 flex items-center gap-2'>
-          <code className='text-xs font-medium text-foreground/80 font-mono'>
+          <code className='text-xs font-medium text-foreground/80'>
             {field.key}
           </code>
           {field.description && (
@@ -191,7 +187,7 @@ const InputField = ({
             )}
           </div>
           <div className='flex-1 min-w-0 flex items-center gap-2'>
-            <code className='text-xs font-medium text-foreground/80 font-mono'>
+            <code className='text-xs font-medium text-foreground/80'>
               {field.label || field.key}
             </code>
             {field.description && (
@@ -395,7 +391,7 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
                     <span className='text-sm font-medium block truncate'>
                       {nodeDef?.label || source.nodeType}
                     </span>
-                    <span className='text-[10px] text-muted-foreground font-mono'>
+                    <span className='text-[10px] text-muted-foreground'>
                       {actionLabel}
                     </span>
                   </div>

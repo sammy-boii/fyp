@@ -62,7 +62,7 @@ const OutputField = ({
         return (
           <Badge
             variant='secondary'
-            className='text-[10px] font-mono px-1.5 py-0 h-5 gap-1'
+            className='text-[10px] px-1.5 py-0 h-5 gap-1'
           >
             <List className='h-3 w-3' />
             {field.arrayLength}
@@ -72,28 +72,24 @@ const OutputField = ({
         return (
           <Badge
             variant='secondary'
-            className='text-[10px] font-mono px-1.5 py-0 h-5 gap-1'
+            className='text-[10px] px-1.5 py-0 h-5 gap-1'
           >
             <Braces className='h-3 w-3' />
           </Badge>
         )
       case 'null':
         return (
-          <span className='text-muted-foreground/60 font-mono text-[10px]'>
-            null
-          </span>
+          <span className='text-muted-foreground/60 text-[10px]'>null</span>
         )
       case 'boolean':
         return (
-          <span className='text-xs font-mono text-muted-foreground'>
+          <span className='text-xs text-muted-foreground'>
             {String(field.value)}
           </span>
         )
       case 'number':
         return (
-          <span className='font-mono text-xs text-muted-foreground'>
-            {field.value}
-          </span>
+          <span className=' text-xs text-muted-foreground'>{field.value}</span>
         )
       case 'string':
         const displayValue =
@@ -101,7 +97,7 @@ const OutputField = ({
             ? `${field.value.substring(0, 40)}...`
             : field.value
         return (
-          <span className='text-xs text-muted-foreground font-mono truncate max-w-[180px] block'>
+          <span className='text-xs text-muted-foreground truncate max-w-[180px] block'>
             {displayValue}
           </span>
         )
@@ -126,7 +122,7 @@ const OutputField = ({
           <div className='w-1.5 h-1.5 rounded-full bg-muted-foreground/30' />
         </div>
         <div className='flex-1 min-w-0 flex items-center gap-2'>
-          <code className='text-xs font-medium text-foreground/80 font-mono'>
+          <code className='text-xs font-medium text-foreground/80 '>
             {field.key}
           </code>
           {field.description && (
@@ -172,7 +168,7 @@ const OutputField = ({
             )}
           </div>
           <div className='flex-1 min-w-0 flex items-center gap-2'>
-            <code className='text-xs font-medium text-foreground/80 font-mono'>
+            <code className='text-xs font-medium text-foreground/80'>
               {field.label || field.key}
             </code>
             {field.description && (

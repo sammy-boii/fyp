@@ -15,11 +15,11 @@ import {
   XCircle,
   Play,
   Loader2,
-  Wifi,
   WifiOff,
   Clock,
   Timer,
-  Cog
+  Cog,
+  Signal
 } from 'lucide-react'
 import { useMemo } from 'react'
 import type { TimelineElement } from '@/types/index.types'
@@ -356,13 +356,13 @@ const WorkflowExecutionTab = ({
           {isConnected ? (
             <Badge
               variant='outline'
-              className='text-green-600 border-green-600 gap-1.5'
+              className='text-emerald-600 border-emerald-500/50 gap-1.5'
             >
               <span className='relative flex size-2'>
-                <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500/60' />
-                <span className='relative inline-flex h-2 w-2 rounded-full bg-green-500' />
+                <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/60' />
+                <span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-500' />
               </span>
-              <Wifi className='h-3 w-3' />
+              <Signal className='h-3 w-3' />
               Live
             </Badge>
           ) : (
@@ -400,7 +400,7 @@ const WorkflowExecutionTab = ({
                   </p>
                 </div>
               </div>
-              <span className='text-sm text-muted-foreground font-mono'>
+              <span className='text-sm text-muted-foreground'>
                 {currentExecution.progress.current} /{' '}
                 {currentExecution.progress.total} steps
               </span>

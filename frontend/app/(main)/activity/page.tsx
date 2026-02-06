@@ -3,11 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
-  BarChart3,
   CheckCircle2,
+  Clock,
+  Loader2,
   Signal,
+  Sparkles,
   Trash2,
   WifiOff,
+  XCircle,
   Zap
 } from 'lucide-react'
 
@@ -29,6 +32,7 @@ import {
 import { useGetWorkflows } from '@/hooks/use-workflows'
 import { useActivityWebSocket } from '@/hooks/use-activity-websocket'
 import type { ExecutionEvent } from '@/hooks/use-workflow-websocket'
+import { cn } from '@/lib/utils'
 
 import { DataTable } from './data-table'
 import { columns } from './columns'
@@ -73,151 +77,202 @@ const ActivityPage = () => {
   const failedCount = rows.filter((row) => row.status === 'FAILED').length
 
   return (
-    <div className='w-full bg-background'>
-      <div className='mx-auto flex flex-col gap-6 p-8'>
-        <header className='flex flex-wrap items-center justify-between gap-4'>
-          <div className='flex items-center gap-4'>
-            <div className='relative flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 shadow-inner'>
-              <div className='absolute inset-0 rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.55),_transparent_55%)]' />
-              <Activity className='relative h-5 w-5 text-primary' />
-            </div>
-            <div>
-              <div className='flex flex-wrap items-center gap-2'>
-                <h1 className='text-2xl font-semibold leading-tight'>
-                  Activity
-                </h1>
-                <Badge variant='secondary' className='text-xs'>
-                  {totalExecutions} executions
-                </Badge>
+    <div className='min-h-screen w-full bg-linear-to-b from-background via-background to-muted/20'>
+      <div className='mx-auto flex max-w-7xl flex-col gap-8 p-6 md:p-8'>
+        {/* Header Section */}
+        <header className='flex flex-col gap-6'>
+          <div className='flex flex-wrap items-start justify-between gap-4'>
+            <div className='flex items-center gap-4'>
+              <div className='relative'>
+                <div className='flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary/20 via-primary/10 to-transparent shadow-sm ring-1 ring-primary/20'>
+                  <Activity className='h-7 w-7 text-primary' />
+                </div>
+                {isConnected && (
+                  <span className='absolute -right-1 -top-1 flex h-4 w-4'>
+                    <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75' />
+                    <span className='relative inline-flex h-4 w-4 rounded-full bg-emerald-500' />
+                  </span>
+                )}
               </div>
-              <p className='text-xs text-muted-foreground'>
-                Track execution history and real-time workflow updates.
-              </p>
+              <div>
+                <div className='flex flex-wrap items-center gap-3'>
+                  <h1 className='text-3xl font-bold tracking-tight'>
+                    Activity Feed
+                  </h1>
+                  {totalExecutions > 0 && (
+                    <Badge
+                      variant='secondary'
+                      className='rounded-full px-3 py-1 text-xs font-medium'
+                    >
+                      <Sparkles className='mr-1 h-3 w-3' />
+                      {totalExecutions} total
+                    </Badge>
+                  )}
+                </div>
+                <p className='mt-1 text-sm text-muted-foreground'>
+                  Real-time execution monitoring and workflow insights
+                </p>
+              </div>
+            </div>
+            <div className='flex flex-wrap items-center gap-3'>
+              {isConnected ? (
+                <div className='flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-400'>
+                  <span className='relative flex h-2 w-2'>
+                    <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75' />
+                    <span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-500' />
+                  </span>
+                  <Signal className='h-3.5 w-3.5' />
+                  Live
+                  <span className='rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs'>
+                    {connectedCount}
+                  </span>
+                </div>
+              ) : (
+                <div className='flex items-center gap-2 rounded-full bg-red-500/10 px-4 py-2 text-sm font-medium text-red-600 ring-1 ring-red-500/20 dark:text-red-400'>
+                  <WifiOff className='h-3.5 w-3.5' />
+                  Offline
+                </div>
+              )}
+              <Button
+                variant='outline'
+                size='sm'
+                className='gap-2 rounded-full'
+                disabled={rows.length === 0 || clearActivity.isPending}
+                onClick={() =>
+                  clearActivity.mutate(undefined, {
+                    onSuccess: () => setRows([])
+                  })
+                }
+              >
+                <Trash2 className='h-4 w-4' />
+                Clear logs
+              </Button>
             </div>
           </div>
-          <div className='flex flex-wrap items-center gap-2'>
-            {isConnected ? (
-              <Badge
-                variant='outline'
-                className='text-emerald-600 border-emerald-500/50 gap-1.5'
-              >
-                <span className='relative flex size-2'>
-                  <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/60' />
-                  <span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-500' />
-                </span>
-                <Signal className='h-3 w-3' />
-                Live ({connectedCount})
-              </Badge>
-            ) : (
-              <Badge variant='outline' className='text-red-600 border-red-600'>
-                <WifiOff className='h-3 w-3 mr-1' />
-                Offline
-              </Badge>
-            )}
-            <Button
-              variant='outline'
-              size='sm'
-              className='gap-2'
-              disabled={rows.length === 0 || clearActivity.isPending}
-              onClick={() =>
-                clearActivity.mutate(undefined, {
-                  onSuccess: () => setRows([])
-                })
-              }
-            >
-              <Trash2 className='h-4 w-4' />
-              Clear logs
-            </Button>
+
+          {/* Stats Cards */}
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+            <StatsCard
+              label='Total'
+              value={totalExecutions}
+              icon={<Zap className='h-5 w-5' />}
+              variant='default'
+            />
+            <StatsCard
+              label='Running'
+              value={runningCount}
+              icon={<Loader2 className='h-5 w-5 animate-spin' />}
+              variant='running'
+              pulse={runningCount > 0}
+            />
+            <StatsCard
+              label='Completed'
+              value={completedCount}
+              icon={<CheckCircle2 className='h-5 w-5' />}
+              variant='completed'
+            />
+            <StatsCard
+              label='Failed'
+              value={failedCount}
+              icon={<XCircle className='h-5 w-5' />}
+              variant='failed'
+            />
           </div>
         </header>
 
-        <div className='grid gap-3 md:grid-cols-3'>
-          <Card className='border border-border/60 bg-muted/30 shadow-sm'>
-            <CardContent className='flex items-center justify-between gap-3 p-4'>
-              <div>
-                <p className='text-xs text-muted-foreground'>Running</p>
-                <p className='text-2xl font-semibold'>{runningCount}</p>
-              </div>
-              <div className='flex h-9 w-9 items-center justify-center rounded-full bg-primary/10'>
-                <Zap className='h-4 w-4 text-primary' />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className='border border-border/60 bg-muted/30 shadow-sm'>
-            <CardContent className='flex items-center justify-between gap-3 p-4'>
-              <div>
-                <p className='text-xs text-muted-foreground'>Completed</p>
-                <p className='text-2xl font-semibold'>{completedCount}</p>
-              </div>
-              <div className='flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15'>
-                <CheckCircle2 className='h-4 w-4 text-emerald-500' />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className='border border-border/60 bg-muted/30 shadow-sm'>
-            <CardContent className='flex items-center justify-between gap-3 p-4'>
-              <div>
-                <p className='text-xs text-muted-foreground'>Failed</p>
-                <p className='text-2xl font-semibold'>{failedCount}</p>
-              </div>
-              <div className='flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10'>
-                <BarChart3 className='h-4 w-4 text-destructive' />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
+        {/* Main Content */}
         {activityQuery.isLoading ? (
-          <div className='space-y-3'>
-            <div className='rounded-xl border bg-card'>
-              <div className='border-b px-6 py-4'>
-                <Skeleton className='h-4 w-full' />
+          <div className='space-y-6'>
+            {/* Toolbar Skeleton */}
+            <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+              <div className='flex flex-1 flex-wrap items-center gap-2'>
+                <Skeleton className='h-9 w-full md:w-[320px] rounded-lg' />
+                <Skeleton className='h-9 w-24 rounded-lg' />
+                <Skeleton className='h-9 w-24 rounded-lg' />
+              </div>
+              <Skeleton className='h-9 w-20 rounded-lg' />
+            </div>
+            {/* Table Skeleton */}
+            <Card className='overflow-hidden border-0 shadow-md'>
+              <div className='border-b bg-muted/30 px-6 py-3'>
+                <div className='flex items-center gap-6'>
+                  {[
+                    'Workflow',
+                    'Status',
+                    'Trigger',
+                    'Steps',
+                    'Duration',
+                    'Started'
+                  ].map((h, i) => (
+                    <Skeleton
+                      key={h}
+                      className={cn('h-4', i === 0 ? 'w-36' : 'w-20')}
+                    />
+                  ))}
+                </div>
               </div>
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className='flex items-center gap-3 border-b px-4 py-4 last:border-b-0'
+                  className='flex items-center gap-6 border-b px-6 py-4 last:border-b-0'
+                  style={{ animationDelay: `${i * 100}ms` }}
                 >
-                  <Skeleton className='h-4 w-4 rounded' />
-                  <Skeleton className='h-4 w-40' />
-                  <Skeleton className='h-4 w-20' />
-                  <Skeleton className='h-4 w-20' />
-                  <Skeleton className='h-4 w-16' />
-                  <Skeleton className='h-4 w-28' />
+                  <div className='flex items-center gap-3 flex-1'>
+                    <Skeleton className='h-9 w-9 rounded-lg' />
+                    <Skeleton className='h-4 w-32' />
+                  </div>
+                  <Skeleton className='h-6 w-20 rounded-full' />
+                  <Skeleton className='h-6 w-16 rounded-full' />
+                  <Skeleton className='h-4 w-10' />
+                  <Skeleton className='h-4 w-14' />
                   <Skeleton className='h-4 w-24' />
                 </div>
               ))}
-            </div>
+            </Card>
           </div>
         ) : activityQuery.isError || activityQuery.data?.error ? (
-          <div className='flex min-h-[50vh] items-center justify-center'>
-            <Empty>
+          <Card className='flex min-h-[50vh] items-center justify-center border-dashed'>
+            <Empty className='border-none'>
               <EmptyHeader>
                 <EmptyMedia variant='icon'>
-                  <Activity className='h-6 w-6' />
+                  <div className='rounded-full bg-destructive/10 p-3'>
+                    <XCircle className='h-6 w-6 text-destructive' />
+                  </div>
                 </EmptyMedia>
-                <EmptyTitle>Unable to load activity</EmptyTitle>
-                <EmptyDescription>
-                  There was a problem fetching your execution history. Please
-                  try again.
+                <EmptyTitle className='text-xl'>
+                  Unable to load activity
+                </EmptyTitle>
+                <EmptyDescription className='max-w-sm'>
+                  We couldn&apos;t fetch your execution history. Check your
+                  connection and try refreshing the page.
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>
-          </div>
+          </Card>
         ) : rows.length === 0 ? (
-          <div className='flex min-h-[50vh] items-center justify-center'>
-            <Empty>
+          <Card className='flex min-h-[50vh] items-center justify-center border-dashed'>
+            <Empty className='border-none'>
               <EmptyHeader>
-                <EmptyMedia variant='icon'>
-                  <Activity className='h-6 w-6' />
+                <EmptyMedia>
+                  <div className='relative'>
+                    <div className='flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-primary/20 via-primary/5 to-transparent ring-1 ring-primary/10'>
+                      <Clock className='h-10 w-10 text-primary/60' />
+                    </div>
+                    <div className='absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-border'>
+                      <Sparkles className='h-4 w-4 text-muted-foreground' />
+                    </div>
+                  </div>
                 </EmptyMedia>
-                <EmptyTitle>No executions yet</EmptyTitle>
-                <EmptyDescription>
-                  Run a workflow to start building your activity history.
+                <EmptyTitle className='text-xl mt-4'>
+                  No activity yet
+                </EmptyTitle>
+                <EmptyDescription className='max-w-sm'>
+                  Your workflow executions will appear here. Run a workflow to
+                  start tracking your automation history.
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>
-          </div>
+          </Card>
         ) : (
           <DataTable columns={columns} data={rows} />
         )}
@@ -349,3 +404,85 @@ const applyEventToRows = (
 }
 
 export default ActivityPage
+
+/* -------------------------------------------------------------------------- */
+/*                               Stats Card                                   */
+/* -------------------------------------------------------------------------- */
+
+type StatsCardVariant = 'default' | 'running' | 'completed' | 'failed'
+
+const statsCardStyles: Record<
+  StatsCardVariant,
+  { bg: string; icon: string; text: string; ring: string }
+> = {
+  default: {
+    bg: 'from-primary/10 via-primary/5 to-transparent',
+    icon: 'bg-primary/10 text-primary',
+    text: 'text-foreground',
+    ring: 'ring-primary/10'
+  },
+  running: {
+    bg: 'from-amber-500/10 via-amber-500/5 to-transparent',
+    icon: 'bg-amber-500/10 text-amber-500',
+    text: 'text-amber-600 dark:text-amber-400',
+    ring: 'ring-amber-500/20'
+  },
+  completed: {
+    bg: 'from-emerald-500/10 via-emerald-500/5 to-transparent',
+    icon: 'bg-emerald-500/10 text-emerald-500',
+    text: 'text-emerald-600 dark:text-emerald-400',
+    ring: 'ring-emerald-500/20'
+  },
+  failed: {
+    bg: 'from-red-500/10 via-red-500/5 to-transparent',
+    icon: 'bg-red-500/10 text-red-500',
+    text: 'text-red-600 dark:text-red-400',
+    ring: 'ring-red-500/20'
+  }
+}
+
+function StatsCard({
+  label,
+  value,
+  icon,
+  variant = 'default',
+  pulse = false
+}: {
+  label: string
+  value: number
+  icon: React.ReactNode
+  variant?: StatsCardVariant
+  pulse?: boolean
+}) {
+  const style = statsCardStyles[variant]
+
+  return (
+    <Card
+      className={cn(
+        'relative overflow-hidden border-0 shadow-sm transition-all duration-300 hover:shadow-md',
+        `bg-linear-to-br ${style.bg}`,
+        `ring-1 ${style.ring}`
+      )}
+    >
+      {pulse && (
+        <div className='absolute inset-0 animate-pulse bg-linear-to-r from-transparent via-white/5 to-transparent' />
+      )}
+      <CardContent className='flex items-center gap-4 p-5'>
+        <div
+          className={cn(
+            'flex h-12 w-12 items-center justify-center rounded-xl',
+            style.icon
+          )}
+        >
+          {icon}
+        </div>
+        <div>
+          <p className='text-sm font-medium text-muted-foreground'>{label}</p>
+          <p className={cn('text-3xl font-bold tracking-tight', style.text)}>
+            {value}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}

@@ -162,7 +162,7 @@ export function CreateFileForm() {
               <PlaceholderInput
                 type='text'
                 placeholder='Enter image base64 data'
-                className='h-9 text-sm font-mono'
+                className='h-9 text-sm'
                 {...field}
                 aria-invalid={fieldState.invalid}
               />
@@ -195,7 +195,7 @@ export function CreateFileForm() {
               <PlaceholderTextarea
                 placeholder='{{node_id.base64}} or enter plain text...'
                 rows={5}
-                className='resize-none text-sm font-mono'
+                className='resize-none text-sm'
                 {...field}
                 aria-invalid={fieldState.invalid}
               />

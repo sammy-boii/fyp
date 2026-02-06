@@ -214,7 +214,10 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
     if (node.iconComponent) {
       const IconComponent = node.iconComponent
       return (
-        <IconComponent className='size-6 text-foreground' style={iconColorStyle} />
+        <IconComponent
+          className='size-6 text-foreground'
+          style={iconColorStyle}
+        />
       )
     }
     return <Play className='size-6 text-foreground' style={iconColorStyle} />
@@ -224,7 +227,7 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
     <ContextMenu>
       <ContextMenuTrigger>
         <div className='relative group z-0'>
-          <div className='absolute -top-5 right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center'>
+          <div className='absolute -top-[26px] right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center'>
             {!isManualTrigger && (
               <NodeActionsSheet
                 node={node}
@@ -251,7 +254,11 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
               </SheetTrigger>
               <AddNodeSheetContent
                 onOpenChange={setReplaceSheetOpen}
-                onAddNode={(nodeType) => handleReplaceTrigger(nodeType as ValueOf<typeof TRIGGER_NODE_TYPES>)}
+                onAddNode={(nodeType) =>
+                  handleReplaceTrigger(
+                    nodeType as ValueOf<typeof TRIGGER_NODE_TYPES>
+                  )
+                }
                 showOnlyTriggers
               />
             </Sheet>
@@ -342,7 +349,6 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
       </ContextMenuTrigger>
 
       <ContextMenuContent className='w-44'>
-
         {!isManualTrigger && (
           <ContextMenuItem className='gap-3' onClick={handleConfigure}>
             <Settings className='h-4 w-4' />

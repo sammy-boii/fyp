@@ -303,7 +303,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
     <ContextMenu>
       <ContextMenuTrigger>
         <div className='relative group z-0'>
-          <div className='absolute -top-6 right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center'>
+          <div className='absolute -top-[26px] right-0 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center'>
             <Button
               size='icon'
               variant='outline'

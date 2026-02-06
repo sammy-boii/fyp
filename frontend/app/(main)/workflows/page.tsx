@@ -103,6 +103,7 @@ export default function WorkflowsPage() {
               <div className='space-y-2'>
                 <Label htmlFor='new-workflow-description'>Description</Label>
                 <Textarea
+                  className='max-w-[460px]'
                   id='new-workflow-description'
                   placeholder='Describe what this workflow does'
                   value={newWorkflowDescription}

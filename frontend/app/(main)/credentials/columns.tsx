@@ -514,7 +514,7 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={5}
-                  className='max-w-md'
+                  className='max-w-[460px]'
                 />
               </div>
             </div>

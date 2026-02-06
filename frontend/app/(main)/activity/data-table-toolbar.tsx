@@ -299,13 +299,11 @@ function ColumnVisibility({ table }: { table: Table<ActivityExecutionRow> }) {
                   ? 'Workflow'
                   : column.id === 'triggerType'
                     ? 'Trigger'
-                    : column.id === 'nodeCount'
-                      ? 'Steps'
-                      : column.id === 'durationMs'
-                        ? 'Duration'
-                        : column.id === 'createdAt'
-                          ? 'Started'
-                          : column.id}
+                    : column.id === 'durationMs'
+                      ? 'Duration'
+                      : column.id === 'createdAt'
+                        ? 'Started'
+                        : column.id}
             </DropdownMenuCheckboxItem>
           ))}
       </DropdownMenuContent>

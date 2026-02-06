@@ -81,12 +81,12 @@ export function EditWorkflowDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-           <DialogTitle className='flex items-center gap-3'>
-                <div className='bg-muted/60 rounded-md p-2'>
-                  <Edit2 className='size-5' />
-                </div>
-                Edit workflow
-              </DialogTitle>
+          <DialogTitle className='flex items-center gap-3'>
+            <div className='bg-muted/60 rounded-md p-2'>
+              <Edit2 className='size-5' />
+            </div>
+            Edit workflow
+          </DialogTitle>
           <DialogDescription>
             Change the name or description of your workflow.
           </DialogDescription>
@@ -110,6 +110,7 @@ export function EditWorkflowDialog({
             <div className='space-y-2'>
               <Label htmlFor='edit-workflow-description'>Description</Label>
               <Textarea
+                className='max-w-[460px]'
                 id='edit-workflow-description'
                 placeholder='Describe what this workflow does'
                 value={editDescription}

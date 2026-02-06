@@ -4,13 +4,11 @@ import { ExecutionLog } from '@/hooks/use-workflow-websocket'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { TimelineLayout } from '@/components/timeline'
 import { cn } from '@/lib/utils'
 import {
   BadgeCheck,
-  Activity,
   Trash2,
   XCircle,
   Play,
@@ -18,8 +16,7 @@ import {
   WifiOff,
   Clock,
   Timer,
-  Cog,
-  Signal
+  Cog
 } from 'lucide-react'
 import { useMemo } from 'react'
 import type { TimelineElement } from '@/types/index.types'
@@ -232,7 +229,10 @@ const WorkflowExecutionTab = ({
           case 'node:start':
             return 'accent'
           case 'workflow:start':
-            return 'secondary'
+            return 'orange'
+          case 'node:complete':
+          case 'workflow:complete':
+            return 'green'
           default:
             return 'primary'
         }
@@ -243,10 +243,7 @@ const WorkflowExecutionTab = ({
           case 'workflow:start':
             return 'Workflow Started'
           case 'node:start':
-            return `Executing: ${formatNodeName(
-              log.data?.nodeId,
-              log.data?.nodeName
-            )} Node`
+            return `Executing: ${resolvedActionLabel}`
           case 'node:complete':
             return `Completed: ${resolvedActionLabel}`
           case 'node:error':
@@ -347,29 +344,27 @@ const WorkflowExecutionTab = ({
       {/* Header */}
       <div className='flex flex-wrap items-center justify-between gap-3 mb-6'>
         <div className='flex items-center gap-4'>
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-3'>
             <h2 className='text-xl font-semibold'>Execution History</h2>
-            <Badge variant='secondary' className='text-xs'>
-              {executionGroups.length} runs
-            </Badge>
+            <span className='rounded-full bg-muted px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground'>
+              {executionGroups.length}
+            </span>
           </div>
           {isConnected ? (
-            <Badge
-              variant='outline'
-              className='text-emerald-600 border-emerald-500/50 gap-1.5'
-            >
+            <div className='flex items-center gap-2 text-sm text-muted-foreground'>
               <span className='relative flex size-2'>
                 <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/60' />
-                <span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-500' />
+                <span className='relative inline-flex size-2 rounded-full bg-emerald-500' />
               </span>
-              <Signal className='h-3 w-3' />
-              Live
-            </Badge>
+              <span className='text-emerald-600 dark:text-emerald-400 font-medium'>
+                Live
+              </span>
+            </div>
           ) : (
-            <Badge variant='outline' className='text-red-600 border-red-600'>
-              <WifiOff className='h-3 w-3 mr-1' />
-              Offline
-            </Badge>
+            <div className='flex items-center gap-1.5 text-sm text-muted-foreground'>
+              <WifiOff className='h-3.5 w-3.5' />
+              <span>Offline</span>
+            </div>
           )}
         </div>
         <Button
@@ -385,29 +380,26 @@ const WorkflowExecutionTab = ({
 
       {/* Progress Bar for current execution */}
       {currentExecution && showProgress && currentExecution.progress && (
-        <Card className='mb-6 bg-linear-to-r from-primary/5  border-none outline-0 via-transparent to-transparent'>
-          <CardContent className='px-4'>
-            <div className='flex flex-wrap items-center justify-between gap-3 mb-3'>
-              <div className='flex items-center gap-2'>
-                <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/15'>
-                  <Loader2 className='h-4 w-4 text-primary animate-spin' />
-                </div>
-                <div>
-                  <p className='text-sm font-medium'>Executing workflow</p>
-                  <p className='text-xs text-muted-foreground flex items-center gap-1'>
-                    <Activity className='h-3 w-3' />
-                    Live updates streaming
-                  </p>
-                </div>
+        <div className='rounded-lg border border-primary/20 bg-primary/5 p-4 mb-6'>
+          <div className='flex flex-wrap items-center justify-between gap-3 mb-3'>
+            <div className='flex items-center gap-3'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/10'>
+                <Loader2 className='h-4 w-4 text-primary animate-spin' />
               </div>
-              <span className='text-sm text-muted-foreground'>
-                {currentExecution.progress.current} /{' '}
-                {currentExecution.progress.total} steps
-              </span>
+              <div>
+                <p className='text-sm font-medium'>Executing workflow</p>
+                <p className='text-xs text-muted-foreground'>
+                  Streaming live updates
+                </p>
+              </div>
             </div>
-            <Progress value={clampedProgress} className='h-2' />
-          </CardContent>
-        </Card>
+            <span className='text-sm font-medium tabular-nums'>
+              {currentExecution.progress.current} /{' '}
+              {currentExecution.progress.total}
+            </span>
+          </div>
+          <Progress value={clampedProgress} className='h-1.5' />
+        </div>
       )}
 
       {/* Execution Groups */}
@@ -415,38 +407,39 @@ const WorkflowExecutionTab = ({
         <ScrollArea className='h-full'>
           {executionGroups.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-20 text-muted-foreground'>
-              <Clock className='h-16 w-16 mb-4 opacity-30 animate-pulse' />
-              <p className='text-base font-medium'>No execution history</p>
-              <p className='text-sm mt-1'>
+              <Clock className='h-10 w-10 mb-3 opacity-20' />
+              <p className='text-sm font-medium'>No execution history</p>
+              <p className='text-xs mt-1 text-muted-foreground/70'>
                 Run your workflow to see execution logs here
               </p>
             </div>
           ) : (
             <div className='space-y-6 pb-6'>
               {executionGroups.map((group) => (
-                <Card key={group.executionId} className='overflow-hidden'>
-                  <CardHeader className='pb-4'>
-                    <div className='flex flex-wrap items-center justify-between gap-3'>
-                      <div className='flex items-center gap-3'>
-                        <CardTitle className='text-base font-semibold'>
-                          Workflow Execution
-                        </CardTitle>
-                        {getStatusBadge(group.status)}
-                      </div>
-                      <div className='flex items-center gap-4 text-xs text-muted-foreground'>
-                        <span className='font-medium'>
-                          {formatDateTime(group.startTime)}
-                        </span>
-                        {group.duration && (
-                          <Badge variant='secondary' className='font-mono'>
-                            <Timer className='h-3 w-3 mr-1' />
-                            {formatDurationSeconds(group.duration)}
-                          </Badge>
-                        )}
-                      </div>
+                <div
+                  key={group.executionId}
+                  className='rounded-lg border bg-card overflow-hidden'
+                >
+                  <div className='flex flex-wrap items-center justify-between gap-3 border-b px-6 py-4'>
+                    <div className='flex items-center gap-3'>
+                      <h3 className='text-sm font-semibold'>
+                        Workflow Execution
+                      </h3>
+                      {getStatusBadge(group.status)}
                     </div>
-                  </CardHeader>
-                  <CardContent className='pt-6 pb-4'>
+                    <div className='flex items-center gap-4 text-xs text-muted-foreground'>
+                      <span className='font-medium'>
+                        {formatDateTime(group.startTime)}
+                      </span>
+                      {group.duration && (
+                        <span className='flex items-center gap-1 font-mono rounded-full bg-muted px-2 py-0.5'>
+                          <Timer className='h-3 w-3' />
+                          {formatDurationSeconds(group.duration)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className='p-6'>
                     <TimelineLayout
                       animate
                       items={convertLogsToTimeline(
@@ -456,8 +449,8 @@ const WorkflowExecutionTab = ({
                       size='md'
                       className='mx-0 max-w-none'
                     />
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           )}

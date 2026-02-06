@@ -17,6 +17,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog'
+import {
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -31,10 +41,38 @@ import { useGetWorkflows } from '@/hooks/use-workflows'
 import { useActivityWebSocket } from '@/hooks/use-activity-websocket'
 import type { ExecutionEvent } from '@/hooks/use-workflow-websocket'
 import { cn } from '@/lib/utils'
+import { TRIGGER_ACTION_ID } from '@shared/constants'
 
 import { DataTable } from './data-table'
 import { columns } from './columns'
-import type { ActivityExecutionRow } from './types'
+import type { ActivityExecutionRow, ActivityTriggerType } from './types'
+
+const resolveTriggerType = (workflow?: {
+  nodes?: any
+  schedule?: string | null
+}): ActivityTriggerType => {
+  if (!workflow) return 'UNKNOWN'
+  if (workflow.schedule) return 'SCHEDULED'
+  if (!Array.isArray(workflow.nodes)) return 'UNKNOWN'
+
+  const triggerIds = new Set(Object.values(TRIGGER_ACTION_ID))
+  const triggerNode = workflow.nodes.find((node: any) =>
+    triggerIds.has(node?.data?.actionId)
+  )
+  const actionId = triggerNode?.data?.actionId
+
+  switch (actionId) {
+    case TRIGGER_ACTION_ID.MANUAL_TRIGGER:
+      return 'MANUAL'
+    case TRIGGER_ACTION_ID.SCHEDULE_TRIGGER:
+      return 'SCHEDULED'
+    case TRIGGER_ACTION_ID.GMAIL_WEBHOOK_TRIGGER:
+    case TRIGGER_ACTION_ID.DISCORD_WEBHOOK_TRIGGER:
+      return 'WEBHOOK'
+    default:
+      return 'UNKNOWN'
+  }
+}
 
 const ActivityPage = () => {
   const activityQuery = useGetUserExecutionActivity()
@@ -42,11 +80,18 @@ const ActivityPage = () => {
   const clearActivity = useClearUserExecutionActivity()
 
   const [rows, setRows] = useState<ActivityExecutionRow[]>([])
+  const [clearDialogOpen, setClearDialogOpen] = useState(false)
 
-  const workflowMap = useMemo(() => {
-    const map = new Map<string, string>()
+  const workflowMetaMap = useMemo(() => {
+    const map = new Map<
+      string,
+      { name: string; triggerType: ActivityTriggerType }
+    >()
     workflowsQuery.data?.data?.forEach((workflow) => {
-      map.set(workflow.id, workflow.name)
+      map.set(workflow.id, {
+        name: workflow.name,
+        triggerType: resolveTriggerType(workflow)
+      })
     })
     return map
   }, [workflowsQuery.data?.data])
@@ -59,7 +104,7 @@ const ActivityPage = () => {
   const { connectedCount, isConnected } = useActivityWebSocket(workflowIds, {
     enabled: workflowIds.length > 0,
     onEvent: (event) => {
-      setRows((prev) => applyEventToRows(prev, event, workflowMap))
+      setRows((prev) => applyEventToRows(prev, event, workflowMetaMap))
     }
   })
 
@@ -68,6 +113,23 @@ const ActivityPage = () => {
 
     setRows((prev) => mergeActivityRows(activityQuery.data?.data ?? [], prev))
   }, [activityQuery.data?.data])
+
+  useEffect(() => {
+    if (workflowMetaMap.size === 0) return
+
+    setRows((prev) =>
+      prev.map((row) => {
+        if (row.triggerType !== 'UNKNOWN') return row
+        const meta = workflowMetaMap.get(row.workflowId)
+        if (!meta || meta.triggerType === 'UNKNOWN') return row
+        return {
+          ...row,
+          workflowName: meta.name || row.workflowName,
+          triggerType: meta.triggerType
+        }
+      })
+    )
+  }, [workflowMetaMap])
 
   const totalExecutions = rows.length
   const runningCount = rows.filter((row) => row.status === 'RUNNING').length
@@ -122,20 +184,58 @@ const ActivityPage = () => {
                   Offline
                 </Badge>
               )}
-              <Button
-                variant='outline'
-                size='sm'
-                className='gap-2'
-                disabled={rows.length === 0 || clearActivity.isPending}
-                onClick={() =>
-                  clearActivity.mutate(undefined, {
-                    onSuccess: () => setRows([])
-                  })
-                }
+              <AlertDialog
+                open={clearDialogOpen}
+                onOpenChange={setClearDialogOpen}
               >
-                <Trash2 className='h-4 w-4' />
-                Clear logs
-              </Button>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='gap-2'
+                    disabled={rows.length === 0 || clearActivity.isPending}
+                  >
+                    <Trash2 className='h-4 w-4' />
+                    Clear logs
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className='flex gap-2 items-center'>
+                      <div className='bg-muted p-2 rounded-md'>
+                        <Trash2 className='size-5' />
+                      </div>
+                      Clear Execution Logs
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will delete all execution logs and reset the
+                      dashboard stats as well. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={clearActivity.isPending}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <Button
+                      variant='destructive'
+                      className='w-28'
+                      isLoading={clearActivity.isPending}
+                      disabled={clearActivity.isPending}
+                      onClick={() =>
+                        clearActivity.mutate(undefined, {
+                          onSuccess: () => {
+                            setRows([])
+                            setClearDialogOpen(false)
+                          }
+                        })
+                      }
+                    >
+                      <Trash2 className='h-4 w-4' />
+                      Clear logs
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
 
@@ -189,9 +289,9 @@ const ActivityPage = () => {
                     'Workflow',
                     'Status',
                     'Trigger',
-                    'Steps',
                     'Duration',
-                    'Started'
+                    'Started',
+                    'Actions'
                   ].map((h, i) => (
                     <Skeleton
                       key={h}
@@ -212,9 +312,9 @@ const ActivityPage = () => {
                   </div>
                   <Skeleton className='h-6 w-20 rounded-full' />
                   <Skeleton className='h-6 w-16 rounded-full' />
-                  <Skeleton className='h-4 w-10' />
                   <Skeleton className='h-4 w-14' />
                   <Skeleton className='h-4 w-24' />
+                  <Skeleton className='h-8 w-8 rounded-md' />
                 </div>
               ))}
             </Card>
@@ -302,14 +402,20 @@ const mergeActivityRows = (
 const applyEventToRows = (
   rows: ActivityExecutionRow[],
   event: ExecutionEvent,
-  workflowMap: Map<string, string>
+  workflowMetaMap: Map<
+    string,
+    { name: string; triggerType: ActivityTriggerType }
+  >
 ) => {
   const index = rows.findIndex((row) => row.executionId === event.executionId)
   const existing = index >= 0 ? rows[index] : null
+  const workflowMeta = workflowMetaMap.get(event.workflowId)
   const workflowName =
-    existing?.workflowName ??
-    workflowMap.get(event.workflowId) ??
-    'Unknown workflow'
+    existing?.workflowName ?? workflowMeta?.name ?? 'Unknown workflow'
+  const resolvedTrigger =
+    existing?.triggerType && existing.triggerType !== 'UNKNOWN'
+      ? existing.triggerType
+      : (workflowMeta?.triggerType ?? 'UNKNOWN')
 
   const base: ActivityExecutionRow =
     existing ??
@@ -318,7 +424,7 @@ const applyEventToRows = (
       workflowId: event.workflowId,
       workflowName,
       status: 'RUNNING',
-      triggerType: 'UNKNOWN',
+      triggerType: resolvedTrigger,
       durationMs: null,
       error: null,
       createdAt: event.timestamp,
@@ -332,6 +438,7 @@ const applyEventToRows = (
   const next: ActivityExecutionRow = {
     ...base,
     workflowName,
+    triggerType: resolvedTrigger,
     lastEventType: event.type,
     lastEventAt: event.timestamp
   }

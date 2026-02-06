@@ -459,7 +459,14 @@ const TimelineIcon = ({
   iconSize = 'md'
 }: {
   icon?: React.ReactNode
-  color?: 'primary' | 'secondary' | 'muted' | 'accent' | 'destructive'
+  color?:
+    | 'primary'
+    | 'secondary'
+    | 'muted'
+    | 'accent'
+    | 'destructive'
+    | 'orange'
+    | 'green'
   status?: 'completed' | 'in-progress' | 'pending' | 'error'
   iconSize?: 'sm' | 'md' | 'lg'
 }) => {
@@ -480,7 +487,11 @@ const TimelineIcon = ({
     secondary: 'bg-secondary text-secondary-foreground',
     muted: 'bg-muted text-muted-foreground',
     accent: 'bg-accent text-accent-foreground',
-    destructive: 'bg-destructive text-destructive-foreground'
+    destructive: 'bg-destructive text-destructive-foreground',
+    orange:
+      'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
+    green:
+      'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
   }
 
   return (

@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch'
 import { ColumnDef } from '@tanstack/react-table'
 import {
   ExternalLink,
-  GitBranch,
+  Layers,
   MoreHorizontal,
   PlayCircle,
   Trash2,
@@ -109,15 +109,15 @@ export const columns: ColumnDef<WorkflowRow>[] = [
     accessorKey: 'nodes',
     header: () => (
       <div className='flex items-center gap-2'>
-        <GitBranch className='h-4 w-4 text-muted-foreground' />
-        Nodes
+        <Layers className='h-4 w-4 text-muted-foreground' />
+        Steps
       </div>
     ),
     cell: ({ row }) => {
       const workflow = row.original
       return (
         <div className='flex items-center gap-2 text-sm'>
-          <GitBranch className='h-4 w-4 text-muted-foreground' />
+          <Layers className='h-4 w-4 text-muted-foreground' />
           <span className='font-medium'>{workflow.nodes.length}</span>
         </div>
       )

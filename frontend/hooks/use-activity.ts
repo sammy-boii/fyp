@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   clearUserExecutionActivity,
+  getExecutionDetails,
   getUserExecutionActivity
 } from '@/actions/user.actions'
 import { toast } from 'sonner'
@@ -11,6 +12,14 @@ export function useGetUserExecutionActivity() {
   return useQuery({
     queryKey: ['activity-executions'],
     queryFn: getUserExecutionActivity
+  })
+}
+
+export function useGetExecutionDetails(executionId: string | null) {
+  return useQuery({
+    queryKey: ['activity-execution', executionId],
+    queryFn: () => getExecutionDetails(executionId as string),
+    enabled: Boolean(executionId)
   })
 }
 

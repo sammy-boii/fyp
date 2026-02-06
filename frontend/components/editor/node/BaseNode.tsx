@@ -310,7 +310,10 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
               className='h-6 w-6 bg-background border-border/50 shadow-sm hover:bg-green-500/10 hover:border-green-500/60 hover:text-green-500 hover:shadow-md disabled:opacity-40 disabled:hover:bg-background transition-all'
               onClick={handleExecuteNode}
               disabled={
-                !data.actionId || !data.config || executeNodeMutation.isPending
+                !data.actionId ||
+                !data.config ||
+                executeNodeMutation.isPending ||
+                isAnyOperationPending
               }
             >
               {executeNodeMutation.isPending ? (

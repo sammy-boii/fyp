@@ -305,6 +305,78 @@ export async function getUserExecutionActivity() {
   })
 }
 
+export async function getExecutionDetails(executionId: string) {
+  return tryCatch(async () => {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      throw new Error('Not authenticated')
+    }
+
+    const execution = await prisma.workflowExecution.findFirst({
+      where: {
+        id: executionId,
+        workflow: {
+          authorId: user.id
+        }
+      },
+      include: {
+        workflow: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        nodeExecutions: {
+          select: {
+            id: true,
+            nodeId: true,
+            nodeType: true,
+            actionId: true,
+            outputData: true,
+            error: true,
+            status: true,
+            startedAt: true,
+            completedAt: true,
+            createdAt: true
+          },
+          orderBy: {
+            createdAt: 'asc'
+          }
+        }
+      }
+    })
+
+    if (!execution) {
+      throw new Error('Execution not found or access denied')
+    }
+
+    return {
+      executionId: execution.id,
+      workflowId: execution.workflowId,
+      workflowName: execution.workflow.name,
+      status: execution.status,
+      triggerType: execution.triggerType,
+      durationMs: execution.duration ?? null,
+      error: execution.error ?? null,
+      createdAt: execution.createdAt.toISOString(),
+      completedAt: execution.completedAt?.toISOString() ?? null,
+      nodeExecutions: execution.nodeExecutions.map((node) => ({
+        id: node.id,
+        nodeId: node.nodeId,
+        nodeType: node.nodeType,
+        actionId: node.actionId,
+        outputData: node.outputData ?? null,
+        error: node.error ?? null,
+        status: node.status,
+        startedAt: node.startedAt?.toISOString() ?? null,
+        completedAt: node.completedAt?.toISOString() ?? null,
+        createdAt: node.createdAt.toISOString()
+      }))
+    }
+  })
+}
+
 export async function clearUserExecutionActivity() {
   return tryCatch(async () => {
     const user = await getCurrentUser()

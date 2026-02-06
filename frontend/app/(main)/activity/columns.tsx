@@ -6,16 +6,17 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  ExternalLink,
   Globe,
   Hand,
   HelpCircle,
-  Layers,
+  Settings,
   Timer,
   Workflow,
   XCircle
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
@@ -208,44 +209,6 @@ export const columns: ColumnDef<ActivityExecutionRow>[] = [
     }
   },
   {
-    accessorKey: 'nodeCount',
-    header: () => (
-      <div className='flex items-center gap-2 font-semibold'>
-        <Layers className='h-4 w-4 text-muted-foreground' />
-        Steps
-      </div>
-    ),
-    cell: ({ row }) => {
-      const count = row.getValue('nodeCount') as number
-      const progress = row.original.progress
-      const status = row.original.status
-
-      if (progress?.total && progress.total > 0) {
-        const percentage = Math.round((progress.current / progress.total) * 100)
-        return (
-          <div className='flex flex-col gap-1.5 min-w-20'>
-            <div className='flex items-center justify-between text-xs'>
-              <span className='font-medium tabular-nums'>
-                {progress.current}/{progress.total}
-              </span>
-              <span className='text-muted-foreground'>{percentage}%</span>
-            </div>
-            <Progress
-              value={percentage}
-              className={cn('h-1.5', status === 'RUNNING' && 'animate-pulse')}
-            />
-          </div>
-        )
-      }
-      return (
-        <span className='inline-flex items-center gap-1 text-sm tabular-nums'>
-          <Layers className='h-3.5 w-3.5 text-muted-foreground' />
-          {count || 0}
-        </span>
-      )
-    }
-  },
-  {
     accessorKey: 'durationMs',
     header: () => (
       <div className='flex items-center gap-2 font-semibold'>
@@ -264,7 +227,7 @@ export const columns: ColumnDef<ActivityExecutionRow>[] = [
               <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500/60' />
               <span className='relative inline-flex h-2 w-2 rounded-full bg-amber-500' />
             </span>
-            In progress
+            Running
           </span>
         )
       }
@@ -339,5 +302,35 @@ export const columns: ColumnDef<ActivityExecutionRow>[] = [
         </TooltipProvider>
       )
     }
+  },
+  {
+    id: 'actions',
+    enableHiding: false,
+    enableSorting: false,
+    header: () => (
+      <div className='flex items-center gap-2 font-semibold'>
+        <Settings className='h-4 w-4 text-muted-foreground' />
+        Actions
+      </div>
+    ),
+    cell: ({ row }) => (
+      <TooltipProvider delayDuration={50}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant='ghost' size='icon' className='h-8 w-8' asChild>
+              <a
+                href={`/activity/${row.original.executionId}`}
+                target='_blank'
+                rel='noreferrer'
+              >
+                <ExternalLink className='h-4 w-4' />
+                <span className='sr-only'>View execution</span>
+              </a>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>View execution</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
   }
 ]

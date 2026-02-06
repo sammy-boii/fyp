@@ -5,9 +5,7 @@ import {
   Activity,
   CheckCircle2,
   Clock,
-  Loader2,
   Signal,
-  Sparkles,
   Trash2,
   WifiOff,
   XCircle,
@@ -77,66 +75,57 @@ const ActivityPage = () => {
   const failedCount = rows.filter((row) => row.status === 'FAILED').length
 
   return (
-    <div className='min-h-screen w-full bg-linear-to-b from-background via-background to-muted/20'>
-      <div className='mx-auto flex max-w-7xl flex-col gap-8 p-6 md:p-8'>
+    <div className='w-full bg-background'>
+      <div className='mx-auto flex flex-col gap-6 p-8'>
         {/* Header Section */}
         <header className='flex flex-col gap-6'>
-          <div className='flex flex-wrap items-start justify-between gap-4'>
-            <div className='flex items-center gap-4'>
-              <div className='relative'>
-                <div className='flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary/20 via-primary/10 to-transparent shadow-sm ring-1 ring-primary/20'>
-                  <Activity className='h-7 w-7 text-primary' />
-                </div>
-                {isConnected && (
-                  <span className='absolute -right-1 -top-1 flex h-4 w-4'>
-                    <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75' />
-                    <span className='relative inline-flex h-4 w-4 rounded-full bg-emerald-500' />
-                  </span>
-                )}
+          <div className='flex flex-wrap items-center justify-between gap-3'>
+            <div className='flex items-center gap-3'>
+              <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10'>
+                <Activity className='h-5 w-5 text-primary' />
               </div>
               <div>
-                <div className='flex flex-wrap items-center gap-3'>
-                  <h1 className='text-3xl font-bold tracking-tight'>
-                    Activity Feed
+                <div className='flex flex-wrap items-center gap-2'>
+                  <h1 className='text-2xl font-semibold leading-tight'>
+                    Activity
                   </h1>
                   {totalExecutions > 0 && (
-                    <Badge
-                      variant='secondary'
-                      className='rounded-full px-3 py-1 text-xs font-medium'
-                    >
-                      <Sparkles className='mr-1 h-3 w-3' />
-                      {totalExecutions} total
+                    <Badge variant='secondary' className='text-xs'>
+                      {totalExecutions} executions
                     </Badge>
                   )}
                 </div>
-                <p className='mt-1 text-sm text-muted-foreground'>
-                  Real-time execution monitoring and workflow insights
+                <p className='text-xs text-muted-foreground'>
+                  Track and monitor your workflow executions in real-time.
                 </p>
               </div>
             </div>
-            <div className='flex flex-wrap items-center gap-3'>
+            <div className='flex flex-wrap items-center gap-2'>
               {isConnected ? (
-                <div className='flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-400'>
+                <Badge
+                  variant='outline'
+                  className='gap-1.5 border-emerald-500/50 text-emerald-600'
+                >
                   <span className='relative flex h-2 w-2'>
-                    <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75' />
+                    <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/60' />
                     <span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-500' />
                   </span>
-                  <Signal className='h-3.5 w-3.5' />
-                  Live
-                  <span className='rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs'>
-                    {connectedCount}
-                  </span>
-                </div>
+                  <Signal className='h-3 w-3' />
+                  Live ({connectedCount})
+                </Badge>
               ) : (
-                <div className='flex items-center gap-2 rounded-full bg-red-500/10 px-4 py-2 text-sm font-medium text-red-600 ring-1 ring-red-500/20 dark:text-red-400'>
-                  <WifiOff className='h-3.5 w-3.5' />
+                <Badge
+                  variant='outline'
+                  className='border-red-600 text-red-600'
+                >
+                  <WifiOff className='mr-1 h-3 w-3' />
                   Offline
-                </div>
+                </Badge>
               )}
               <Button
                 variant='outline'
                 size='sm'
-                className='gap-2 rounded-full'
+                className='gap-2'
                 disabled={rows.length === 0 || clearActivity.isPending}
                 onClick={() =>
                   clearActivity.mutate(undefined, {
@@ -161,7 +150,7 @@ const ActivityPage = () => {
             <StatsCard
               label='Running'
               value={runningCount}
-              icon={<Loader2 className='h-5 w-5 animate-spin' />}
+              icon={<Clock className='h-5 w-5' />}
               variant='running'
               pulse={runningCount > 0}
             />
@@ -259,7 +248,7 @@ const ActivityPage = () => {
                       <Clock className='h-10 w-10 text-primary/60' />
                     </div>
                     <div className='absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-border'>
-                      <Sparkles className='h-4 w-4 text-muted-foreground' />
+                      <Zap className='h-4 w-4 text-muted-foreground' />
                     </div>
                   </div>
                 </EmptyMedia>

@@ -137,12 +137,12 @@ const DashboardPage = () => {
                 src={user?.avatar || undefined}
                 alt={user?.name || 'User'}
               />
-              <AvatarFallback>
+              <AvatarFallback className='text-lg'>
                 {user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className='text-2xl font-semibold leading-tight'>
+              <h1 className='text-2xl font-semibold'>
                 {user?.name || 'Your name'}
               </h1>
               <p className='text-sm text-muted-foreground'>
@@ -153,7 +153,7 @@ const DashboardPage = () => {
 
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
             <DialogTrigger asChild>
-              <Button size='sm' className='gap-2'>
+              <Button size='sm' variant='outline' className='gap-2'>
                 <Pencil className='h-4 w-4' />
                 Edit Profile
               </Button>
@@ -308,47 +308,65 @@ const DashboardPage = () => {
         </header>
 
         <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-          <Card>
-            <CardHeader>
-              <CardTitle className='flex items-center gap-2'>
-                <Workflow className='h-4 w-4 text-muted-foreground' />
-                Workflows
-              </CardTitle>
-              <CardDescription>Most recent workflows</CardDescription>
+          <Card className='relative overflow-hidden border-0 shadow-sm ring-1 ring-primary/10 bg-linear-to-br from-primary/10 via-primary/5 to-transparent transition-all duration-300 hover:shadow-md'>
+            <CardHeader className='pb-2'>
+              <div className='flex items-center gap-3'>
+                <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10'>
+                  <Workflow className='h-5 w-5 text-primary' />
+                </div>
+                <div>
+                  <CardTitle className='text-base'>Workflows</CardTitle>
+                  <CardDescription className='text-xs'>
+                    Your automations
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className='text-3xl font-semibold'>{workflowCount}</div>
-              <p className='text-sm pt-2 text-muted-foreground'>
+              <div className='text-3xl font-bold'>{workflowCount}</div>
+              <p className='text-xs text-muted-foreground mt-1'>
                 Total created by you
               </p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className='flex items-center gap-2'>
-                <Link2 className='h-4 w-4 text-muted-foreground' />
-                Connected accounts
-              </CardTitle>
-              <CardDescription>OAuth credentials saved</CardDescription>
+          <Card className='relative overflow-hidden border-0 shadow-sm ring-1 ring-blue-500/10 bg-linear-to-br from-blue-500/10 via-blue-500/5 to-transparent transition-all duration-300 hover:shadow-md'>
+            <CardHeader className='pb-2'>
+              <div className='flex items-center gap-3'>
+                <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10'>
+                  <Link2 className='h-5 w-5 text-blue-500' />
+                </div>
+                <div>
+                  <CardTitle className='text-base'>Connected</CardTitle>
+                  <CardDescription className='text-xs'>
+                    OAuth credentials
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className='text-3xl font-semibold'>
+              <div className='text-3xl font-bold'>
                 {user?.credentialsCount ?? 0}
               </div>
-              <p className='text-sm pt-2 text-muted-foreground'>
-                Providers linked to this account
+              <p className='text-xs text-muted-foreground mt-1'>
+                Providers linked
               </p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className='flex items-center gap-2'>
-                <ShieldCheck className='h-4 w-4 text-muted-foreground' />
-                Profile health
-              </CardTitle>
-              <CardDescription>Quick status at a glance</CardDescription>
+          <Card className='relative overflow-hidden border-0 shadow-sm ring-1 ring-emerald-500/10 bg-linear-to-br from-emerald-500/10 via-emerald-500/5 to-transparent transition-all duration-300 hover:shadow-md'>
+            <CardHeader className='pb-2'>
+              <div className='flex items-center gap-3'>
+                <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10'>
+                  <ShieldCheck className='h-5 w-5 text-emerald-500' />
+                </div>
+                <div>
+                  <CardTitle className='text-base'>Profile</CardTitle>
+                  <CardDescription className='text-xs'>
+                    Account status
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className='space-y-2 text-sm'>
+            <CardContent className='space-y-2.5 text-sm'>
               <div className='flex items-center justify-between'>
                 <span className='flex items-center gap-1 text-muted-foreground'>
                   <UserRound className='h-3.5 w-3.5' />

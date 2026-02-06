@@ -10,7 +10,6 @@ import {
   Hand,
   HelpCircle,
   Layers,
-  Loader2,
   Timer,
   Workflow,
   XCircle
@@ -37,7 +36,7 @@ const statusConfig: Record<
 > = {
   RUNNING: {
     label: 'Running',
-    icon: <Loader2 className='h-3 w-3 animate-spin' />,
+    icon: <Clock className='h-3 w-3' />,
     className: 'text-amber-600 dark:text-amber-400',
     bgClass: 'bg-amber-500/10 border-amber-500/30'
   },

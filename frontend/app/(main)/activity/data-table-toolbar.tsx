@@ -4,12 +4,12 @@ import type { Table } from '@tanstack/react-table'
 import {
   Calendar,
   CheckCircle2,
+  Clock,
   Columns3,
   Filter,
   Globe,
   Hand,
   HelpCircle,
-  Loader2,
   RotateCcw,
   Search,
   XCircle
@@ -40,7 +40,7 @@ const statusOptions: FilterOption[] = [
   {
     label: 'Running',
     value: 'RUNNING',
-    icon: <Loader2 className='h-3.5 w-3.5 animate-spin' />,
+    icon: <Clock className='h-3.5 w-3.5' />,
     color: 'text-amber-500'
   },
   {

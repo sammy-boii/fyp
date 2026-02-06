@@ -10,7 +10,10 @@ import {
   PlayCircle,
   Trash2,
   Workflow,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  ToggleLeft,
+  Settings
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -77,7 +80,12 @@ function formatDate(iso: string | null | undefined) {
 export const columns: ColumnDef<WorkflowRow>[] = [
   {
     accessorKey: 'name',
-    header: 'Workflow',
+    header: () => (
+      <div className='flex items-center gap-2'>
+        <Workflow className='h-4 w-4 text-muted-foreground' />
+        Workflow
+      </div>
+    ),
     cell: ({ row }) => {
       const workflow = row.original
       return (
@@ -99,7 +107,12 @@ export const columns: ColumnDef<WorkflowRow>[] = [
   },
   {
     accessorKey: 'nodes',
-    header: 'Nodes',
+    header: () => (
+      <div className='flex items-center gap-2'>
+        <GitBranch className='h-4 w-4 text-muted-foreground' />
+        Nodes
+      </div>
+    ),
     cell: ({ row }) => {
       const workflow = row.original
       return (
@@ -112,7 +125,12 @@ export const columns: ColumnDef<WorkflowRow>[] = [
   },
   {
     accessorKey: 'executionCount',
-    header: 'Executions',
+    header: () => (
+      <div className='flex items-center gap-2'>
+        <PlayCircle className='h-4 w-4 text-muted-foreground' />
+        Executions
+      </div>
+    ),
     cell: ({ getValue }) => {
       const count = getValue() as number
       return (
@@ -125,7 +143,12 @@ export const columns: ColumnDef<WorkflowRow>[] = [
   },
   {
     accessorKey: 'lastExecutedAt',
-    header: 'Last Executed',
+    header: () => (
+      <div className='flex items-center gap-2'>
+        <Clock className='h-4 w-4 text-muted-foreground' />
+        Last Executed
+      </div>
+    ),
     cell: ({ getValue }) => {
       const lastExecuted = getValue() as string | null
       return (
@@ -151,12 +174,22 @@ export const columns: ColumnDef<WorkflowRow>[] = [
   // },
   {
     id: 'status',
-    header: 'Status',
+    header: () => (
+      <div className='flex items-center gap-2'>
+        <ToggleLeft className='h-4 w-4 text-muted-foreground' />
+        Status
+      </div>
+    ),
     cell: ({ row }) => <StatusCell workflow={row.original} />
   },
   {
     id: 'actions',
-    header: 'Actions',
+    header: () => (
+      <div className='flex items-center gap-2'>
+        <Settings className='h-4 w-4 text-muted-foreground' />
+        Actions
+      </div>
+    ),
     cell: ({ row }) => <ActionCell workflow={row.original} />
   }
 ]
@@ -167,10 +200,10 @@ function StatusCell({ workflow }: { workflow: WorkflowRow }) {
 
   const handleToggleActive = async (active: boolean) => {
     if (isToggling) return
-    
+
     setOptimisticActive(active) // Optimistic update
     setIsToggling(true)
-    
+
     try {
       const { updateWorkflow } = await import('@/actions/workflow.actions')
       const result = await updateWorkflow(workflow.id, { isActive: active })

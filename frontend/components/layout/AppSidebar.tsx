@@ -27,7 +27,7 @@ import {
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
-import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from 'lucide-react'
+import { BadgeCheck, ChevronsUpDown, LogOut } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
@@ -46,6 +46,7 @@ import { logout } from '@/actions/auth.actions'
 import { toast } from 'sonner'
 import { useGetProfile } from '@/hooks/use-user'
 import { Kbd } from '../ui/kbd'
+import { AnimatedThemeToggler } from '../magicui/animated-theme-toggler'
 
 // Menu items.
 const items = [
@@ -254,10 +255,7 @@ function NavUser({
               </DropdownMenuItem>
 
               <DropdownMenuItem asChild>
-                <Link href='/notifications'>
-                  <Bell />
-                  Notifications
-                </Link>
+                <AnimatedThemeToggler className='flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none' />
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

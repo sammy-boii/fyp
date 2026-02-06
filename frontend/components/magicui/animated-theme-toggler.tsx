@@ -8,9 +8,13 @@ import { useTheme } from 'next-themes'
 
 type props = {
   className?: string
+  showLabel?: boolean
 }
 
-export const AnimatedThemeToggler = ({ className }: props) => {
+export const AnimatedThemeToggler = ({
+  className,
+  showLabel = true
+}: props) => {
   const { setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const buttonRef = useRef<HTMLButtonElement | null>(null)
@@ -61,14 +65,16 @@ export const AnimatedThemeToggler = ({ className }: props) => {
   if (!mounted) {
     return (
       <button className={cn(className)} disabled={true}>
-        <Moon size={20} />
+        <Moon size={16} />
+        {showLabel && <span>Dark mode</span>}
       </button>
     )
   }
 
   return (
     <button ref={buttonRef} onClick={changeTheme} className={cn(className)}>
-      {isDarkMode ? <SunDim size={20} /> : <Moon size={20} />}
+      {isDarkMode ? <SunDim size={16} /> : <Moon size={16} />}
+      {showLabel && <span>{isDarkMode ? 'Light mode' : 'Dark mode'}</span>}
     </button>
   )
 }

@@ -42,7 +42,7 @@ export default function WorkflowsPage() {
       <div className='mx-auto flex flex-col gap-6 p-8'>
         <header className='flex flex-wrap items-center justify-between gap-3'>
           <div className='flex items-center gap-3'>
-            <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10'>
+            <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br from-primary/15 via-primary/10 to-primary/5 ring-1 ring-primary/10'>
               <Workflow className='h-5 w-5 text-primary' />
             </div>
             <div>
@@ -195,7 +195,7 @@ export default function WorkflowsPage() {
                 </EmptyMedia>
                 <EmptyTitle>No workflows yet</EmptyTitle>
                 <EmptyDescription>
-                  Create your first workflow to automate your tasks.
+                  Create your first workflow to get started.
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

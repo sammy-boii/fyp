@@ -69,11 +69,6 @@ const items = [
     title: 'Activity',
     url: '/activity',
     icon: Activity
-  },
-  {
-    title: 'Settings',
-    url: '/settings',
-    icon: Settings
   }
 ]
 

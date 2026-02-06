@@ -256,3 +256,71 @@ export async function getDashboardStats() {
 function formatActionId(actionId: TActionID) {
   return actionId.replace(/_/g, ' ')
 }
+
+export async function getUserExecutionActivity() {
+  return tryCatch(async () => {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      throw new Error('Not authenticated')
+    }
+
+    const executions = await prisma.workflowExecution.findMany({
+      where: {
+        workflow: {
+          authorId: user.id
+        }
+      },
+      include: {
+        workflow: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        nodeExecutions: {
+          select: {
+            id: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 300
+    })
+
+    return executions.map((execution) => ({
+      executionId: execution.id,
+      workflowId: execution.workflowId,
+      workflowName: execution.workflow.name,
+      status: execution.status,
+      triggerType: execution.triggerType,
+      durationMs: execution.duration ?? null,
+      error: execution.error ?? null,
+      createdAt: execution.createdAt.toISOString(),
+      completedAt: execution.completedAt?.toISOString() ?? null,
+      nodeCount: execution.nodeExecutions.length
+    }))
+  })
+}
+
+export async function clearUserExecutionActivity() {
+  return tryCatch(async () => {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      throw new Error('Not authenticated')
+    }
+
+    const result = await prisma.workflowExecution.deleteMany({
+      where: {
+        workflow: {
+          authorId: user.id
+        }
+      }
+    })
+
+    return { deleted: result.count }
+  })
+}

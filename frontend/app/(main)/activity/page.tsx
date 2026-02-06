@@ -243,21 +243,14 @@ const ActivityPage = () => {
             <Empty className='border-none'>
               <EmptyHeader>
                 <EmptyMedia>
-                  <div className='relative'>
-                    <div className='flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-primary/20 via-primary/5 to-transparent ring-1 ring-primary/10'>
-                      <Clock className='h-10 w-10 text-primary/60' />
-                    </div>
-                    <div className='absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-border'>
-                      <Zap className='h-4 w-4 text-muted-foreground' />
-                    </div>
-                  </div>
+                  <Clock className='size-8 text-muted-foreground' />
                 </EmptyMedia>
-                <EmptyTitle className='text-xl mt-4'>
-                  No activity yet
+                <EmptyTitle className='text-xl tracking-normal'>
+                  No Activity Yet
                 </EmptyTitle>
                 <EmptyDescription className='max-w-sm'>
-                  Your workflow executions will appear here. Run a workflow to
-                  start tracking your automation history.
+                  Execute a workflow and view their live execution status and
+                  logs
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>
@@ -405,28 +398,28 @@ const statsCardStyles: Record<
   { bg: string; icon: string; text: string; ring: string }
 > = {
   default: {
-    bg: 'from-primary/10 via-primary/5 to-transparent',
+    bg: 'bg-card',
     icon: 'bg-primary/10 text-primary',
     text: 'text-foreground',
-    ring: 'ring-primary/10'
+    ring: 'ring-border'
   },
   running: {
-    bg: 'from-amber-500/10 via-amber-500/5 to-transparent',
+    bg: 'bg-card',
     icon: 'bg-amber-500/10 text-amber-500',
     text: 'text-amber-600 dark:text-amber-400',
-    ring: 'ring-amber-500/20'
+    ring: 'ring-border'
   },
   completed: {
-    bg: 'from-emerald-500/10 via-emerald-500/5 to-transparent',
+    bg: 'bg-card',
     icon: 'bg-emerald-500/10 text-emerald-500',
     text: 'text-emerald-600 dark:text-emerald-400',
-    ring: 'ring-emerald-500/20'
+    ring: 'ring-border'
   },
   failed: {
-    bg: 'from-red-500/10 via-red-500/5 to-transparent',
+    bg: 'bg-card',
     icon: 'bg-red-500/10 text-red-500',
     text: 'text-red-600 dark:text-red-400',
-    ring: 'ring-red-500/20'
+    ring: 'ring-border'
   }
 }
 
@@ -449,7 +442,7 @@ function StatsCard({
     <Card
       className={cn(
         'relative overflow-hidden border-0 shadow-sm transition-all duration-300 hover:shadow-md',
-        `bg-linear-to-br ${style.bg}`,
+        style.bg,
         `ring-1 ${style.ring}`
       )}
     >

@@ -4,6 +4,7 @@ import { googleDriveRoutes } from './google-drive'
 import { workflowRoutes } from './workflow'
 import { discordRoutes } from './discord'
 import { webhookRoutes } from './webhook'
+import { aiRoutes } from './ai'
 
 export const routes = new Hono()
 
@@ -18,3 +19,5 @@ routes.route('/discord', discordRoutes)
 routes.route('/webhook', webhookRoutes)
 
 routes.route('/workflow', workflowRoutes)
+
+routes.route('/ai', aiRoutes)

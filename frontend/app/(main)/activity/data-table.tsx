@@ -73,7 +73,7 @@ export function DataTable<TData, TValue>({
   return (
     <div className='space-y-4'>
       <DataTableToolbar table={table} />
-      <Card className='overflow-hidden border-0 shadow-md ring-1 ring-border/50'>
+      <Card className='overflow-hidden bg-transparent border-0 shadow-md'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

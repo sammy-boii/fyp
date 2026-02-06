@@ -224,17 +224,17 @@ export default function CredentialsPage() {
           </div>
         ) : rows.length === 0 ? (
           <div className='flex min-h-[60vh] items-center justify-center'>
-            <Empty>
+            <Empty className='border-none'>
               <EmptyHeader>
-                <EmptyMedia variant={'icon'}>
-                  <KeyRound className='' />
+                <EmptyMedia>
+                  <KeyRound className='size-8 text-muted-foreground' />
                 </EmptyMedia>
-                <EmptyTitle className='opacity-90'>
-                  No Credentials Connected Yet
+                <EmptyTitle className='text-xl tracking-normal'>
+                  No Credentials Connected
                 </EmptyTitle>
-                <EmptyDescription>
+                <EmptyDescription className='max-w-sm'>
                   Connect a provider to securely store and manage your access
-                  tokens.
+                  tokens.{' '}
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

@@ -308,7 +308,7 @@ const DashboardPage = () => {
         </header>
 
         <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-          <Card className='relative overflow-hidden border-0 shadow-sm ring-1 ring-primary/10 bg-linear-to-br from-primary/10 via-primary/5 to-transparent transition-all duration-300 hover:shadow-md'>
+          <Card className='relative overflow-hidden border-0 shadow-md ring-1 ring-border transition-all duration-300 hover:shadow-md'>
             <CardHeader className='pb-2'>
               <div className='flex items-center gap-3'>
                 <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10'>
@@ -329,7 +329,7 @@ const DashboardPage = () => {
               </p>
             </CardContent>
           </Card>
-          <Card className='relative overflow-hidden border-0 shadow-sm ring-1 ring-blue-500/10 bg-linear-to-br from-blue-500/10 via-blue-500/5 to-transparent transition-all duration-300 hover:shadow-md'>
+          <Card className='relative overflow-hidden border-0 shadow-md ring-1 ring-border transition-all duration-300 hover:shadow-md'>
             <CardHeader className='pb-2'>
               <div className='flex items-center gap-3'>
                 <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10'>
@@ -352,7 +352,7 @@ const DashboardPage = () => {
               </p>
             </CardContent>
           </Card>
-          <Card className='relative overflow-hidden border-0 shadow-sm ring-1 ring-emerald-500/10 bg-linear-to-br from-emerald-500/10 via-emerald-500/5 to-transparent transition-all duration-300 hover:shadow-md'>
+          <Card className='relative overflow-hidden border-0 shadow-md ring-1 ring-border transition-all duration-300 hover:shadow-md'>
             <CardHeader className='pb-2'>
               <div className='flex items-center gap-3'>
                 <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10'>

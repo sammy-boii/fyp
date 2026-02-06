@@ -188,14 +188,17 @@ export default function WorkflowsPage() {
           </div>
         ) : workflows.length === 0 ? (
           <div className='flex min-h-[60vh] items-center justify-center'>
-            <Empty>
+            <Empty className='border-none'>
               <EmptyHeader>
-                <EmptyMedia variant='icon'>
-                  <Workflow className='h-6 w-6' />
+                <EmptyMedia>
+                  <Workflow className='size-8 text-muted-foreground' />
                 </EmptyMedia>
-                <EmptyTitle>No workflows yet</EmptyTitle>
-                <EmptyDescription>
-                  Create your first workflow to get started.
+                <EmptyTitle className='text-xl tracking-normal'>
+                  No Workflows Found
+                </EmptyTitle>
+                <EmptyDescription className='max-w-sm'>
+                  Create and configure your first workflow and view their
+                  listing here
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

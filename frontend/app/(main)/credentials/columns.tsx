@@ -23,10 +23,12 @@ import {
   Key,
   Lock,
   Pencil,
+  Settings,
   ShieldAlert,
   ShieldCheck,
   TimerReset,
-  Trash2
+  Trash2,
+  Layers
 } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
@@ -114,12 +116,22 @@ function ProviderIcon({ provider }: { provider?: string | null }) {
 export const columns: ColumnDef<CredentialRow>[] = [
   {
     accessorKey: 'provider',
-    header: 'Provider',
+    header: () => (
+      <div className='flex items-center gap-2'>
+        <Layers className='h-4 w-4' />
+        Provider
+      </div>
+    ),
     cell: ({ row }) => <ProviderCell cred={row.original} />
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: () => (
+      <div className='flex items-center gap-2'>
+        <ShieldCheck className='h-4 w-4' />
+        Status
+      </div>
+    ),
     cell: ({ getValue }) => {
       const status = getValue() as CredentialRow['status']
       const Icon =
@@ -138,7 +150,12 @@ export const columns: ColumnDef<CredentialRow>[] = [
   },
   {
     accessorKey: 'refreshTokenExpiresAt',
-    header: 'Expires',
+    header: () => (
+      <div className='flex items-center gap-2'>
+        <TimerReset className='h-4 w-4' />
+        Expires
+      </div>
+    ),
     cell: ({ getValue }) => {
       const expiresAt = getValue() as string
       return (
@@ -151,7 +168,12 @@ export const columns: ColumnDef<CredentialRow>[] = [
   },
   {
     accessorKey: 'notes',
-    header: 'Notes',
+    header: () => (
+      <div className='flex items-center gap-2'>
+        <FileText className='h-4 w-4' />
+        Notes
+      </div>
+    ),
     cell: ({ getValue }) => {
       const notes = getValue() as string | null | undefined
       if (!notes) {
@@ -170,7 +192,12 @@ export const columns: ColumnDef<CredentialRow>[] = [
   // Move actions column to the end and align right
   {
     id: 'actions',
-    header: () => <div className='w-full pr-2'>Actions</div>,
+    header: () => (
+      <div className='flex items-center gap-2 w-full pr-2'>
+        <Settings className='h-4 w-4' />
+        Actions
+      </div>
+    ),
     cell: ({ row }) => (
       <div className='w-full pr-2'>
         <ActionCell cred={row.original} />

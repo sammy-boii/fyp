@@ -1,11 +1,11 @@
 'use client'
 
-import AtomicLoader from '@/components/animation/AtomicLoader'
+import WorkflowLoader from '@/components/animation/WorkflowLoader'
 
 export default function TestPage() {
   return (
-    <div className='size-96'>
-      <AtomicLoader />
+    <div className='w-full h-screen flex items-center justify-center bg-background'>
+      <WorkflowLoader text='BUILDING WORKFLOW' />
     </div>
   )
 }

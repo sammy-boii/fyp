@@ -34,7 +34,7 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <Card className='overflow-hidden border-0 shadow-md ring-1 ring-border/50'>
+    <Card className='overflow-hidden border-0 shadow-md bg-transparent'>
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -81,10 +81,7 @@ export function DataTable<TData, TValue>({
             ))
           ) : (
             <TableRow>
-              <TableCell
-                colSpan={columns.length}
-                className='h-32 text-center text-muted-foreground'
-              >
+              <TableCell className='h-32 text-center text-muted-foreground'>
                 <div className='flex flex-col items-center gap-2'>
                   <p className='text-sm font-medium'>No results found</p>
                   <p className='text-xs'>

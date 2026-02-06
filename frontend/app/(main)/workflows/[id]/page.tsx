@@ -16,7 +16,7 @@ import {
 } from '@xyflow/react'
 
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Plus } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import type { Node, OnEdgesChange, OnNodesChange } from '@xyflow/react'
@@ -39,6 +39,7 @@ import { WorkflowHeader } from './_components/WorkflowHeader'
 import { AddNodeSheetContent } from './_components/AddNodeSheet'
 import { EditWorkflowDialog } from './_components/EditWorkflowDialog'
 import { EmptyWorkflowPlaceholder } from './_components/EmptyWorkflowPlaceholder'
+import { AIPromptInput } from './_components/AIPromptInput'
 import {
   DEFAULT_EDGE_OPTIONS,
   createNode,
@@ -55,18 +56,13 @@ import {
   NODE_DEFINITIONS,
   TRIGGER_NODE_DEFINITIONS
 } from '@/constants/registry'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
 import WorkflowExecutionTab from './_components/WorkflowExecutionTab'
+import { NodeContextMenu } from './_components/NodeContextMenu'
+import { DeleteNodesDialog } from './_components/DeleteNodesDialog'
 import { useWorkflowWebSocket } from '@/hooks/use-workflow-websocket'
 import { WorkflowEditorProvider } from './_context/WorkflowEditorContext'
 import DropletLoader from '@/components/animation/DropletLoader'
+import WorkflowLoader from '@/components/animation/WorkflowLoader'
 
 export default function WorkflowViewPage() {
   return (
@@ -107,6 +103,7 @@ function WorkflowViewPageInner() {
   } | null>(null)
   const [deleteSelectedDialogOpen, setDeleteSelectedDialogOpen] =
     useState(false)
+  const [isAIGenerating, setIsAIGenerating] = useState(false)
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const lastExecutionIdRef = useRef<string | null>(null)
   const hasInitialized = useRef(false)
@@ -592,6 +589,21 @@ function WorkflowViewPageInner() {
     setSheetOpen(false)
   }
 
+  // Handler for AI-generated workflow
+  const handleAIWorkflowGenerated = useCallback(
+    (aiNodes: Node[], aiEdges: Edge[]) => {
+      // Replace current nodes and edges with AI-generated ones
+      setNodes(aiNodes)
+      setEdges(aiEdges)
+
+      // Fit view to show all nodes after a short delay
+      setTimeout(() => {
+        reactFlowInstance.fitView({ padding: 0.2 })
+      }, 100)
+    },
+    [setNodes, setEdges, reactFlowInstance]
+  )
+
   const handleExecuteWorkflow = useCallback(async () => {
     // Prevent double execution or execution during node execution
     if (
@@ -872,92 +884,39 @@ function WorkflowViewPageInner() {
                 <Background gap={40} />
               </ReactFlow>
 
+              {/* AI Generation overlay */}
+              {isAIGenerating && (
+                <div className='absolute inset-0 z-20 flex items-center justify-center bg-background/80 backdrop-blur-sm'>
+                  <WorkflowLoader text='Generating workflow...' />
+                </div>
+              )}
+
+              {/* AI Prompt Input - floating at bottom */}
+              <div className='absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-full max-w-2xl px-4'>
+                <AIPromptInput
+                  onWorkflowGenerated={handleAIWorkflowGenerated}
+                  onLoadingChange={setIsAIGenerating}
+                  disabled={isExecuting}
+                />
+              </div>
+
               {/* Context menu for selected nodes */}
-              {contextMenu &&
-                selectedNodes.filter((n) => n.type !== 'trigger_node').length >
-                  0 && (
-                  <div
-                    className='fixed z-50 min-w-40 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95'
-                    style={{ left: contextMenu.x, top: contextMenu.y }}
-                  >
-                    <button
-                      className='relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground text-destructive'
-                      onClick={() => {
-                        setDeleteSelectedDialogOpen(true)
-                        setContextMenu(null)
-                      }}
-                    >
-                      <Trash2 className='h-4 w-4 mr-2' />
-                      Delete{' '}
-                      {
-                        selectedNodes.filter((n) => n.type !== 'trigger_node')
-                          .length
-                      }{' '}
-                      node
-                      {selectedNodes.filter((n) => n.type !== 'trigger_node')
-                        .length > 1
-                        ? 's'
-                        : ''}
-                    </button>
-                  </div>
-                )}
+              {contextMenu && (
+                <NodeContextMenu
+                  position={contextMenu}
+                  selectedNodes={selectedNodes}
+                  onDelete={() => setDeleteSelectedDialogOpen(true)}
+                  onClose={() => setContextMenu(null)}
+                />
+              )}
 
               {/* Delete selected nodes confirmation dialog */}
-              <Dialog
+              <DeleteNodesDialog
                 open={deleteSelectedDialogOpen}
                 onOpenChange={setDeleteSelectedDialogOpen}
-              >
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle className='flex items-center gap-2'>
-                      <div className='p-2 rounded-md bg-destructive/20'>
-                        <Trash2 className='size-5 text-destructive' />
-                      </div>
-                      Delete{' '}
-                      {
-                        selectedNodes.filter((n) => n.type !== 'trigger_node')
-                          .length
-                      }{' '}
-                      Node
-                      {selectedNodes.filter((n) => n.type !== 'trigger_node')
-                        .length > 1
-                        ? 's'
-                        : ''}
-                    </DialogTitle>
-                    <DialogDescription>
-                      Are you sure you want to delete{' '}
-                      {selectedNodes.filter((n) => n.type !== 'trigger_node')
-                        .length > 1
-                        ? 'these nodes'
-                        : 'this node'}
-                      ? This action cannot be undone and will remove all
-                      connections to{' '}
-                      {selectedNodes.filter((n) => n.type !== 'trigger_node')
-                        .length > 1
-                        ? 'these nodes'
-                        : 'this node'}
-                      .
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button
-                      variant='outline'
-                      onClick={() => setDeleteSelectedDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant='destructive'
-                      onClick={() => {
-                        handleDeleteSelectedNodes()
-                        setDeleteSelectedDialogOpen(false)
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                selectedNodes={selectedNodes}
+                onConfirm={handleDeleteSelectedNodes}
+              />
             </div>
           </TabsContent>
           <TabsContent value='executions' className='flex-1'>

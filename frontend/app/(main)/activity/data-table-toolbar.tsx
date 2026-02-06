@@ -106,15 +106,15 @@ export function DataTableToolbar({
     }, 0) + (table.getState().globalFilter ? 1 : 0)
 
   return (
-    <div className='flex flex-col gap-4 rounded-xl bg-muted/30 p-4 ring-1 ring-border/50 md:flex-row md:items-center md:justify-between'>
+    <div className='flex flex-col gap-4 mt-4 md:flex-row md:items-center md:justify-between'>
       <div className='flex flex-1 flex-wrap items-center gap-3'>
         <div className='relative flex-1 md:max-w-sm'>
           <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
           <Input
-            placeholder='Search workflows, errors...'
+            placeholder='Search workflow, errors...'
             value={(table.getState().globalFilter as string) ?? ''}
             onChange={(event) => table.setGlobalFilter(event.target.value)}
-            className='h-10 bg-background pl-9 shadow-sm'
+            className='h-10 border border-muted bg-background pl-9 shadow-sm'
           />
         </div>
 
@@ -187,7 +187,7 @@ function MultiSelectFilter({
           variant={hasSelection ? 'secondary' : 'outline'}
           size='sm'
           className={cn(
-            'h-9 gap-2 border-dashed shadow-sm transition-all',
+            'h-9 gap-2 border text-muted-foreground shadow-sm transition-all',
             hasSelection && 'border-primary/50 bg-primary/5'
           )}
         >
@@ -260,7 +260,11 @@ function ColumnVisibility({ table }: { table: Table<ActivityExecutionRow> }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant='outline' size='sm' className='h-9 gap-2 shadow-sm'>
+        <Button
+          variant='outline'
+          size='sm'
+          className='h-9 text-muted-foreground gap-2 shadow-sm'
+        >
           <Columns3 className='h-3.5 w-3.5' />
           Columns
           {hiddenCount > 0 && (

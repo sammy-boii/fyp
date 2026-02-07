@@ -102,13 +102,36 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
     return undefined
   })
 
-  // Check if each handle has outgoing edges
-  const trueHandleConnected = useStore((state) =>
-    state.edges.some((e) => e.source === id && e.sourceHandle === 'true')
-  )
-  const falseHandleConnected = useStore((state) =>
-    state.edges.some((e) => e.source === id && e.sourceHandle === 'false')
-  )
+  // Check if each handle has outgoing edges (fallback for legacy edges without sourceHandle)
+  const { trueHandleConnected, falseHandleConnected } = useStore((state) => {
+    const outgoingEdges = state.edges.filter((e) => e.source === id)
+    let hasTrue = outgoingEdges.some((e) => e.sourceHandle === 'true')
+    let hasFalse = outgoingEdges.some((e) => e.sourceHandle === 'false')
+
+    const hasLegacyEdges = outgoingEdges.some((e) => !e.sourceHandle)
+    if (hasLegacyEdges) {
+      const sourceNode = state.nodes.find((n) => n.id === id)
+      if (sourceNode) {
+        outgoingEdges.forEach((edge) => {
+          if (edge.sourceHandle) return
+          const targetNode = state.nodes.find((n) => n.id === edge.target)
+          if (!targetNode) return
+
+          if (targetNode.position.y <= sourceNode.position.y) {
+            hasTrue = true
+          } else {
+            hasFalse = true
+          }
+        })
+      }
+
+      if (!hasTrue && !hasFalse) {
+        hasTrue = true
+      }
+    }
+
+    return { trueHandleConnected: hasTrue, falseHandleConnected: hasFalse }
+  })
 
   const addNodeFromHandle = (
     nodeType: ValueOf<typeof ALL_NODE_TYPES>,

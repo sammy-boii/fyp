@@ -900,7 +900,7 @@ function WorkflowViewPageInner() {
                     <Button
                       variant='default'
                       size='lg'
-                      className='rounded-lg size-10 text-white'
+                      className='rounded-lg size-10'
                     >
                       <Plus className='size-5' />
                     </Button>

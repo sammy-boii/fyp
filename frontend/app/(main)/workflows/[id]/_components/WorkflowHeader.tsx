@@ -92,7 +92,7 @@ export function WorkflowHeader({
         </Button>
         <Button
           size='sm'
-          className='gap-1.5 w-20 px-2 h-8 text-xs text-white'
+          className='gap-1.5 w-20 px-2 h-8 text-xs'
           onClick={onSave}
           isLoading={isSaving}
           disabled={isAnyOperationPending || !workflowId}

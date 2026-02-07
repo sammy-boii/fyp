@@ -12,8 +12,8 @@ export const gmailOAuthRoutes = new Hono()
 gmailOAuthRoutes.use(
   '/*',
   googleAuth({
-    client_id: Bun.env.GOOGLE_CLIENT_ID,
-    client_secret: Bun.env.GOOGLE_CLIENT_SECRET,
+    client_id: Bun.env.GMAIL_CLIENT_ID,
+    client_secret: Bun.env.GMAIL_CLIENT_SECRET,
     redirect_uri: REDIRECT_URL.GMAIL.OAUTH,
     scope: SCOPES.GMAIL,
     access_type: 'offline', // request refresh token

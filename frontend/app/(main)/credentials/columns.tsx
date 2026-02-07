@@ -373,7 +373,7 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                   Access Token Expiry
                 </Label>
                 <div className='rounded-md bg-muted/20 px-3 py-2 text-sm text-muted-foreground'>
-                  {formatDate(cred.refreshTokenExpiresAt)}
+                  {formatDate(cred.accessTokenExpiresAt)}
                 </div>
               </div>
 

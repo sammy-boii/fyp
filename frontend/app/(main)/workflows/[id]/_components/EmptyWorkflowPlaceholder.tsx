@@ -6,18 +6,28 @@ import { AddNodeSheetContent } from '@/app/(main)/workflows/[id]/_components/Add
 import { ValueOf } from '@/types/index.types'
 import { ALL_NODE_TYPES } from '@/constants'
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 
 interface EmptyWorkflowPlaceholderProps {
+  isAIGenerating: boolean
   onAddNode: (nodeType: ValueOf<typeof ALL_NODE_TYPES>) => void
 }
 
 export function EmptyWorkflowPlaceholder({
-  onAddNode
+  onAddNode,
+  isAIGenerating
 }: EmptyWorkflowPlaceholderProps) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
+  console.log(isAIGenerating)
+
   return (
-    <div className='absolute inset-0 flex items-center justify-center z-10 pointer-events-none'>
+    <div
+      className={cn(
+        'absolute inset-0 flex items-center justify-center pointer-events-none',
+        isAIGenerating ? 'z-1' : 'z-10 '
+      )}
+    >
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetTrigger asChild>
           <div className='flex w-24 gap-2 group flex-col justify-center'>

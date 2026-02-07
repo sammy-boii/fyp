@@ -916,7 +916,10 @@ function WorkflowViewPageInner() {
 
               {/* Empty workflow placeholder - show only when no nodes */}
               {nodes.length === 0 && (
-                <EmptyWorkflowPlaceholder onAddNode={addNode} />
+                <EmptyWorkflowPlaceholder
+                  isAIGenerating={isAIGenerating}
+                  onAddNode={addNode}
+                />
               )}
 
               <ReactFlow

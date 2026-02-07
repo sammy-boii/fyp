@@ -56,23 +56,18 @@ export default function AIPromptInput({
     const tl = gsap.timeline()
 
     // Move button from bottom-right to bottom center (right side of input)
-    tl.to(
-      morphBtnRef.current,
-      {
-        right: 'calc(50% - 246px)',
-        rotation: 180,
-        scale: 0.75,
-        duration: 0.6,
-        ease: 'power2.inOut'
-      },
-      0
-    )
+    tl.to(morphBtnRef.current, {
+      right: 'calc(50% - 246px)',
+      rotation: 180,
+      scale: 0.6,
+      duration: 0.45,
+      ease: 'power1.inOut'
+    })
 
     // Scale down the icon briefly during rotation
     tl.to(
       btnIconRef.current,
       {
-        scale: 0.8,
         duration: 0.3,
         ease: 'power2.in'
       },
@@ -90,15 +85,15 @@ export default function AIPromptInput({
       0.3
     )
 
-    // Draw the border stroke
+    // Draw the border stroke shortly after the button starts moving
     tl.to(
       inputBorderRef.current,
       {
         strokeDashoffset: 0,
         duration: 0.8,
-        ease: 'power2.out'
+        ease: 'power1.out'
       },
-      0.3
+      0.1
     )
 
     // Hide cursor dot
@@ -122,9 +117,9 @@ export default function AIPromptInput({
       {
         clipPath: 'circle(150% at 90% 50%)',
         duration: 0.5,
-        ease: 'power2.out'
+        ease: 'power1.out'
       },
-      0.4
+      '<0.1'
     )
 
     // Show input field with typing effect
@@ -133,12 +128,12 @@ export default function AIPromptInput({
       {
         opacity: 1,
         duration: 0.3,
-        ease: 'power2.out',
+        ease: 'power1.out',
         onComplete: () => {
           inputFieldRef.current?.focus()
         }
       },
-      0.7
+      '<0.05'
     )
 
     // Bring back the icon
@@ -146,10 +141,10 @@ export default function AIPromptInput({
       btnIconRef.current,
       {
         scale: 1,
-        duration: 0.5,
-        ease: 'elastic.out(1, 0.5)'
+        duration: 0.3,
+        ease: 'power1.out'
       },
-      0.5
+      '<0.05'
     )
   }
 
@@ -189,7 +184,7 @@ export default function AIPromptInput({
       {
         clipPath: 'circle(0% at 90% 50%)',
         duration: 0.5,
-        ease: 'power2.in'
+        ease: 'power1.in'
       },
       0.3
     )
@@ -199,10 +194,10 @@ export default function AIPromptInput({
       inputBorderRef.current,
       {
         strokeDashoffset: -1400,
-        duration: 0.8,
-        ease: 'power2.in'
+        duration: 0.6,
+        ease: 'power1.in'
       },
-      0.5
+      0.35
     )
 
     // Morph button back to original position (bottom right of page)
@@ -212,10 +207,10 @@ export default function AIPromptInput({
         right: 16,
         rotation: 0,
         scale: 1,
-        duration: 0.7,
-        ease: 'power2.inOut'
+        duration: 0.45,
+        ease: 'power1.inOut'
       },
-      0.9
+      0.45
     )
 
     // Scale icon back
@@ -223,10 +218,10 @@ export default function AIPromptInput({
       btnIconRef.current,
       {
         scale: 1,
-        duration: 0.3,
-        ease: 'back.out(2)'
+        duration: 0.2,
+        ease: 'power1.out'
       },
-      1.3
+      '<'
     )
 
     tl.add(() => {
@@ -242,7 +237,7 @@ export default function AIPromptInput({
         opacity: 0
       })
       gsap.set(morphBtnRef.current, { rotation: 0 })
-    }, 1.5)
+    }, 1.1)
   }
 
   const collapseInput = () => {
@@ -260,19 +255,19 @@ export default function AIPromptInput({
       {
         clipPath: 'circle(0% at 90% 50%)',
         duration: 0.5,
-        ease: 'power2.in'
+        ease: 'power1.in'
       },
-      0.1
+      0
     )
 
     tl.to(
       inputBorderRef.current,
       {
         strokeDashoffset: -1400,
-        duration: 0.8,
-        ease: 'power2.in'
+        duration: 0.6,
+        ease: 'power1.in'
       },
-      0.2
+      0
     )
 
     tl.to(
@@ -281,20 +276,20 @@ export default function AIPromptInput({
         right: 16,
         rotation: 0,
         scale: 1,
-        duration: 0.7,
-        ease: 'power2.inOut'
+        duration: 0.45,
+        ease: 'power1.inOut'
       },
-      0.6
+      0.2
     )
 
     tl.to(
       btnIconRef.current,
       {
         scale: 1,
-        duration: 0.3,
-        ease: 'back.out(2)'
+        duration: 0.2,
+        ease: 'power1.out'
       },
-      1.0
+      '<'
     )
 
     tl.add(() => {
@@ -310,7 +305,7 @@ export default function AIPromptInput({
         opacity: 0
       })
       gsap.set(morphBtnRef.current, { rotation: 0 })
-    }, 1.2)
+    }, 0.9)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -367,7 +362,7 @@ export default function AIPromptInput({
             height='41'
             rx='10'
             ry='10'
-            className='fill-none stroke-muted-foreground/50 stroke-2'
+            className='fill-none '
             strokeDasharray='1400'
             strokeDashoffset='1400'
           />

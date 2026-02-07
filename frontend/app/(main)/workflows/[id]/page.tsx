@@ -18,6 +18,7 @@ import {
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2, Plus } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { toast } from 'sonner'
 
 import type { Node, OnEdgesChange, OnNodesChange } from '@xyflow/react'
 
@@ -39,7 +40,7 @@ import { WorkflowHeader } from './_components/WorkflowHeader'
 import { AddNodeSheetContent } from './_components/AddNodeSheet'
 import { EditWorkflowDialog } from './_components/EditWorkflowDialog'
 import { EmptyWorkflowPlaceholder } from './_components/EmptyWorkflowPlaceholder'
-import { AIPromptInput } from './_components/AIPromptInput'
+import MorphingInput from './_components/AIPromptInput'
 import {
   DEFAULT_EDGE_OPTIONS,
   createNode,
@@ -50,7 +51,7 @@ import {
   formatEdges
 } from '@/lib/react-flow-utils'
 import { ValueOf } from '@/types/index.types'
-import { ALL_NODE_TYPES } from '@/constants'
+import { ALL_NODE_TYPES, BACKEND_URL } from '@/constants'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
 import {
   NODE_DEFINITIONS,
@@ -70,6 +71,12 @@ export default function WorkflowViewPage() {
       <WorkflowViewPageInner />
     </ReactFlowProvider>
   )
+}
+
+interface AIWorkflowResponse {
+  nodes: Node[]
+  edges: Edge[]
+  error?: string
 }
 
 function WorkflowViewPageInner() {
@@ -604,6 +611,55 @@ function WorkflowViewPageInner() {
     [setNodes, setEdges, reactFlowInstance]
   )
 
+  const handleAiPromptSend = useCallback(
+    async (prompt: string) => {
+      if (!prompt.trim() || isAIGenerating || isExecuting) return
+
+      setIsAIGenerating(true)
+      try {
+        const response = await fetch(
+          `${BACKEND_URL}/api/ai/generate-workflow`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt: prompt.trim() })
+          }
+        )
+
+        const text = await response.text()
+        let data: AIWorkflowResponse
+
+        try {
+          data = JSON.parse(text)
+        } catch {
+          console.error('Invalid JSON response:', text)
+          throw new Error('Invalid response from server')
+        }
+
+        if (!response.ok || data.error) {
+          throw new Error(data.error || 'Failed to generate workflow')
+        }
+
+        if (data.nodes && data.nodes.length > 0) {
+          handleAIWorkflowGenerated(data.nodes, data.edges || [])
+          toast.success(`Generated workflow with ${data.nodes.length} nodes`)
+        } else {
+          throw new Error('No nodes generated')
+        }
+      } catch (error) {
+        console.error('AI generation error:', error)
+        toast.error(
+          error instanceof Error ? error.message : 'Failed to generate workflow'
+        )
+      } finally {
+        setIsAIGenerating(false)
+      }
+    },
+    [handleAIWorkflowGenerated, isAIGenerating, isExecuting]
+  )
+
   const handleExecuteWorkflow = useCallback(async () => {
     // Prevent double execution or execution during node execution
     if (
@@ -844,7 +900,7 @@ function WorkflowViewPageInner() {
                     <Button
                       variant='default'
                       size='lg'
-                      className='rounded-lg size-10'
+                      className='rounded-lg size-10 text-white'
                     >
                       <Plus className='size-5' />
                     </Button>
@@ -886,19 +942,16 @@ function WorkflowViewPageInner() {
 
               {/* AI Generation overlay */}
               {isAIGenerating && (
-                <div className='absolute inset-0 z-20 flex items-center justify-center bg-background/80 backdrop-blur-sm'>
-                  <WorkflowLoader text='Generating workflow...' />
+                <div className='absolute inset-0 z-1 flex items-center justify-center bg-background/10 backdrop-blur-sm'>
+                  <WorkflowLoader text='GENERATING WORKFLOW' />
                 </div>
               )}
 
-              {/* AI Prompt Input - floating at bottom */}
-              <div className='absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-full max-w-2xl px-4'>
-                <AIPromptInput
-                  onWorkflowGenerated={handleAIWorkflowGenerated}
-                  onLoadingChange={setIsAIGenerating}
-                  disabled={isExecuting}
-                />
-              </div>
+              {/* AI Prompt Input */}
+              <MorphingInput
+                onSend={handleAiPromptSend}
+                placeholder='Describe your workflow...'
+              />
 
               {/* Context menu for selected nodes */}
               {contextMenu && (

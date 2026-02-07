@@ -116,7 +116,11 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                    className={isActive(item.url) ? 'text-white' : ''}
+                  >
                     {item.url === '/activity' ? (
                       <a href={item.url}>
                         <item.icon />
@@ -246,6 +250,7 @@ function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              variant='destructive'
               onClick={async () => {
                 await logout()
                 toast.success('Logged out successfully')

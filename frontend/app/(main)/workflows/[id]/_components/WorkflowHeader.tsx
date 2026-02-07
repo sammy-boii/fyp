@@ -80,14 +80,19 @@ export function WorkflowHeader({
           className='gap-1.5 px-2 w-24 h-8 text-xs'
           onClick={onExecute}
           isLoading={isExecuting}
-          disabled={isAnyOperationPending || !workflowId || isWorkflowEmpty || !isManualTrigger}
+          disabled={
+            isAnyOperationPending ||
+            !workflowId ||
+            isWorkflowEmpty ||
+            !isManualTrigger
+          }
         >
           <Play className='h-3.5 w-3.5' />
           Execute
         </Button>
         <Button
           size='sm'
-          className='gap-1.5 w-20 px-2 h-8 text-xs'
+          className='gap-1.5 w-20 px-2 h-8 text-xs text-white'
           onClick={onSave}
           isLoading={isSaving}
           disabled={isAnyOperationPending || !workflowId}

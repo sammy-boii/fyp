@@ -60,7 +60,7 @@ export default function AIPromptInput({
       right: 'calc(50% - 246px)',
       rotation: 180,
       scale: 0.6,
-      duration: 0.45,
+      duration: 0.35,
       ease: 'power1.inOut'
     })
 
@@ -74,17 +74,6 @@ export default function AIPromptInput({
       0
     )
 
-    // Show cursor dot at center position
-    tl.set(
-      cursorDotRef.current,
-      {
-        left: '50%',
-        top: 26,
-        opacity: 1
-      },
-      0.3
-    )
-
     // Draw the border stroke shortly after the button starts moving
     tl.to(
       inputBorderRef.current,
@@ -93,18 +82,7 @@ export default function AIPromptInput({
         duration: 0.8,
         ease: 'power1.out'
       },
-      0.1
-    )
-
-    // Hide cursor dot
-    tl.to(
-      cursorDotRef.current,
-      {
-        opacity: 0,
-        scale: 0,
-        duration: 0.2
-      },
-      1.0
+      0.3
     )
 
     // Fill in the background with a radial expansion

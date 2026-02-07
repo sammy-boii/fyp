@@ -53,7 +53,7 @@ ${CONDITION_OPERATORS}
 
 STRICTNESS:
 - If the user's prompt is unclear, nonsensical, or cannot be mapped to the available node types/actions, return ONLY:
-  {"error":"<short reason>"}
+  {"error":"Failed to generate workflow"}
 - Do NOT output nodes/edges when returning an error.
 - Do NOT invent new node types or actionIds.
 - If a condition is implied but the condition details are missing, return an error instead of guessing.
@@ -94,6 +94,8 @@ CONDITION NODE CONFIG:
     ]
   }
 - For operators "is_empty" and "is_not_empty", omit "value".
+- If a branch needs multiple actions, chain them in sequence after the condition node.
+- Do NOT connect multiple nodes directly from the same condition handle.
 
 COMMON INTENTS:
 - "save to google drive" or "save in drive" => type "GOOGLE_DRIVE" with actionId "create_file"
@@ -146,6 +148,8 @@ interface GeneratedWorkflow {
   }>
   error?: string
 }
+
+const GENERIC_AI_ERROR = 'Failed to generate workflow'
 
 const VALID_NODE_TYPES = new Set([
   'MANUAL_TRIGGER',
@@ -463,9 +467,7 @@ const validateAndNormalizeWorkflow = (
       }
       conditionHandleCounts.set(edge.source, handleCounts)
     } else if (edge.sourceHandle) {
-      return {
-        error: 'sourceHandle is only allowed on edges from condition nodes'
-      }
+      delete edge.sourceHandle
     }
   }
 
@@ -627,7 +629,10 @@ export async function generateWorkflow(c: Context) {
     let content = response.choices?.[0]?.message?.content?.trim()
 
     if (!content) {
-      return c.json({ error: 'No response from AI' }, 500)
+      console.error('AI generate workflow: empty response', {
+        prompt: trimmedPrompt
+      })
+      return c.json({ error: GENERIC_AI_ERROR }, 500)
     }
 
     // Clean response - remove markdown code blocks if present
@@ -649,15 +654,17 @@ export async function generateWorkflow(c: Context) {
     } catch (parseError) {
       console.error('Failed to parse AI response:', content)
       console.error('Parse error:', parseError)
-      return c.json(
-        { error: 'Failed to parse AI response. Please try again.' },
-        500
-      )
+      return c.json({ error: GENERIC_AI_ERROR }, 500)
     }
 
     const validation = validateAndNormalizeWorkflow(workflow)
     if (validation.error) {
-      return c.json({ error: validation.error }, 400)
+      console.error('AI workflow validation failed', {
+        error: validation.error,
+        prompt: trimmedPrompt,
+        aiResponse: content
+      })
+      return c.json({ error: GENERIC_AI_ERROR }, 400)
     }
 
     workflow = validation.workflow!

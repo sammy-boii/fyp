@@ -2,30 +2,6 @@ import { prisma } from '@shared/db/prisma'
 import { encryptToken } from './crypto'
 import { API_ROUTES } from '@/src/constants'
 
-async function getGmailCredential(userId: string) {
-  try {
-    return await prisma.oAuthCredential.findFirst({
-      where: {
-        userId,
-        provider: 'google',
-        service: 'gmail'
-      }
-    })
-  } catch (err) {
-    return null
-  }
-}
-
-async function getGoogleDriveCredential(userId: string) {
-  return await prisma.oAuthCredential.findFirst({
-    where: {
-      userId,
-      provider: 'google',
-      service: 'drive'
-    }
-  })
-}
-
 async function refreshGoogleAccessToken(
   credentialId: string,
   refreshToken: string,
@@ -80,43 +56,8 @@ async function refreshGoogleAccessToken(
   }
 }
 
-/**
- * Get a valid decrypted access token for Gmail, refreshing if expired
- */
-export async function getValidGmailAccessToken(
-  userId: string,
-  provider = 'gmail'
-): Promise<{ token: string; credential: any }> {
-  const credential = await getGmailCredential(userId)
+// for google services
 
-  if (!credential) {
-    throw new Error('Gmail credential not found')
-  }
-
-  return await validateAndRefreshToken(credential, provider)
-}
-
-/**
- * Get a valid decrypted access token by credentialId, refreshing if expired
- */
-export async function getValidGmailAccessTokenByCredentialId(
-  credentialId: string,
-  provider: string
-): Promise<{ token: string; credential: any }> {
-  const credential = await prisma.oAuthCredential.findUnique({
-    where: { id: credentialId }
-  })
-
-  if (!credential) {
-    throw new Error('Credential not found')
-  }
-
-  return await validateAndRefreshToken(credential, provider)
-}
-
-/**
- * Validate and refresh token if needed
- */
 async function validateAndRefreshToken(
   credential: any,
   provider: string
@@ -156,12 +97,22 @@ async function validateAndRefreshToken(
   return { token: decryptedAccessToken, credential }
 }
 
-/**
- * Get a valid decrypted access token for Google Drive by credentialId, refreshing if expired
- */
+export async function getValidGmailAccessTokenByCredentialId(
+  credentialId: string
+): Promise<{ token: string; credential: any }> {
+  const credential = await prisma.oAuthCredential.findUnique({
+    where: { id: credentialId }
+  })
+
+  if (!credential) {
+    throw new Error('Credential not found')
+  }
+
+  return await validateAndRefreshToken(credential, 'gmail')
+}
+
 export async function getValidGoogleDriveAccessTokenByCredentialId(
-  credentialId: string,
-  provider = 'drive'
+  credentialId: string
 ): Promise<{ token: string; credential: any }> {
   const credential = await prisma.oAuthCredential.findUnique({
     where: { id: credentialId }
@@ -171,13 +122,11 @@ export async function getValidGoogleDriveAccessTokenByCredentialId(
     throw new Error('Google Drive credential not found')
   }
 
-  return await validateAndRefreshToken(credential, provider)
+  return await validateAndRefreshToken(credential, 'drive')
 }
 
-/**
- * Get Discord bot token from credential
- * Discord bot tokens don't expire, so we just return the token
- */
+// bot tokens don't expire
+
 export async function getDiscordBotToken(
   credentialId: string
 ): Promise<string> {

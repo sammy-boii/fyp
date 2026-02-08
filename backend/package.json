@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "npx kill-port 5000 && bun run --hot src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun"
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "start": "bun dist/index.js"
   },
   "dependencies": {
     "@hono/oauth-providers": "^0.8.5",

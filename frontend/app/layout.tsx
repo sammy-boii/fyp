@@ -4,7 +4,7 @@ import './globals.css'
 import Provider from '@/lib/provider'
 
 const spaceGrotesk = Space_Grotesk({
-  variable: '--font-geist-sans',
+  variable: '--font-space-grotesk',
   subsets: ['latin']
 })
 

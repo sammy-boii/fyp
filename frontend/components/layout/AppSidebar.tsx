@@ -6,8 +6,7 @@ import {
   LayoutDashboard,
   Workflow,
   ZapIcon,
-  PanelLeft,
-  Sparkles
+  PanelLeft
 } from 'lucide-react'
 
 import {
@@ -22,7 +21,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarSeparator,
   useSidebar
 } from '@/components/ui/sidebar'
 import Link from 'next/link'
@@ -48,7 +46,6 @@ import { toast } from 'sonner'
 import { useGetProfile } from '@/hooks/use-user'
 import { Kbd } from '../ui/kbd'
 import { AnimatedThemeToggler } from '../magicui/animated-theme-toggler'
-import { useGetWorkflows } from '@/hooks/use-workflows'
 
 // Menu items.
 const mainItems = [
@@ -82,11 +79,6 @@ export function AppSidebar() {
   const pathName = usePathname()
 
   const { data } = useGetProfile()
-  const { data: workflowsData } = useGetWorkflows()
-
-  const workflows = workflowsData?.data || []
-  const activeWorkflows = workflows.filter((w: any) => w.isActive).length
-  const totalWorkflows = workflows.length
 
   const isActive = (url: string) => {
     return (
@@ -121,8 +113,6 @@ export function AppSidebar() {
         </SidebarMenu>
         <SidebarToggle />
       </SidebarHeader>
-
-      <SidebarSeparator />
 
       <SidebarContent>
         {/* Main navigation */}

@@ -1,5 +1,6 @@
 'use client'
 
+import { WS_BASE_URL } from '@/constants'
 import { useEffect, useRef, useState, useCallback } from 'react'
 
 export type ExecutionEventType =
@@ -43,8 +44,6 @@ type UseWorkflowWebSocketOptions = {
   onWorkflowComplete?: (duration?: number) => void
   onWorkflowError?: (error?: string) => void
 }
-
-const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000'
 
 export function useWorkflowWebSocket(
   workflowId: string | null,

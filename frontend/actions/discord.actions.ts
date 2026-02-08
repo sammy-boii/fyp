@@ -1,11 +1,9 @@
 'use server'
 
+import { BACKEND_BASE_URL } from '@/constants'
 import { getCurrentUser } from '@/data/dal'
 import { tryCatch } from '@/lib/utils'
 import { cookies } from 'next/headers'
-
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
 
 export type Guild = {
   id: string
@@ -51,7 +49,7 @@ export async function listGuilds(credentialId: string) {
     params.set('credentialId', credentialId)
 
     const response = await fetch(
-      `${BACKEND_URL}/api/discord/guilds?${params.toString()}`,
+      `${BACKEND_BASE_URL}/api/discord/guilds?${params.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${token}`
@@ -94,7 +92,7 @@ export async function listChannels(
     params.set('type', type)
 
     const response = await fetch(
-      `${BACKEND_URL}/api/discord/channels?${params.toString()}`,
+      `${BACKEND_BASE_URL}/api/discord/channels?${params.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${token}`
@@ -137,7 +135,7 @@ export async function listGuildMembers(
     params.set('limit', limit.toString())
 
     const response = await fetch(
-      `${BACKEND_URL}/api/discord/members?${params.toString()}`,
+      `${BACKEND_BASE_URL}/api/discord/members?${params.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${token}`

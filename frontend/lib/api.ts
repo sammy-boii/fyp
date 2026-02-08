@@ -1,11 +1,9 @@
+import { BACKEND_BASE_URL } from '@/constants'
 import ky, { KyInstance } from 'ky'
 import { cookies } from 'next/headers'
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/'
-
 export const api: KyInstance = ky.create({
-  prefixUrl: BACKEND_URL,
+  prefixUrl: BACKEND_BASE_URL,
   timeout: false, // Disable timeout for long-running workflows
   retry: {
     limit: 0,

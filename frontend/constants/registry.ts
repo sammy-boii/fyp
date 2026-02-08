@@ -6,7 +6,7 @@ import googleDriveIcon from '@/public/google-drive.png'
 import aiIcon from '@/public/ai.svg'
 
 import { NodeDefinition, TriggerNodeDefinition } from '@/types/node.types'
-import { BACKEND_URL, NODE_TYPES, TRIGGER_NODE_TYPES } from '.'
+import { BACKEND_BASE_URL, NODE_TYPES, TRIGGER_NODE_TYPES } from '.'
 import { TimerReset, GitBranch, Globe } from 'lucide-react'
 
 import { GOOGLE_DRIVE_ACTIONS } from '@/components/editor/custom-nodes/google-drive/GoogleDriveActions'
@@ -136,14 +136,14 @@ export const CREDENTIALS_OPTIONS = [
     id: 'gmail',
     name: 'Gmail',
     icon: gmailIcon,
-    url: `${BACKEND_URL}/api/gmail/oauth`,
+    url: `${BACKEND_BASE_URL}/api/gmail/oauth`,
     description: 'Connect your Gmail and manage emails'
   },
   {
     id: 'google-drive',
     name: 'Google Drive',
     icon: googleDriveIcon,
-    url: `${BACKEND_URL}/api/google-drive/oauth`,
+    url: `${BACKEND_BASE_URL}/api/google-drive/oauth`,
     description: 'Access and manage files from your Google Drive'
   },
   {

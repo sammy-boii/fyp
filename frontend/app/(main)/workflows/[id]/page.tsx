@@ -51,7 +51,7 @@ import {
   formatEdges
 } from '@/lib/react-flow-utils'
 import { ValueOf } from '@/types/index.types'
-import { ALL_NODE_TYPES, BACKEND_URL } from '@/constants'
+import { ALL_NODE_TYPES, BACKEND_BASE_URL } from '@/constants'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
 import {
   NODE_DEFINITIONS,
@@ -618,7 +618,7 @@ function WorkflowViewPageInner() {
       setIsAIGenerating(true)
       try {
         const response = await fetch(
-          `${BACKEND_URL}/api/ai/generate-workflow`,
+          `${BACKEND_BASE_URL}/api/ai/generate-workflow`,
           {
             method: 'POST',
             headers: {

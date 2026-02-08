@@ -1,11 +1,9 @@
 'use server'
 
+import { BACKEND_BASE_URL } from '@/constants'
 import { getCurrentUser } from '@/data/dal'
 import { tryCatch } from '@/lib/utils'
 import { cookies } from 'next/headers'
-
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
 
 export type DriveItem = {
   id: string
@@ -42,7 +40,7 @@ export async function listDriveItems(
     }
 
     const response = await fetch(
-      `${BACKEND_URL}/api/google-drive/files?${params.toString()}`,
+      `${BACKEND_BASE_URL}/api/google-drive/files?${params.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${token}`

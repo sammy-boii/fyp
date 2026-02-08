@@ -21,4 +21,6 @@ export const ALL_NODE_TYPES = {
   ...TRIGGER_NODE_TYPES
 } as const
 
-export const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000'
+export const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL
+
+export const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL

@@ -4,10 +4,10 @@ import {
   Activity,
   KeyRound,
   LayoutDashboard,
-  Settings,
   Workflow,
   ZapIcon,
-  PanelLeft
+  PanelLeft,
+  Sparkles
 } from 'lucide-react'
 
 import {
@@ -22,6 +22,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarSeparator,
   useSidebar
 } from '@/components/ui/sidebar'
 import Link from 'next/link'
@@ -47,28 +48,33 @@ import { toast } from 'sonner'
 import { useGetProfile } from '@/hooks/use-user'
 import { Kbd } from '../ui/kbd'
 import { AnimatedThemeToggler } from '../magicui/animated-theme-toggler'
+import { useGetWorkflows } from '@/hooks/use-workflows'
 
 // Menu items.
-const items = [
+const mainItems = [
   {
     title: 'Dashboard',
     url: '/dashboard',
-    icon: LayoutDashboard
+    icon: LayoutDashboard,
+    description: 'Overview & stats'
   },
   {
     title: 'Workflows',
     url: '/workflows',
-    icon: Workflow
+    icon: Workflow,
+    description: 'Automations'
   },
   {
     title: 'Credentials',
     url: '/credentials',
-    icon: KeyRound
+    icon: KeyRound,
+    description: 'API keys & OAuth'
   },
   {
     title: 'Activity',
     url: '/activity',
-    icon: Activity
+    icon: Activity,
+    description: 'Execution logs'
   }
 ]
 
@@ -76,9 +82,13 @@ export function AppSidebar() {
   const pathName = usePathname()
 
   const { data } = useGetProfile()
+  const { data: workflowsData } = useGetWorkflows()
+
+  const workflows = workflowsData?.data || []
+  const activeWorkflows = workflows.filter((w: any) => w.isActive).length
+  const totalWorkflows = workflows.length
 
   const isActive = (url: string) => {
-    // Exact match or starts with the URL followed by a slash
     return (
       pathName === url ||
       (pathName.startsWith(url) && pathName[url.length] === '/')
@@ -90,18 +100,20 @@ export function AppSidebar() {
       <SidebarHeader className='relative'>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link className='flex items-center gap-2 p-2 relative' href='/'>
-              {/* Zap icon only visible when collapsed & not hovered */}
-              <ZapIcon
-                className='
-          size-5! transition-all duration-300
-          group-data-[state=collapsed]:opacity-100
-          group-data-[state=collapsed]:group-hover:opacity-0
-          group-data-[state=expanded]:opacity-100
-        '
-              />
-              {/* Sidebar title only visible when expanded */}
-              <span className='font-bold group-data-[state=expanded]:block hidden'>
+            <Link className='flex items-center gap-2.5 p-2 relative' href='/'>
+              <div className='relative'>
+                <ZapIcon
+                  className='
+                    size-5! transition-all duration-300
+                    group-data-[state=collapsed]:opacity-100
+                    group-data-[state=collapsed]:group-hover:opacity-0
+                    group-data-[state=expanded]:opacity-100
+                    text-primary
+                  '
+                />
+                <div className='absolute -inset-1 bg-primary/20 rounded-md blur-sm -z-10 group-data-[state=collapsed]:group-hover:opacity-0 transition-opacity' />
+              </div>
+              <span className='font-bold text-lg tracking-tight group-data-[state=expanded]:block hidden'>
                 Flux
               </span>
             </Link>
@@ -109,26 +121,33 @@ export function AppSidebar() {
         </SidebarMenu>
         <SidebarToggle />
       </SidebarHeader>
+
+      <SidebarSeparator />
+
       <SidebarContent>
+        {/* Main navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <SidebarGroupLabel className='text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold'>
+            Navigate
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(item.url)}
+                    tooltip={item.title}
                     className={isActive(item.url) ? 'text-white' : ''}
                   >
                     {item.url === '/activity' ? (
                       <a href={item.url}>
-                        <item.icon />
+                        <item.icon className='size-4' />
                         <span>{item.title}</span>
                       </a>
                     ) : (
                       <Link href={item.url}>
-                        <item.icon />
+                        <item.icon className='size-4' />
                         <span>{item.title}</span>
                       </Link>
                     )}
@@ -139,6 +158,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
       <SidebarFooter>
         <NavUser
           user={{

@@ -8,9 +8,11 @@ node_modules
 /frontend/.env
 shared/.env
 
-
 # prisma generated files
 /shared/src/prisma/generated/prisma
 
 # prisma cache
 /shared/node_modules
+
+
+backend/dist

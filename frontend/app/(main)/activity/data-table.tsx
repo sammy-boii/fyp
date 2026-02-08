@@ -28,16 +28,17 @@ import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
+import type { ActivityExecutionRow } from './types'
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
+interface DataTableProps<TValue> {
+  columns: ColumnDef<ActivityExecutionRow, TValue>[]
+  data: ActivityExecutionRow[]
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TValue>({
   columns,
   data
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TValue>) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     executionId: false,
     error: false
@@ -48,7 +49,7 @@ export function DataTable<TData, TValue>({
   ])
   const [globalFilter, setGlobalFilter] = useState('')
 
-  const table = useReactTable({
+  const table = useReactTable<ActivityExecutionRow>({
     data,
     columns,
     state: {

@@ -1,6 +1,25 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        // Apply to all pages
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: `
+              default-src 'self';
+              connect-src 'self' wss://flux-backend-r3tv.onrender.com https://flux-frontend-pearl.vercel.app;
+              script-src 'self';
+              style-src 'self' 'unsafe-inline';
+            `.replace(/\n/g, ' ')
+          }
+        ]
+      }
+    ]
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '20mb' // temp (hopefully)

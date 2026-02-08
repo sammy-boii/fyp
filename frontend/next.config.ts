@@ -4,7 +4,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Apply to all pages
         source: '/(.*)',
         headers: [
           {
@@ -12,7 +11,7 @@ const nextConfig: NextConfig = {
             value: `
               default-src 'self';
               connect-src 'self' wss://flux-backend-r3tv.onrender.com https://flux-frontend-pearl.vercel.app;
-              script-src 'self';
+              script-src 'self' 'unsafe-inline' 'unsafe-eval';
               style-src 'self' 'unsafe-inline';
             `.replace(/\n/g, ' ')
           }

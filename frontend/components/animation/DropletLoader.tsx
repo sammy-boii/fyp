@@ -95,8 +95,9 @@ export default function DropletLoader() {
             className='absolute w-20 h-20 rounded-full z-2'
             style={{
               background:
-                'linear-gradient(135deg, oklch(0.835 0.239 147.17) 0%, oklch(0.735 0.189 147.17) 100%)',
-              boxShadow: '0 0 20px oklch(0.835 0.239 147.17 / 0.4)',
+                'linear-gradient(135deg, var(--primary) 0%, color-mix(in oklch, var(--primary) 80%, black) 100%)',
+              boxShadow:
+                '0 0 20px color-mix(in oklch, var(--primary) 40%, transparent)',
               animation: 'pulse 3s ease-in-out infinite'
             }}
           />
@@ -105,42 +106,42 @@ export default function DropletLoader() {
           <div
             className='droplet absolute w-[30px] h-[30px] rounded-full opacity-80'
             style={{
-              background: 'oklch(0.835 0.239 147.17)',
+              background: 'var(--primary)',
               animation: 'orbit 4s linear infinite'
             }}
           />
           <div
             className='droplet absolute w-[25px] h-[25px] rounded-full opacity-80'
             style={{
-              background: 'oklch(0.785 0.219 147.17)',
+              background: 'color-mix(in oklch, var(--primary) 85%, black)',
               animation: 'orbit 5.5s linear infinite reverse'
             }}
           />
           <div
             className='droplet absolute w-5 h-5 rounded-full opacity-80'
             style={{
-              background: 'oklch(0.885 0.259 147.17)',
+              background: 'color-mix(in oklch, var(--primary) 90%, white)',
               animation: 'vertical-bounce 3s ease-in-out infinite'
             }}
           />
           <div
             className='droplet absolute w-[35px] h-[35px] rounded-full opacity-80'
             style={{
-              background: 'oklch(0.735 0.189 147.17)',
+              background: 'color-mix(in oklch, var(--primary) 80%, black)',
               animation: 'horizontal-bounce 4.5s ease-in-out infinite'
             }}
           />
           <div
             className='droplet absolute w-[15px] h-[15px] rounded-full opacity-80'
             style={{
-              background: 'oklch(0.860 0.249 147.17)',
+              background: 'color-mix(in oklch, var(--primary) 95%, white)',
               animation: 'chaotic 6s infinite'
             }}
           />
           <div
             className='droplet absolute w-10 h-10 rounded-full opacity-80'
             style={{
-              background: 'oklch(0.810 0.229 147.17)',
+              background: 'color-mix(in oklch, var(--primary) 92%, black)',
               animation: 'orbit 7s linear infinite'
             }}
           />
@@ -151,8 +152,9 @@ export default function DropletLoader() {
           <span
             className='text-[0.75rem] font-semibold tracking-[0.3em]'
             style={{
-              color: 'oklch(0.735 0.189 147.17)',
-              textShadow: '0 0 10px oklch(0.735 0.189 147.17 / 0.5)'
+              color: 'var(--primary)',
+              textShadow:
+                '0 0 10px color-mix(in oklch, var(--primary) 50%, transparent)'
             }}
           >
             INITIALIZING
@@ -162,7 +164,7 @@ export default function DropletLoader() {
               className='w-full h-full'
               style={{
                 background:
-                  'linear-gradient(90deg, transparent, oklch(0.835 0.239 147.17), transparent)',
+                  'linear-gradient(90deg, transparent, var(--primary), transparent)',
                 animation: 'scan 2s linear infinite'
               }}
             />

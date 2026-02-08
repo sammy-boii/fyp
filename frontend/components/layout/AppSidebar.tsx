@@ -37,6 +37,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { TooltipTrigger } from '@radix-ui/react-tooltip'
@@ -46,6 +49,8 @@ import { toast } from 'sonner'
 import { useGetProfile } from '@/hooks/use-user'
 import { Kbd } from '../ui/kbd'
 import { AnimatedThemeToggler } from '../magicui/animated-theme-toggler'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Palette } from 'lucide-react'
 
 // Menu items.
 const mainItems = [
@@ -202,6 +207,34 @@ function NavUser({
 
   const router = useRouter()
   const fallbackInitial = user.name?.charAt(0)?.toUpperCase() || 'U'
+  const defaultAccent = '#22c55e'
+  const [accentColor, setAccentColor] = useState(defaultAccent)
+
+  const accentForeground = useMemo(() => {
+    const hex = accentColor.replace('#', '')
+    if (hex.length !== 6) return '#0a0a0a'
+    const r = parseInt(hex.slice(0, 2), 16) / 255
+    const g = parseInt(hex.slice(2, 4), 16) / 255
+    const b = parseInt(hex.slice(4, 6), 16) / 255
+    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    return luminance > 0.6 ? '#0a0a0a' : '#ffffff'
+  }, [accentColor])
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem('app-accent-color')
+    if (stored) {
+      setAccentColor(stored)
+    }
+  }, [])
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.style.setProperty('--primary', accentColor)
+    root.style.setProperty('--sidebar-primary', accentColor)
+    root.style.setProperty('--primary-foreground', accentForeground)
+    root.style.setProperty('--sidebar-primary-foreground', accentForeground)
+    window.localStorage.setItem('app-accent-color', accentColor)
+  }, [accentColor, accentForeground])
 
   return (
     <SidebarMenu>
@@ -257,6 +290,12 @@ function NavUser({
               <DropdownMenuItem asChild>
                 <AnimatedThemeToggler className='flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none' />
               </DropdownMenuItem>
+
+              <AccentColorPicker
+                accentColor={accentColor}
+                onColorChange={setAccentColor}
+                defaultAccent={defaultAccent}
+              />
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -274,5 +313,120 @@ function NavUser({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+  )
+}
+
+const presetColors = [
+  { color: '#22c55e', label: 'Green' },
+  { color: '#3b82f6', label: 'Blue' },
+  { color: '#a855f7', label: 'Purple' },
+  { color: '#f97316', label: 'Orange' },
+  { color: '#ef4444', label: 'Red' },
+  { color: '#ec4899', label: 'Pink' },
+  { color: '#14b8a6', label: 'Teal' },
+  { color: '#eab308', label: 'Yellow' }
+]
+
+function AccentColorPicker({
+  accentColor,
+  onColorChange,
+  defaultAccent
+}: {
+  accentColor: string
+  onColorChange: (color: string) => void
+  defaultAccent: string
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const isCustom = !presetColors.some(
+    (p) => p.color.toLowerCase() === accentColor.toLowerCase()
+  )
+
+  function AccentColorDot() {
+    return (
+      <span
+        className='ml-auto size-3 rounded-full border border-border/50 shadow-sm'
+        style={{ backgroundColor: accentColor }}
+      />
+    )
+  }
+
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger replace={AccentColorDot} className='gap-2'>
+        <Palette className='size-4 text-muted-foreground' />
+        <span>Accent color</span>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent className='min-w-[200px] p-3'>
+        <div className='flex items-center justify-between mb-3'>
+          <span className='text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+            Theme
+          </span>
+          <button
+            onClick={() => onColorChange(defaultAccent)}
+            className='text-[11px] cursor-pointer text-muted-foreground/70 hover:text-foreground transition-colors'
+          >
+            Reset
+          </button>
+        </div>
+        <div className='grid grid-cols-4 gap-2'>
+          {presetColors.map(({ color, label }) => (
+            <button
+              key={color}
+              aria-label={label}
+              onClick={() => onColorChange(color)}
+              className='group/swatch relative cursor-pointer size-8 rounded-lg transition-all duration-200 hover:scale-110 hover:shadow-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+              style={{ backgroundColor: color }}
+            >
+              {accentColor.toLowerCase() === color.toLowerCase() && (
+                <span className='absolute inset-0 flex items-center justify-center'>
+                  <svg
+                    className='size-3 text-white drop-shadow-sm'
+                    viewBox='0 0 24 24'
+                    fill='none'
+                    stroke='currentColor'
+                    strokeWidth='3'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                  >
+                    <polyline points='20 6 9 17 4 12' />
+                  </svg>
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        <div className='mt-3 pt-3 border-t border-border/50'>
+          <div className='relative'>
+            <button
+              onClick={() => inputRef.current?.click()}
+              className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent'
+            >
+              <span
+                className='size-4 rounded-full border border-dashed border-muted-foreground/40'
+                style={{ background: isCustom ? accentColor : undefined }}
+              >
+                {!isCustom && (
+                  <span className='flex items-center justify-center h-full text-[9px] text-muted-foreground'>
+                    +
+                  </span>
+                )}
+              </span>
+              <span className='text-muted-foreground'>
+                {isCustom ? accentColor.toUpperCase() : 'Custom color…'}
+              </span>
+            </button>
+            <input
+              ref={inputRef}
+              type='color'
+              value={accentColor}
+              onChange={(e) => onColorChange(e.target.value)}
+              className='absolute inset-0 size-full cursor-pointer opacity-0'
+              tabIndex={-1}
+            />
+          </div>
+        </div>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   )
 }

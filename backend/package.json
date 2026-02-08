@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "npx kill-port 5000 && bun run --hot src/index.ts",
     "prisma:generate": "bunx prisma generate --schema ../shared/src/prisma/schema.prisma",
-    "build": "bun build src/index.ts --outdir dist --target bun && bun run prisma:generate",
+    "build": " bun run prisma:generate && bun build src/index.ts --outdir dist --target bun",
     "start": "bun dist/index.js"
   },
   "dependencies": {

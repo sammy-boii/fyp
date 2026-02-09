@@ -68,7 +68,7 @@ const ResetPasswordForm = () => {
     const { error } = await resetPassword(values)
 
     if (error) {
-      toast.error(error.message)
+      toast.error(error)
       return
     }
 

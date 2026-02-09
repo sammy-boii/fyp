@@ -52,7 +52,7 @@ const SignUpPage = () => {
     const { error } = await signUp(formData)
 
     if (error) {
-      toast.error(error.message)
+      toast.error(error)
       return
     }
 

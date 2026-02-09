@@ -12,10 +12,24 @@ import {
   ComboboxEmpty
 } from '@/components/ui/combobox'
 import { Button } from '@/components/ui/button'
-import { Loader2, Hash, Volume2, Folder, Megaphone, MessageSquare, RefreshCw } from 'lucide-react'
+import {
+  Loader2,
+  Hash,
+  Volume2,
+  Folder,
+  Megaphone,
+  MessageSquare,
+  RefreshCw
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export type ChannelTypeFilter = 'all' | 'text' | 'voice' | 'category' | 'announcement' | 'forum'
+export type ChannelTypeFilter =
+  | 'all'
+  | 'text'
+  | 'voice'
+  | 'category'
+  | 'announcement'
+  | 'forum'
 
 interface ChannelPickerProps {
   value: string
@@ -75,10 +89,14 @@ export function ChannelPicker({
 
     startTransition(async () => {
       setError(null)
-      const result = await listChannels(credentialId, watchedGuildId, channelType)
+      const result = await listChannels(
+        credentialId,
+        watchedGuildId,
+        channelType
+      )
 
       if (result.error) {
-        setError(result.error.message || 'Failed to fetch channels')
+        setError(result.error || 'Failed to fetch channels')
         setChannels([])
       } else {
         setChannels(result.data || [])
@@ -195,11 +213,7 @@ export function ChannelPicker({
 
   return (
     <div className='flex items-center gap-2'>
-      <Combobox
-        value={value}
-        onValueChange={handleSelect}
-        disabled={disabled}
-      >
+      <Combobox value={value} onValueChange={handleSelect} disabled={disabled}>
         <ComboboxInput
           placeholder={placeholder}
           className={cn('h-9 text-sm flex-1', className)}
@@ -258,25 +272,25 @@ export function ChannelPicker({
                     <div className='px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase'>
                       {category.name}
                     </div>
-                    {(categorizedChannels.channelsByCategory[category.id] || []).map(
-                      (channel) => {
-                        const Icon = getChannelIcon(channel.type)
-                        return (
-                          <ComboboxItem
-                            key={channel.id}
-                            value={channel.id}
-                            className='cursor-pointer pl-4'
-                          >
-                            <div className='flex items-center gap-2'>
-                              <Icon className='h-4 w-4 text-muted-foreground' />
-                              <span className='truncate max-w-[180px]'>
-                                {channel.name}
-                              </span>
-                            </div>
-                          </ComboboxItem>
-                        )
-                      }
-                    )}
+                    {(
+                      categorizedChannels.channelsByCategory[category.id] || []
+                    ).map((channel) => {
+                      const Icon = getChannelIcon(channel.type)
+                      return (
+                        <ComboboxItem
+                          key={channel.id}
+                          value={channel.id}
+                          className='cursor-pointer pl-4'
+                        >
+                          <div className='flex items-center gap-2'>
+                            <Icon className='h-4 w-4 text-muted-foreground' />
+                            <span className='truncate max-w-[180px]'>
+                              {channel.name}
+                            </span>
+                          </div>
+                        </ComboboxItem>
+                      )
+                    })}
                   </div>
                 ))}
               </>

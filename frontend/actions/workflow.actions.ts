@@ -105,7 +105,6 @@ export async function getWorkflow(id: string) {
       throw new Error('Workflow not found or access denied')
     }
 
-    // Fetch the latest completed execution with node outputs
     const latestExecution = await prisma.workflowExecution.findFirst({
       where: {
         workflowId: id,
@@ -122,7 +121,6 @@ export async function getWorkflow(id: string) {
       }
     })
 
-    // Merge lastOutput into nodes if we have execution data
     if (latestExecution && Array.isArray(workflow.nodes)) {
       const nodeOutputMap = new Map(
         latestExecution.nodeExecutions.map((ne) => [ne.nodeId, ne.outputData])
@@ -178,7 +176,6 @@ export async function updateWorkflow(id: string, data: Partial<Workflow>) {
       throw new Error('Not authenticated')
     }
 
-    // Verify the workflow belongs to the current user
     const existing = await prisma.workflow.findUnique({
       where: {
         id,
@@ -202,19 +199,9 @@ export async function updateWorkflow(id: string, data: Partial<Workflow>) {
       }
     })
 
-    // Always refresh the trigger cache when a workflow is updated.
-    // This handles all cases:
-    // - Workflow changed from Discord trigger to Manual trigger (removes from cache)
-    // - Workflow changed from Manual to Discord trigger (adds to cache)
-    // - Discord trigger config changed (updates cache)
-    // - Workflow activated/deactivated (adds/removes from cache)
-    // The refreshWorkflow method internally handles all the logic:
-    // it removes any existing entry and re-adds only if the workflow is active
-    // and has a properly configured Discord webhook trigger.
     try {
       await api.patch(`api/workflow/${id}/refresh-cache`).json()
     } catch (err) {
-      // Log but don't fail the update if cache refresh fails
       console.error('Failed to refresh trigger cache:', err)
     }
 
@@ -230,7 +217,6 @@ export async function deleteWorkflow(id: string) {
       throw new Error('Not authenticated')
     }
 
-    // Verify the workflow belongs to the current user
     const workflow = await prisma.workflow.findUnique({
       where: {
         id,
@@ -242,11 +228,9 @@ export async function deleteWorkflow(id: string) {
       throw new Error('Workflow not found or access denied')
     }
 
-    // Remove from trigger cache before deleting
     try {
       await api.delete(`api/workflow/${id}/cache`).json()
     } catch (err) {
-      // Log but don't fail the delete if cache removal fails
       console.error('Failed to remove workflow from trigger cache:', err)
     }
 
@@ -266,7 +250,6 @@ export async function executeWorkflow(id: string) {
       throw new Error('Not authenticated')
     }
 
-    // Verify the workflow belongs to the current user
     const workflow = await prisma.workflow.findUnique({
       where: {
         id,
@@ -294,7 +277,6 @@ export async function executeNode(workflowId: string, nodeId: string) {
       throw new Error('Not authenticated')
     }
 
-    // Verify the workflow belongs to the current user
     const workflow = await prisma.workflow.findUnique({
       where: {
         id: workflowId,

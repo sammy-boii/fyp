@@ -76,7 +76,7 @@ export function DriveItemPicker({
         )
 
         if (result.error) {
-          setError(result.error.message || 'Failed to fetch items')
+          setError(result.error || 'Failed to fetch items')
           setItems([])
         } else {
           setItems(result.data || [])

@@ -105,12 +105,12 @@ export function useExecuteWorkflow() {
       const toastId = toast.loading('Executing workflow...')
       return toastId
     },
-    onSuccess: (data, variables, toastId) => {
+    onSuccess: (data, _variables, toastId) => {
       if (data.error) {
         toast.dismiss(toastId as string)
         throw data.error
       }
-      const duration = ((data.data.data?.duration ?? 0) / 1000).toFixed(2)
+      const duration = ((data.data?.data?.duration ?? 0) / 1000).toFixed(2)
       toast.dismiss(toastId as string)
       toast.success(`Workflow executed successfully in ${duration}s`)
     },

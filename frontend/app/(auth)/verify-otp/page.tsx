@@ -83,7 +83,7 @@ const VerifyOtpForm = () => {
     startTransition(async () => {
       const { data, error } = await verifyResetOTP(emailFromQuery, otp)
       if (error) {
-        toast.error(error.message)
+        toast.error(error)
         return
       }
       toast.success('OTP verified successfully')
@@ -104,7 +104,7 @@ const VerifyOtpForm = () => {
     startResendTransition(async () => {
       const { error } = await sendResetOTP(emailFromQuery)
       if (error) {
-        toast.error(error.message)
+        toast.error(error)
         return
       }
       toast.success('The OTP was resent successfully')

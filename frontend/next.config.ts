@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { FRONTEND_BASE_URL, WS_BASE_URL } from './constants'
 
 const nextConfig: NextConfig = {
   async headers() {
@@ -10,7 +11,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              connect-src 'self' wss://flux-backend-r3tv.onrender.com https://flux-frontend-pearl.vercel.app;
+              connect-src 'self' ${WS_BASE_URL} ${FRONTEND_BASE_URL};
               script-src 'self' 'unsafe-inline' 'unsafe-eval';
               style-src 'self' 'unsafe-inline';
             `.replace(/\n/g, ' ')

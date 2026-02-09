@@ -176,10 +176,7 @@ const ActivityPage = () => {
                   Live ({connectedCount})
                 </Badge>
               ) : (
-                <Badge
-                  variant='outline'
-                  className='border-red-600 text-red-600'
-                >
+                <Badge variant='outline' className='border-0 text-red-500'>
                   <WifiOff className='mr-1 h-3 w-3' />
                   Offline
                 </Badge>

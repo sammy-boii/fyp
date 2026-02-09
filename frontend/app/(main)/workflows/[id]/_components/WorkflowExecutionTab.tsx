@@ -361,7 +361,7 @@ const WorkflowExecutionTab = ({
               </span>
             </div>
           ) : (
-            <div className='flex items-center gap-1.5 text-sm text-muted-foreground'>
+            <div className='flex items-center gap-1.5 text-sm text-red-500'>
               <WifiOff className='h-3.5 w-3.5' />
               <span>Offline</span>
             </div>

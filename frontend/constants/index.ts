@@ -23,4 +23,9 @@ export const ALL_NODE_TYPES = {
 
 export const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL
 
-export const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL
+export const FRONTEND_BASE_URL = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
+
+export const WS_BASE_URL =
+  process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000'
+
+console.log(BACKEND_BASE_URL, WS_BASE_URL)

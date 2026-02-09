@@ -67,7 +67,7 @@ export function UserPicker({
       const result = await listGuildMembers(credentialId, watchedGuildId)
 
       if (result.error) {
-        setError(result.error.message || 'Failed to fetch members')
+        setError(result.error || 'Failed to fetch members')
         setMembers([])
       } else {
         setMembers(result.data || [])
@@ -159,11 +159,7 @@ export function UserPicker({
 
   return (
     <div className='flex items-center gap-2'>
-      <Combobox
-        value={value}
-        onValueChange={handleSelect}
-        disabled={disabled}
-      >
+      <Combobox value={value} onValueChange={handleSelect} disabled={disabled}>
         <ComboboxInput
           placeholder={placeholder}
           className={cn('h-9 text-sm flex-1', className)}

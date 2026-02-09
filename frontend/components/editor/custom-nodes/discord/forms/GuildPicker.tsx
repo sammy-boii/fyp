@@ -64,7 +64,7 @@ export function GuildPicker({
       const result = await listGuilds(credentialId)
 
       if (result.error) {
-        setError(result.error.message || 'Failed to fetch servers')
+        setError(result.error || 'Failed to fetch servers')
         setGuilds([])
       } else {
         setGuilds(result.data || [])
@@ -140,11 +140,7 @@ export function GuildPicker({
 
   return (
     <div className='flex items-center gap-2'>
-      <Combobox
-        value={value}
-        onValueChange={handleSelect}
-        disabled={disabled}
-      >
+      <Combobox value={value} onValueChange={handleSelect} disabled={disabled}>
         <ComboboxInput
           placeholder={placeholder}
           className={cn('h-9 text-sm flex-1', className)}

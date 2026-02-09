@@ -22,6 +22,12 @@ type ScheduleConfig = {
   loop?: boolean
 }
 
+type AIWorkflowResponse = {
+  nodes: any[]
+  edges: any[]
+  error?: string
+}
+
 function buildScheduleValue(nodes?: any[]): string | null | undefined {
   if (!nodes) return undefined
 
@@ -294,4 +300,30 @@ export async function executeNode(workflowId: string, nodeId: string) {
 
     return result
   })
+}
+
+export async function generateWorkflowFromPrompt(prompt: string) {
+  try {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      return { data: null, error: 'Not authenticated' }
+    }
+
+    const data = await api
+      .post('api/ai/generate-workflow', {
+        json: { prompt }
+      })
+      .json<AIWorkflowResponse>()
+
+    if (data.error) {
+      return { data: null, error: data.error || 'Failed to generate workflow' }
+    }
+
+    return { data, error: null }
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : 'Failed to generate workflow'
+    return { data: null, error: message }
+  }
 }

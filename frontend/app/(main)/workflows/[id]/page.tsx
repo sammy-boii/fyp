@@ -53,7 +53,7 @@ import {
 import { ValueOf } from '@/types/index.types'
 import { ALL_NODE_TYPES } from '@/constants'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
-import { api } from '@/lib/api'
+import { generateWorkflowFromPrompt } from '@/actions/workflow.actions'
 import {
   NODE_DEFINITIONS,
   TRIGGER_NODE_DEFINITIONS
@@ -618,17 +618,15 @@ function WorkflowViewPageInner() {
 
       setIsAIGenerating(true)
       try {
-        const data = await api
-          .post('api/ai/generate-workflow', {
-            json: { prompt: prompt.trim() }
-          })
-          .json<AIWorkflowResponse>()
+        const result = await generateWorkflowFromPrompt(prompt.trim())
 
-        if (data.error) {
-          throw new Error(data.error || 'Failed to generate workflow')
+        if (result.error) {
+          throw new Error(result.error)
         }
 
-        if (data.nodes && data.nodes.length > 0) {
+        const data = result.data as AIWorkflowResponse
+
+        if (data?.nodes && data.nodes.length > 0) {
           handleAIWorkflowGenerated(data.nodes, data.edges || [])
           toast.success(`Generated workflow with ${data.nodes.length} nodes`)
         } else {

@@ -13,6 +13,7 @@ export const api: KyInstance = ky.create({
   hooks: {
     beforeRequest: [
       async (req) => {
+        if (typeof window !== 'undefined') return
         const cookieStore = await cookies()
         const token = cookieStore.get('token')?.value
         if (token) {
@@ -26,10 +27,10 @@ export const api: KyInstance = ky.create({
           const contentType = res.headers.get('content-type')
           if (contentType?.includes('application/json')) {
             const errorData = await res.clone().json()
-            throw new Error(errorData.error || 'Request failed')
+            throw new Error(errorData.error || 'API request failed')
           } else {
             const errorMsg = await res.clone().text()
-            throw new Error(errorMsg || 'Request failed')
+            throw new Error(errorMsg || 'API request failed')
           }
         }
       }

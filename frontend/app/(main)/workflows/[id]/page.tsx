@@ -51,8 +51,9 @@ import {
   formatEdges
 } from '@/lib/react-flow-utils'
 import { ValueOf } from '@/types/index.types'
-import { ALL_NODE_TYPES, BACKEND_BASE_URL } from '@/constants'
+import { ALL_NODE_TYPES } from '@/constants'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
+import { api } from '@/lib/api'
 import {
   NODE_DEFINITIONS,
   TRIGGER_NODE_DEFINITIONS
@@ -617,28 +618,13 @@ function WorkflowViewPageInner() {
 
       setIsAIGenerating(true)
       try {
-        const response = await fetch(
-          `${BACKEND_BASE_URL}/api/ai/generate-workflow`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ prompt: prompt.trim() })
-          }
-        )
+        const data = await api
+          .post('api/ai/generate-workflow', {
+            json: { prompt: prompt.trim() }
+          })
+          .json<AIWorkflowResponse>()
 
-        const text = await response.text()
-        let data: AIWorkflowResponse
-
-        try {
-          data = JSON.parse(text)
-        } catch {
-          console.error('Invalid JSON response:', text)
-          throw new Error('Invalid response from server')
-        }
-
-        if (!response.ok || data.error) {
+        if (data.error) {
           throw new Error(data.error || 'Failed to generate workflow')
         }
 

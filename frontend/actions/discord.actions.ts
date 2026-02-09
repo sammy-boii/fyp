@@ -1,9 +1,8 @@
 'use server'
 
-import { BACKEND_BASE_URL } from '@/constants'
 import { getCurrentUser } from '@/data/dal'
+import { api } from '@/lib/api'
 import { tryCatch } from '@/lib/utils'
-import { cookies } from 'next/headers'
 
 export type Guild = {
   id: string
@@ -38,32 +37,14 @@ export async function listGuilds(credentialId: string) {
       throw new Error('Not authenticated')
     }
 
-    const cookieStore = await cookies()
-    const token = cookieStore.get('token')?.value
-
-    if (!token) {
-      throw new Error('Not authenticated')
-    }
-
     const params = new URLSearchParams()
     params.set('credentialId', credentialId)
 
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/discord/guilds?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const data = await api
+      .get('api/discord/guilds', { searchParams: params })
+      .json<{ data: Guild[] }>()
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || 'Failed to fetch guilds')
-    }
-
-    const data = await response.json()
-    return data.data as Guild[]
+    return data.data
   })
 }
 
@@ -79,34 +60,16 @@ export async function listChannels(
       throw new Error('Not authenticated')
     }
 
-    const cookieStore = await cookies()
-    const token = cookieStore.get('token')?.value
-
-    if (!token) {
-      throw new Error('Not authenticated')
-    }
-
     const params = new URLSearchParams()
     params.set('credentialId', credentialId)
     params.set('guildId', guildId)
     params.set('type', type)
 
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/discord/channels?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const data = await api
+      .get('api/discord/channels', { searchParams: params })
+      .json<{ data: Channel[] }>()
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || 'Failed to fetch channels')
-    }
-
-    const data = await response.json()
-    return data.data as Channel[]
+    return data.data
   })
 }
 
@@ -122,33 +85,15 @@ export async function listGuildMembers(
       throw new Error('Not authenticated')
     }
 
-    const cookieStore = await cookies()
-    const token = cookieStore.get('token')?.value
-
-    if (!token) {
-      throw new Error('Not authenticated')
-    }
-
     const params = new URLSearchParams()
     params.set('credentialId', credentialId)
     params.set('guildId', guildId)
     params.set('limit', limit.toString())
 
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/discord/members?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const data = await api
+      .get('api/discord/members', { searchParams: params })
+      .json<{ data: GuildMember[] }>()
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || 'Failed to fetch guild members')
-    }
-
-    const data = await response.json()
-    return data.data as GuildMember[]
+    return data.data
   })
 }

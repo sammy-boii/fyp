@@ -1,9 +1,8 @@
 'use server'
 
-import { BACKEND_BASE_URL } from '@/constants'
 import { getCurrentUser } from '@/data/dal'
+import { api } from '@/lib/api'
 import { tryCatch } from '@/lib/utils'
-import { cookies } from 'next/headers'
 
 export type DriveItem = {
   id: string
@@ -25,13 +24,6 @@ export async function listDriveItems(
       throw new Error('Not authenticated')
     }
 
-    const cookieStore = await cookies()
-    const token = cookieStore.get('token')?.value
-
-    if (!token) {
-      throw new Error('Not authenticated')
-    }
-
     const params = new URLSearchParams()
     params.set('credentialId', credentialId)
     params.set('type', type)
@@ -39,21 +31,10 @@ export async function listDriveItems(
       params.set('folderId', folderId)
     }
 
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/google-drive/files?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const data = await api
+      .get('api/google-drive/files', { searchParams: params })
+      .json<{ data: DriveItem[] }>()
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || 'Failed to fetch drive items')
-    }
-
-    const data = await response.json()
-    return data.data as DriveItem[]
+    return data.data
   })
 }

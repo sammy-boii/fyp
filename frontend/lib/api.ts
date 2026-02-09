@@ -3,7 +3,7 @@ import ky, { KyInstance } from 'ky'
 import { cookies } from 'next/headers'
 
 export const api: KyInstance = ky.create({
-  prefixUrl: BACKEND_BASE_URL,
+  prefixUrl: BACKEND_BASE_URL + '/',
   timeout: false, // Disable timeout for long-running workflows
   retry: {
     limit: 0,

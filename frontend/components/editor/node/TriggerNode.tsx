@@ -17,7 +17,6 @@ import React, { useState, useCallback } from 'react'
 import { BaseNodeProps } from '@/types/node.types'
 import { TRIGGER_NODE_DEFINITIONS } from '@/constants/registry'
 import { cn } from '@/lib/utils'
-import { useParams } from 'next/navigation'
 import { useExecuteNode } from '@/hooks/use-workflows'
 import {
   getAvailableInputsFromNodes,
@@ -41,7 +40,6 @@ import {
   calculateNewNodePosition
 } from '@/lib/react-flow-utils'
 import { AddNodeSheetContent } from '@/app/(main)/workflows/[id]/_components/AddNodeSheet'
-import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 import { ValueOf } from '@/types/index.types'
 import { TActionID } from '@shared/constants'
 
@@ -50,11 +48,7 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
     TRIGGER_NODE_DEFINITIONS[data.type as keyof typeof TRIGGER_NODE_TYPES]
   const isManualTrigger = data.type === TRIGGER_NODE_TYPES.MANUAL_TRIGGER
   const { setNodes, setEdges, getEdges, getNodes } = useReactFlow()
-  const params = useParams()
-  const workflowId = params?.id ? String(params.id) : null
   const executeNodeMutation = useExecuteNode()
-  const { saveIfChanged, isAnyOperationPending, setIsExecutingNode } =
-    useWorkflowEditor()
 
   const [sheetOpen, setSheetOpen] = useState(false)
   const [replaceSheetOpen, setReplaceSheetOpen] = useState(false)

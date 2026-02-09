@@ -18,7 +18,6 @@ import {
   ChartTooltipContent
 } from '@/components/ui/chart'
 import { useGetDashboardStats } from '@/hooks/use-user'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useMemo } from 'react'
 import AtomicLoader from '@/components/animation/AtomicLoader'
 

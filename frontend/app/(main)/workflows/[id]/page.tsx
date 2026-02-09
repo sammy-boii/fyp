@@ -803,7 +803,7 @@ function WorkflowViewPageInner() {
             <EmptyTitle>Unable to load workflow</EmptyTitle>
             <EmptyDescription>
               {error?.message ||
-                data?.error?.message ||
+                data?.error ||
                 'Workflow not found or access denied'}
             </EmptyDescription>
           </EmptyHeader>

@@ -81,7 +81,7 @@ const DashboardPage = () => {
         const { data, error } = await uploadCloudinaryImage(avatarFile)
 
         if (error) {
-          toast.error(error.message)
+          toast.error(error)
           return
         }
 
@@ -91,9 +91,7 @@ const DashboardPage = () => {
       }
 
       if (res.error) {
-        toast.error(
-          'An error occured while updating profile: ' + res.error.message
-        )
+        toast.error('An error occured while updating profile: ' + res.error)
         return
       }
 

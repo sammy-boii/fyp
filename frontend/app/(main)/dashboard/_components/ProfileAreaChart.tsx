@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/select'
 import { BarChart3 } from 'lucide-react'
 import { useGetDashboardStats } from '@/hooks/use-user'
-import { Skeleton } from '@/components/ui/skeleton'
 import AtomicLoader from '@/components/animation/AtomicLoader'
 
 const chartConfig = {

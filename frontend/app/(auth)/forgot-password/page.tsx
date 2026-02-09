@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
       const { error } = await sendResetOTP(email)
 
       if (error) {
-        toast.error(error.message || 'Failed to send OTP email')
+        toast.error(error || 'Failed to send OTP email')
         return
       }
 

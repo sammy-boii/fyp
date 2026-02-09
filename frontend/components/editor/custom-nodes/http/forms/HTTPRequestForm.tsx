@@ -1,7 +1,7 @@
 'use client'
 
 import { Controller, useFieldArray, useFormContext } from 'react-hook-form'
-import { Field, FieldLabel } from '@/components/ui/field'
+import { FieldLabel } from '@/components/ui/field'
 import { PlaceholderInput } from '@/components/ui/placeholder-input'
 import {
   Select,
@@ -13,7 +13,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  Globe,
   Plus,
   Trash2,
   FileJson,

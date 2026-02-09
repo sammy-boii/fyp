@@ -11,12 +11,12 @@ type Success<T> = {
   error: null
 }
 
-type Failure<E = Error> = {
+type Failure<E = string> = {
   error: E
   data: null
 }
 
-type Result<T, E = Error> = Success<T> | Failure<E>
+type Result<T, E = string> = Success<T> | Failure<E>
 
 export type ApiResponse<T, E = Error> = Result<T, E>
 
@@ -38,20 +38,20 @@ export async function tryCatch<T>(
       const message = path + issue.message
 
       return {
-        error: new Error(message),
+        error: message,
         data: null
       }
     }
 
     if (err instanceof Error) {
       return {
-        error: err,
+        error: err.message,
         data: null
       }
     }
 
     return {
-      error: new Error(`Something went wrong ${ctx ? ctx : ''}`),
+      error: `Something went wrong ${ctx ? ctx : ''}`,
       data: null
     }
   }

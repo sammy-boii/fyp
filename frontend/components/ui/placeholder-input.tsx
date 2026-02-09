@@ -116,11 +116,7 @@ const PlaceholderEditor = React.forwardRef<
       'aria-invalid': ariaInvalid,
       disabled,
       multiline = false,
-      rows,
-      // Swallow props that don't apply to a div
-      type: _type,
-      name: _name,
-      ...rest
+      rows
     },
     forwardedRef
   ) => {

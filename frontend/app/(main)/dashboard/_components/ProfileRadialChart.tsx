@@ -13,7 +13,6 @@ import {
 import { ChartConfig, ChartContainer } from '@/components/ui/chart'
 import * as Recharts from 'recharts'
 import { useGetDashboardStats } from '@/hooks/use-user'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useMemo } from 'react'
 import AtomicLoader from '@/components/animation/AtomicLoader'
 

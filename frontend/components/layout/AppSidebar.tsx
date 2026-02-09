@@ -133,7 +133,6 @@ export function AppSidebar() {
                     asChild
                     isActive={isActive(item.url)}
                     tooltip={item.title}
-                    className={isActive(item.url) ? 'text-white' : ''}
                   >
                     {item.url === '/activity' ? (
                       <a href={item.url}>
@@ -210,16 +209,6 @@ function NavUser({
   const defaultAccent = '#22c55e'
   const [accentColor, setAccentColor] = useState(defaultAccent)
 
-  const accentForeground = useMemo(() => {
-    const hex = accentColor.replace('#', '')
-    if (hex.length !== 6) return '#0a0a0a'
-    const r = parseInt(hex.slice(0, 2), 16) / 255
-    const g = parseInt(hex.slice(2, 4), 16) / 255
-    const b = parseInt(hex.slice(4, 6), 16) / 255
-    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-    return luminance > 0.6 ? '#0a0a0a' : '#ffffff'
-  }, [accentColor])
-
   useEffect(() => {
     const stored = window.localStorage.getItem('app-accent-color')
     if (stored) {
@@ -231,10 +220,8 @@ function NavUser({
     const root = document.documentElement
     root.style.setProperty('--primary', accentColor)
     root.style.setProperty('--sidebar-primary', accentColor)
-    root.style.setProperty('--primary-foreground', accentForeground)
-    root.style.setProperty('--sidebar-primary-foreground', accentForeground)
     window.localStorage.setItem('app-accent-color', accentColor)
-  }, [accentColor, accentForeground])
+  }, [accentColor])
 
   return (
     <SidebarMenu>

@@ -19,6 +19,11 @@ type ScheduledJob = {
 }
 
 const CHECK_INTERVAL_MS = 30_000
+const NEPAL_OFFSET_MS = (5 * 60 + 45) * 60 * 1000 // so it always follow's Nepal's time
+
+const nowInNepal = (): Date => {
+  return new Date(Date.now() + NEPAL_OFFSET_MS)
+}
 
 const parseTime = (time: string): { hour: number; minute: number } | null => {
   const [rawHour, rawMinute] = time.split(':')
@@ -53,7 +58,7 @@ const parseDateTime = (date: string, time: string): Date | null => {
 
 const getNextRun = (
   config: Required<Pick<ScheduleConfig, 'date' | 'time'>> & { loop: boolean },
-  from: Date = new Date()
+  from: Date = nowInNepal()
 ): Date | null => {
   const start = parseDateTime(config.date, config.time)
   if (!start) return null
@@ -174,7 +179,7 @@ class WorkflowScheduler {
     workflowId: string,
     config: Required<Pick<ScheduleConfig, 'date' | 'time'>> & { loop: boolean }
   ): void {
-    const nextRun = getNextRun(config, new Date())
+    const nextRun = getNextRun(config, nowInNepal())
     if (!nextRun) return
 
     this.jobs.set(workflowId, {
@@ -186,7 +191,7 @@ class WorkflowScheduler {
   }
 
   private async tick(): Promise<void> {
-    const now = new Date()
+    const now = nowInNepal()
 
     for (const job of this.jobs.values()) {
       if (job.running) continue
@@ -223,7 +228,7 @@ class WorkflowScheduler {
     }
 
     if (job.config.loop) {
-      const nextRun = getNextRun(job.config, new Date())
+      const nextRun = getNextRun(job.config, nowInNepal())
       if (nextRun) {
         job.nextRun = nextRun
       } else {

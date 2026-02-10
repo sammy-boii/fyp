@@ -11,7 +11,6 @@ import {
   DialogTitle,
   DialogTrigger
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
@@ -20,7 +19,6 @@ import { ColumnDef } from '@tanstack/react-table'
 import {
   CheckCircle2,
   Clock3,
-  Copy,
   Eye,
   FileText,
   Lock,
@@ -211,26 +209,11 @@ export const columns: ColumnDef<CredentialRow>[] = [
 
 function ActionCell({ cred }: { cred: CredentialRow }) {
   const [isViewOpen, setIsViewOpen] = useState(false)
-  const [isPasswordOpen, setIsPasswordOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const [password, setPassword] = useState('')
   const [notes, setNotes] = useState(cred.notes || '')
-  const [tokenToCopy, setTokenToCopy] = useState<string | null>(null)
   const deleteCredential = useDeleteCredential()
   const updateCredential = useUpdateCredential()
-
-  const handlePasswordSubmit = () => {
-    if (password.trim() === 'test' && tokenToCopy) {
-      navigator.clipboard.writeText(tokenToCopy)
-      toast.success('Token copied to clipboard successfully')
-      setIsPasswordOpen(false)
-      setPassword('')
-      setTokenToCopy(null)
-    } else {
-      toast.error('Incorrect password')
-    }
-  }
 
   const handleDelete = () => {
     deleteCredential.mutate(cred.id, {
@@ -285,8 +268,10 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
             </TooltipTrigger>
             <TooltipContent>View</TooltipContent>
           </Tooltip>
-          <DialogContent className='max-w-2xl p-0 gap-0 overflow-hidden'>
-            {/* Hero header with provider branding */}
+          <DialogContent
+            className='max-w-2xl p-0 gap-0 overflow-hidden'
+            showCloseButton={false}
+          >
             <div className='relative px-6 pt-6 pb-5 bg-linear-to-br from-primary/5 via-primary/2 to-transparent'>
               <div className='flex items-start justify-between'>
                 <div className='flex items-center gap-4'>
@@ -306,7 +291,10 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                     </DialogDescription>
                   </div>
                 </div>
-                <Badge className={statusTone[cred.status]} variant='outline'>
+                <Badge
+                  className={`${statusTone[cred.status]}`}
+                  variant='outline'
+                >
                   {(() => {
                     const Icon =
                       cred.status === 'active'
@@ -336,22 +324,11 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                     Tokens
                   </h4>
                   <div className='rounded-lg border bg-card'>
-                    <TokenRow
-                      label='Access Token'
-                      value={cred.accessToken}
-                      onCopy={(token) => {
-                        setTokenToCopy(token)
-                        setIsPasswordOpen(true)
-                      }}
-                    />
+                    <TokenRow label='Access Token' value={cred.accessToken} />
                     <Separator />
                     <TokenRow
                       label='Refresh Token'
                       value={cred.refreshToken || null}
-                      onCopy={(token) => {
-                        setTokenToCopy(token)
-                        setIsPasswordOpen(true)
-                      }}
                     />
                   </div>
                 </div>
@@ -415,51 +392,6 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
           </DialogContent>
         </Dialog>
 
-        {/* Password Dialog */}
-        <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className='flex items-center gap-2'>
-                <Lock className='h-5 w-5' />
-                Enter Password
-              </DialogTitle>
-              <DialogDescription>
-                It is not advisable to share the token with anyone. Please enter
-                your password to copy the token.
-              </DialogDescription>
-            </DialogHeader>
-            <div className='space-y-4 py-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='password'>Password</Label>
-                <Input
-                  id='password'
-                  type='password'
-                  placeholder='Enter password'
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handlePasswordSubmit()
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant='outline'
-                onClick={() => {
-                  setIsPasswordOpen(false)
-                  setPassword('')
-                  setTokenToCopy(null)
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handlePasswordSubmit}>Confirm</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
         <Dialog open={isEditOpen} onOpenChange={handleEditOpenChange}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -476,7 +408,7 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
             </TooltipTrigger>
             <TooltipContent>Edit</TooltipContent>
           </Tooltip>
-          <DialogContent>
+          <DialogContent showCloseButton={false}>
             <DialogHeader>
               <DialogTitle className='flex items-center gap-2'>
                 <div className='p-2 rounded-md bg-muted/80'>
@@ -540,7 +472,7 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
             </TooltipTrigger>
             <TooltipContent>Delete</TooltipContent>
           </Tooltip>
-          <DialogContent>
+          <DialogContent showCloseButton={false}>
             <DialogHeader>
               <DialogTitle className='flex items-center gap-2'>
                 <div className='p-2 rounded-md bg-destructive/20'>
@@ -580,12 +512,10 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
 
 function TokenRow({
   label,
-  value,
-  onCopy
+  value
 }: {
   label: string
   value: string | null
-  onCopy: (token: string) => void
 }) {
   return (
     <div className='flex items-center justify-between px-4 py-3 group'>
@@ -595,17 +525,6 @@ function TokenRow({
           {value ? maskToken(value) : 'Not set'}
         </p>
       </div>
-      {value && (
-        <Button
-          variant='ghost'
-          size='icon'
-          className='h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity'
-          onClick={() => onCopy(value)}
-        >
-          <Copy className='h-3.5 w-3.5' />
-          <span className='sr-only'>Copy {label}</span>
-        </Button>
-      )}
     </div>
   )
 }

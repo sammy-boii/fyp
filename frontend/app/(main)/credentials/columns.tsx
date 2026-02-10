@@ -14,13 +14,15 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { ColumnDef } from '@tanstack/react-table'
 import {
   CheckCircle2,
   Clock3,
+  Copy,
   Eye,
   FileText,
-  Key,
   Lock,
   Pencil,
   Settings,
@@ -283,15 +285,27 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
             </TooltipTrigger>
             <TooltipContent>View</TooltipContent>
           </Tooltip>
-          <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
-            <DialogHeader>
-              <div className='flex items-center gap-4'>
-                <DialogTitle className='flex items-center gap-2'>
-                  <div className='p-2 rounded-md bg-muted/80'>
-                    <Key className='size-5' />
+          <DialogContent className='max-w-2xl p-0 gap-0 overflow-hidden'>
+            {/* Hero header with provider branding */}
+            <div className='relative px-6 pt-6 pb-5 bg-linear-to-br from-primary/5 via-primary/2 to-transparent'>
+              <div className='flex items-start justify-between'>
+                <div className='flex items-center gap-4'>
+                  <div className='relative flex h-12 w-12 items-center justify-center rounded-xl bg-background shadow-sm ring-1 ring-border'>
+                    <ProviderIcon provider={cred.service} />
                   </div>
-                  Token Information
-                </DialogTitle>
+                  <div className='space-y-1'>
+                    <DialogTitle className='text-base font-semibold capitalize'>
+                      {CREDENTIALS_OPTIONS.find(
+                        (o) => o.id === cred.provider.toLowerCase()
+                      )?.name || cred.provider}
+                    </DialogTitle>
+                    <DialogDescription className='text-xs text-muted-foreground capitalize'>
+                      {cred.service
+                        ? cred.service.split('-').join(' ')
+                        : 'Credential details'}
+                    </DialogDescription>
+                  </div>
+                </div>
                 <Badge className={statusTone[cred.status]} variant='outline'>
                   {(() => {
                     const Icon =
@@ -302,132 +316,102 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
                           : ShieldAlert
                     return (
                       <>
-                        <Icon className='h-4 w-4' />
+                        <Icon className='h-3.5 w-3.5' />
                         {statusCopy[cred.status]}
                       </>
                     )
                   })()}
                 </Badge>
               </div>
-              <DialogDescription>
-                View encrypted token details for this credential
-              </DialogDescription>
-            </DialogHeader>
-            <div className='space-y-6 py-4'>
-              {/* Provider and Service */}
-              <div className='space-y-3'>
-                <div className='flex items-center justify-between'>
-                  <Label className='flex items-center gap-2 text-sm font-medium'>
-                    <Key className='h-4 w-4 text-muted-foreground' />
-                    Provider
-                  </Label>
-                  <div className='rounded-md text-muted-foreground capitalize bg-muted/20 px-3 py-2 text-sm font-medium'>
-                    {cred.provider}
+            </div>
+
+            <Separator />
+
+            <ScrollArea className='max-h-[60vh]'>
+              <div className='px-6 py-5 space-y-5'>
+                {/* Tokens section */}
+                <div className='space-y-3'>
+                  <h4 className='text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2'>
+                    <Lock className='h-3.5 w-3.5' />
+                    Tokens
+                  </h4>
+                  <div className='rounded-lg border bg-card'>
+                    <TokenRow
+                      label='Access Token'
+                      value={cred.accessToken}
+                      onCopy={(token) => {
+                        setTokenToCopy(token)
+                        setIsPasswordOpen(true)
+                      }}
+                    />
+                    <Separator />
+                    <TokenRow
+                      label='Refresh Token'
+                      value={cred.refreshToken || null}
+                      onCopy={(token) => {
+                        setTokenToCopy(token)
+                        setIsPasswordOpen(true)
+                      }}
+                    />
                   </div>
                 </div>
-                {cred.service && (
-                  <div className='flex items-center justify-between'>
-                    <Label className='flex items-center gap-2 text-sm font-medium'>
-                      <ShieldCheck className='h-4 w-4 text-muted-foreground' />
-                      Service
-                    </Label>
-                    <div className='capitalize text-muted-foreground font-medium rounded-md bg-muted/20 px-3 py-2 text-sm'>
-                      {cred.service}
+
+                {/* Expiry section */}
+                <div className='space-y-3'>
+                  <h4 className='text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2'>
+                    <TimerReset className='h-3.5 w-3.5' />
+                    Expiration
+                  </h4>
+                  <div className='grid grid-cols-2 gap-3'>
+                    <ExpiryCard
+                      label='Access Token'
+                      date={cred.accessTokenExpiresAt}
+                    />
+                    <ExpiryCard
+                      label='Refresh Token'
+                      date={cred.refreshTokenExpiresAt}
+                    />
+                  </div>
+                </div>
+
+                {/* Scopes section */}
+                <div className='space-y-3'>
+                  <h4 className='text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2'>
+                    <ShieldCheck className='h-3.5 w-3.5' />
+                    Permissions
+                    {cred.scopes.length > 0 && (
+                      <span className='text-[10px] font-medium bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 tabular-nums'>
+                        {cred.scopes.length}
+                      </span>
+                    )}
+                  </h4>
+                  {cred.scopes.length > 0 ? (
+                    <ScopesList scopes={cred.scopes} />
+                  ) : (
+                    <div className='rounded-lg border bg-card p-4'>
+                      <p className='text-sm text-muted-foreground text-center'>
+                        No scopes granted
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Notes section */}
+                {cred.notes && (
+                  <div className='space-y-3'>
+                    <h4 className='text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2'>
+                      <FileText className='h-3.5 w-3.5' />
+                      Notes
+                    </h4>
+                    <div className='rounded-lg border bg-card p-3'>
+                      <p className='text-sm leading-relaxed whitespace-pre-line wrap-break-word text-muted-foreground'>
+                        {cred.notes}
+                      </p>
                     </div>
                   </div>
                 )}
               </div>
-
-              {/* Access Token */}
-              <div className='space-y-2'>
-                <Label className='flex items-center gap-2 text-sm font-medium'>
-                  <Lock className='h-4 w-4 text-muted-foreground' />
-                  Access Token
-                </Label>
-                <div className='flex items-center gap-2'>
-                  <div className='flex-1 rounded-md border bg-muted/30 px-3 py-2 text-xs'>
-                    {maskToken(cred.accessToken)}
-                  </div>
-                </div>
-              </div>
-
-              {/* Refresh Token */}
-              <div className='space-y-2'>
-                <Label className='flex items-center gap-2 text-sm font-medium'>
-                  <Lock className='h-4 w-4 text-muted-foreground' />
-                  Refresh Token
-                </Label>
-                <div className='flex items-center gap-2'>
-                  <div className='flex-1 rounded-md border bg-muted/30 px-3 py-2 text-xs'>
-                    {cred.refreshToken
-                      ? maskToken(cred.refreshToken)
-                      : 'Not set'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Access Token Expiry */}
-              <div className='flex items-center justify-between'>
-                <Label className='flex items-center gap-2 text-sm font-medium'>
-                  <TimerReset className='h-4 w-4 text-muted-foreground' />
-                  Access Token Expiry
-                </Label>
-                <div className='rounded-md bg-muted/20 px-3 py-2 text-sm text-muted-foreground'>
-                  {formatDate(cred.accessTokenExpiresAt)}
-                </div>
-              </div>
-
-              {/* Refresh Token Expiry */}
-              <div className='flex items-center justify-between'>
-                <Label className='flex items-center gap-2 text-sm font-medium'>
-                  <TimerReset className='h-4 w-4 text-muted-foreground' />
-                  Refresh Token Expiry
-                </Label>
-                <div className='rounded-md bg-muted/20 px-3 py-2 text-sm text-muted-foreground'>
-                  {cred.refreshTokenExpiresAt
-                    ? formatDate(cred.refreshTokenExpiresAt)
-                    : 'Not set'}
-                </div>
-              </div>
-
-              {/* Scopes */}
-              <div className='space-y-2'>
-                <Label className='flex items-center gap-2 text-sm font-medium'>
-                  <ShieldCheck className='h-4 w-4 text-muted-foreground' />
-                  Scopes
-                </Label>
-                <div className='flex flex-wrap gap-2'>
-                  {cred.scopes.length > 0 ? (
-                    cred.scopes.map((scope, idx) => (
-                      <Badge key={idx} variant='secondary' className='text-xs'>
-                        {scope}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className='text-sm text-muted-foreground'>
-                      No scopes available
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className='space-y-2'>
-                <Label className='flex items-center gap-2 text-sm font-medium'>
-                  <FileText className='h-4 w-4 text-muted-foreground' />
-                  Notes
-                </Label>
-                <div className='rounded-md border bg-muted/30 px-3 py-2 text-sm'>
-                  {cred.notes ? (
-                    <p className='max-w-md break-all whitespace-pre-line'>
-                      {cred.notes}
-                    </p>
-                  ) : (
-                    <span className='text-muted-foreground'>No notes</span>
-                  )}
-                </div>
-              </div>
-            </div>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
 
@@ -591,6 +575,243 @@ function ActionCell({ cred }: { cred: CredentialRow }) {
         </Dialog>
       </div>
     </TooltipProvider>
+  )
+}
+
+function TokenRow({
+  label,
+  value,
+  onCopy
+}: {
+  label: string
+  value: string | null
+  onCopy: (token: string) => void
+}) {
+  return (
+    <div className='flex items-center justify-between px-4 py-3 group'>
+      <div className='space-y-1 min-w-0 flex-1'>
+        <p className='text-xs font-medium text-muted-foreground'>{label}</p>
+        <p className='text-xs font-mono text-foreground/80 truncate pr-4'>
+          {value ? maskToken(value) : 'Not set'}
+        </p>
+      </div>
+      {value && (
+        <Button
+          variant='ghost'
+          size='icon'
+          className='h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity'
+          onClick={() => onCopy(value)}
+        >
+          <Copy className='h-3.5 w-3.5' />
+          <span className='sr-only'>Copy {label}</span>
+        </Button>
+      )}
+    </div>
+  )
+}
+
+function ExpiryCard({ label, date }: { label: string; date?: string | null }) {
+  const formatted = formatDate(date)
+  const isSet = date && formatted !== 'Not set' && formatted !== 'Invalid date'
+  const isExpired = isSet && new Date(date) < new Date()
+
+  return (
+    <div className='rounded-lg border bg-card p-3 space-y-1.5'>
+      <p className='text-xs font-medium text-muted-foreground'>{label}</p>
+      <p
+        className={`text-sm font-medium ${
+          !isSet
+            ? 'text-muted-foreground'
+            : isExpired
+              ? 'text-destructive'
+              : 'text-foreground'
+        }`}
+      >
+        {formatted}
+      </p>
+      {isSet && (
+        <div className='flex items-center gap-1.5'>
+          <div
+            className={`h-1.5 w-1.5 rounded-full ${
+              isExpired ? 'bg-destructive' : 'bg-emerald-500'
+            }`}
+          />
+          <span className='text-[11px] text-muted-foreground'>
+            {isExpired ? 'Expired' : 'Valid'}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Parse a raw scope string into a readable label and category */
+function parseScope(raw: string): {
+  label: string
+  category: string
+  description: string
+  access: 'read' | 'write' | 'full'
+} {
+  // Short OAuth scopes
+  const shortScopes: Record<
+    string,
+    { label: string; description: string; category: string }
+  > = {
+    openid: {
+      label: 'OpenID',
+      description: 'Authenticate your identity',
+      category: 'Identity'
+    },
+    email: {
+      label: 'Email Address',
+      description: 'View your email address',
+      category: 'Identity'
+    },
+    profile: {
+      label: 'Profile Info',
+      description: 'View your basic profile info',
+      category: 'Identity'
+    },
+    bot: {
+      label: 'Bot',
+      description: 'Bot access to the platform',
+      category: 'Bot'
+    }
+  }
+
+  const lower = raw.toLowerCase()
+  if (shortScopes[lower]) {
+    return { ...shortScopes[lower], access: 'read' }
+  }
+
+  // Google API URLs: https://www.googleapis.com/auth/gmail.readonly
+  const googleMatch = raw.match(
+    /googleapis\.com\/auth\/([a-z_]+(?:\.[a-z_]+)*)/i
+  )
+  if (googleMatch) {
+    const parts = googleMatch[1].split('.')
+    const service = parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
+    const modifier = parts.slice(1).join(' ')
+
+    const isReadOnly = modifier.includes('readonly')
+    const isFile = modifier.includes('file')
+
+    let desc = `Access ${service}`
+    if (isReadOnly) desc = `Read-only access to ${service}`
+    else if (isFile)
+      desc = `Access files opened or created by the app in ${service}`
+    else if (modifier === 'modify') desc = `Read & modify ${service} data`
+    else if (modifier === 'send') desc = `Send via ${service}`
+    else if (modifier === 'labels') desc = `Manage ${service} labels`
+    else if (!modifier) desc = `Full access to ${service}`
+
+    return {
+      label: modifier
+        ? `${service} · ${modifier.charAt(0).toUpperCase() + modifier.slice(1)}`
+        : service,
+      category: service,
+      description: desc,
+      access: isReadOnly ? 'read' : modifier ? 'write' : 'full'
+    }
+  }
+
+  // Google mail URL
+  if (raw.includes('mail.google.com')) {
+    return {
+      label: 'Gmail · Full Access',
+      category: 'Gmail',
+      description: 'Full access to your Gmail account',
+      access: 'full'
+    }
+  }
+
+  // Fallback
+  return {
+    label: raw.length > 40 ? `${raw.slice(0, 37)}...` : raw,
+    category: 'Other',
+    description: raw,
+    access: 'read'
+  }
+}
+
+const accessConfig = {
+  read: {
+    label: 'Read',
+    className:
+      'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20'
+  },
+  write: {
+    label: 'Read & Write',
+    className:
+      'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
+  },
+  full: {
+    label: 'Full Access',
+    className:
+      'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+  }
+} as const
+
+function ScopesList({ scopes }: { scopes: string[] }) {
+  const parsed = scopes.map((s) => ({ raw: s, ...parseScope(s) }))
+
+  // Group by category
+  const groups = parsed.reduce<Record<string, typeof parsed>>((acc, scope) => {
+    const key = scope.category
+    if (!acc[key]) acc[key] = []
+    acc[key].push(scope)
+    return acc
+  }, {})
+
+  return (
+    <div className='rounded-lg border bg-card overflow-hidden divide-y divide-border'>
+      {Object.entries(groups).map(([category, items]) => (
+        <div key={category}>
+          {/* Category header */}
+          <div className='px-4 py-2 bg-muted/40'>
+            <span className='text-[11px] font-semibold uppercase tracking-wide text-muted-foreground'>
+              {category}
+            </span>
+          </div>
+          {/* Scope rows */}
+          <div className='divide-y divide-border/50'>
+            {items.map((scope, idx) => (
+              <Tooltip key={idx}>
+                <TooltipTrigger asChild>
+                  <div className='flex items-center justify-between px-4 py-2.5 hover:bg-muted/20 transition-colors cursor-default'>
+                    <div className='flex items-center gap-3 min-w-0'>
+                      <div className='flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 shrink-0'>
+                        <ShieldCheck className='h-3 w-3 text-primary' />
+                      </div>
+                      <div className='min-w-0'>
+                        <p className='text-[13px] font-medium truncate'>
+                          {scope.label}
+                        </p>
+                        <p className='text-[11px] text-muted-foreground truncate'>
+                          {scope.description}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge
+                      variant='outline'
+                      className={`text-[10px] px-1.5 py-0 h-5 shrink-0 ml-3 ${accessConfig[scope.access].className}`}
+                    >
+                      {accessConfig[scope.access].label}
+                    </Badge>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side='top'
+                  className='max-w-xs font-mono text-[11px] break-all'
+                >
+                  {scope.raw}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 

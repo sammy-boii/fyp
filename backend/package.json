@@ -8,6 +8,7 @@
     "start": "bun dist/index.js"
   },
   "dependencies": {
+    "@google/genai": "^1.40.0",
     "@hono/oauth-providers": "^0.8.5",
     "@huggingface/inference": "^4.13.11",
     "@types/pdfkit": "^0.17.4",

@@ -304,7 +304,7 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
                 <Info className='h-3.5 w-3.5' />
               </button>
             </TooltipTrigger>
-            <TooltipContent side='bottom' className='w-36'>
+            <TooltipContent side='bottom' className='w-40'>
               <p className='text-xs'>
                 Click or drag any field to use its placeholder.
               </p>

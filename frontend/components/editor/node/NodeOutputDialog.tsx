@@ -255,7 +255,7 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
                 <Info className='h-3.5 w-3.5' />
               </button>
             </TooltipTrigger>
-            <TooltipContent side='bottom' className='w-36'>
+            <TooltipContent side='bottom' className='w-40'>
               <p className='text-xs'>
                 Click any field to copy its placeholder nodes.
               </p>

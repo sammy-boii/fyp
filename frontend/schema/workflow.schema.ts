@@ -11,5 +11,7 @@ export const createWorkflowSchema = z.object({
 
 // Use partial schema for updates - all fields optional
 export const updateWorkflowSchema = createWorkflowSchema.partial().extend({
+  // Allow clearing description on update
+  description: z.string().nullable().optional(),
   isActive: z.boolean().optional()
 })

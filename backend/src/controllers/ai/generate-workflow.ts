@@ -1,7 +1,5 @@
-import { InferenceClient } from '@huggingface/inference'
 import { Context } from 'hono'
-
-const HF_TOKEN = process.env.HF_TOKEN
+import { generateWithGemini, generateWithHuggingFace } from '../../lib/ai-client'
 
 // Simplified node types for AI to understand
 const AVAILABLE_NODES = `
@@ -607,33 +605,24 @@ export async function generateWorkflow(c: Context) {
       return c.json({ error: 'Prompt is not meaningful' }, 400)
     }
 
-    if (!HF_TOKEN) {
+    if (!process.env.GEMINI_API_KEY && !process.env.HF_TOKEN) {
       return c.json({ error: 'AI service not configured' }, 500)
     }
 
-    const client = new InferenceClient(HF_TOKEN)
-
-    const response = await client.chatCompletion({
-      model: 'meta-llama/Llama-3.1-8B-Instruct',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: `Generate a workflow for: ${trimmedPrompt}`
-        }
-      ],
-      max_tokens: 1500,
-      temperature: 0
-    })
-
-    let content = response.choices?.[0]?.message?.content?.trim()
-
-    if (!content) {
-      console.error('AI generate workflow: empty response', {
-        prompt: trimmedPrompt
-      })
-      return c.json({ error: GENERIC_AI_ERROR }, 500)
-    }
+    let content = process.env.GEMINI_API_KEY
+      ? await generateWithGemini({
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt: `Generate a workflow for: ${trimmedPrompt}`,
+          maxTokens: 1500,
+          temperature: 0,
+          responseMimeType: 'application/json'
+        })
+      : await generateWithHuggingFace({
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt: `Generate a workflow for: ${trimmedPrompt}`,
+          maxTokens: 1500,
+          temperature: 0
+        })
 
     // Clean response - remove markdown code blocks if present
     content = content

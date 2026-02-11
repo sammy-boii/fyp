@@ -127,7 +127,7 @@ export function HTTPRequestForm() {
           render={({ field, fieldState }) => (
             <div className='flex-1'>
               <PlaceholderInput
-                placeholder='https://api.example.com/endpoint'
+                placeholder='https://api.example.com'
                 className='text-sm h-9'
                 {...field}
                 aria-invalid={fieldState.invalid}

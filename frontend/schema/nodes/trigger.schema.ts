@@ -23,5 +23,6 @@ export const discordWebhookTriggerFormSchema = z.object({
 export const scheduleTriggerFormSchema = z.object({
   date: z.string().min(1, 'Date is required'),
   time: z.string().min(1, 'Time is required'),
+  timezone: z.string().min(1, 'Time zone is required'),
   loop: z.boolean().default(false)
 })

@@ -7,11 +7,12 @@ type ScheduleConfig = {
   date?: string
   time?: string
   loop?: boolean
+  timezone?: string
 }
 
 type ScheduledJob = {
   workflowId: string
-  config: Required<Pick<ScheduleConfig, 'date' | 'time'>> & {
+  config: Required<Pick<ScheduleConfig, 'date' | 'time' | 'timezone'>> & {
     loop: boolean
   }
   nextRun: Date
@@ -19,11 +20,7 @@ type ScheduledJob = {
 }
 
 const CHECK_INTERVAL_MS = 30_000
-const NEPAL_OFFSET_MS = (5 * 60 + 45) * 60 * 1000 // so it always follow's Nepal's time
-
-const nowInNepal = (): Date => {
-  return new Date(Date.now() + NEPAL_OFFSET_MS)
-}
+const DEFAULT_TIMEZONE = 'Asia/Kathmandu'
 
 const parseTime = (time: string): { hour: number; minute: number } | null => {
   const [rawHour, rawMinute] = time.split(':')
@@ -44,23 +41,168 @@ const parseTime = (time: string): { hour: number; minute: number } | null => {
   return { hour, minute }
 }
 
-const parseDateTime = (date: string, time: string): Date | null => {
-  const parsedTime = parseTime(time)
-  if (!parsedTime) return null
+const parseDate = (
+  date: string
+): { year: number; month: number; day: number } | null => {
+  const [rawYear, rawMonth, rawDay] = date.split('-')
+  const year = Number(rawYear)
+  const month = Number(rawMonth)
+  const day = Number(rawDay)
 
-  const combined = new Date(`${date}T${time}:00`)
-  if (Number.isNaN(combined.getTime())) {
+  if (
+    Number.isNaN(year) ||
+    Number.isNaN(month) ||
+    Number.isNaN(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
     return null
   }
 
-  return combined
+  return { year, month, day }
+}
+
+const formatDate = (year: number, month: number, day: number): string => {
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+const addDays = (date: string, days: number): string | null => {
+  const parsed = parseDate(date)
+  if (!parsed) return null
+
+  const base = new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day))
+  base.setUTCDate(base.getUTCDate() + days)
+
+  return formatDate(
+    base.getUTCFullYear(),
+    base.getUTCMonth() + 1,
+    base.getUTCDate()
+  )
+}
+
+const resolveTimeZone = (timeZone?: string): string => {
+  if (!timeZone) return DEFAULT_TIMEZONE
+
+  try {
+    Intl.DateTimeFormat('en-US', { timeZone }).format(new Date())
+    return timeZone
+  } catch {
+    return DEFAULT_TIMEZONE
+  }
+}
+
+const getTimeZoneParts = (
+  date: Date,
+  timeZone: string
+): {
+  year: number
+  month: number
+  day: number
+  hour: number
+  minute: number
+  second: number
+} | null => {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+
+  const parts = formatter.formatToParts(date)
+  const map: Record<string, number> = {}
+
+  for (const part of parts) {
+    if (part.type === 'literal') continue
+    map[part.type] = Number(part.value)
+  }
+
+  if (
+    !map.year ||
+    !map.month ||
+    !map.day ||
+    map.hour === undefined ||
+    map.minute === undefined ||
+    map.second === undefined
+  ) {
+    return null
+  }
+
+  return {
+    year: map.year,
+    month: map.month,
+    day: map.day,
+    hour: map.hour,
+    minute: map.minute,
+    second: map.second
+  }
+}
+
+const getTimeZoneOffsetMinutes = (
+  timeZone: string,
+  date: Date
+): number => {
+  const parts = getTimeZoneParts(date, timeZone)
+  if (!parts) return 0
+
+  const utc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second
+  )
+
+  return (utc - date.getTime()) / 60000
+}
+
+const zonedTimeToUtc = (
+  date: string,
+  time: string,
+  timeZone: string
+): Date | null => {
+  const parsedDate = parseDate(date)
+  const parsedTime = parseTime(time)
+  if (!parsedDate || !parsedTime) return null
+
+  const utcGuess = new Date(
+    Date.UTC(
+      parsedDate.year,
+      parsedDate.month - 1,
+      parsedDate.day,
+      parsedTime.hour,
+      parsedTime.minute,
+      0,
+      0
+    )
+  )
+
+  const offset1 = getTimeZoneOffsetMinutes(timeZone, utcGuess)
+  const adjusted = new Date(utcGuess.getTime() - offset1 * 60 * 1000)
+  const offset2 = getTimeZoneOffsetMinutes(timeZone, adjusted)
+
+  if (offset1 !== offset2) {
+    return new Date(utcGuess.getTime() - offset2 * 60 * 1000)
+  }
+
+  return adjusted
 }
 
 const getNextRun = (
-  config: Required<Pick<ScheduleConfig, 'date' | 'time'>> & { loop: boolean },
-  from: Date = nowInNepal()
+  config: Required<Pick<ScheduleConfig, 'date' | 'time' | 'timezone'>> & {
+    loop: boolean
+  },
+  from: Date = new Date()
 ): Date | null => {
-  const start = parseDateTime(config.date, config.time)
+  const timeZone = resolveTimeZone(config.timezone)
+  const start = zonedTimeToUtc(config.date, config.time, timeZone)
   if (!start) return null
 
   if (!config.loop) {
@@ -69,15 +211,17 @@ const getNextRun = (
 
   if (start > from) return start
 
-  const timeParts = parseTime(config.time)
-  if (!timeParts) return null
+  const nowParts = getTimeZoneParts(from, timeZone)
+  if (!nowParts) return null
 
-  const candidate = new Date(from)
-  candidate.setSeconds(0, 0)
-  candidate.setHours(timeParts.hour, timeParts.minute)
+  const today = formatDate(nowParts.year, nowParts.month, nowParts.day)
+  let candidate = zonedTimeToUtc(today, config.time, timeZone)
+  if (!candidate) return null
 
   if (candidate <= from) {
-    candidate.setDate(candidate.getDate() + 1)
+    const nextDate = addDays(today, 1)
+    if (!nextDate) return null
+    candidate = zonedTimeToUtc(nextDate, config.time, timeZone)
   }
 
   return candidate
@@ -109,12 +253,14 @@ class WorkflowScheduler {
       const config = scheduleTrigger.data.config as ScheduleConfig
       const date = config.date?.trim()
       const time = config.time?.trim()
+      const timezone = resolveTimeZone(config.timezone?.trim())
 
       if (!date || !time) continue
 
       this.addJob(workflow.id, {
         date,
         time,
+        timezone,
         loop: Boolean(config.loop)
       })
       scheduledCount++
@@ -145,12 +291,14 @@ class WorkflowScheduler {
     const config = scheduleTrigger.data.config as ScheduleConfig
     const date = config.date?.trim()
     const time = config.time?.trim()
+    const timezone = resolveTimeZone(config.timezone?.trim())
 
     if (!date || !time) return
 
     this.addJob(workflowId, {
       date,
       time,
+      timezone,
       loop: Boolean(config.loop)
     })
   }
@@ -177,9 +325,11 @@ class WorkflowScheduler {
 
   private addJob(
     workflowId: string,
-    config: Required<Pick<ScheduleConfig, 'date' | 'time'>> & { loop: boolean }
+    config: Required<Pick<ScheduleConfig, 'date' | 'time' | 'timezone'>> & {
+      loop: boolean
+    }
   ): void {
-    const nextRun = getNextRun(config, nowInNepal())
+    const nextRun = getNextRun(config, new Date())
     if (!nextRun) return
 
     this.jobs.set(workflowId, {
@@ -191,7 +341,7 @@ class WorkflowScheduler {
   }
 
   private async tick(): Promise<void> {
-    const now = nowInNepal()
+    const now = new Date()
 
     for (const job of this.jobs.values()) {
       if (job.running) continue
@@ -228,7 +378,7 @@ class WorkflowScheduler {
     }
 
     if (job.config.loop) {
-      const nextRun = getNextRun(job.config, nowInNepal())
+      const nextRun = getNextRun(job.config, new Date())
       if (nextRun) {
         job.nextRun = nextRun
       } else {

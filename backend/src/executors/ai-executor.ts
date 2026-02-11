@@ -1,6 +1,6 @@
-import { InferenceClient } from '@huggingface/inference'
 import { TNodeExecutionResult } from '../types/workflow.types'
 import { replacePlaceholdersInConfig } from '../lib/placeholder'
+import { generateWithGemini, generateWithHuggingFace } from '../lib/ai-client'
 
 interface AIConfig {
   prompt: string
@@ -15,8 +15,6 @@ interface AIResponse {
     question_type: string
   }
 }
-
-const HF_TOKEN = process.env.HF_TOKEN
 
 const SYSTEM_PROMPT = `You are a helpful AI assistant that ALWAYS responds in valid JSON format.
 
@@ -59,10 +57,11 @@ export async function executeAskAI(
       }
     }
 
-    if (!HF_TOKEN) {
+    if (!process.env.GEMINI_API_KEY && !process.env.HF_TOKEN) {
       return {
         success: false,
-        error: 'HF_TOKEN environment variable is not set'
+        error:
+          'No AI provider configured. Set GEMINI_API_KEY (preferred) or HF_TOKEN.'
       }
     }
 
@@ -70,31 +69,23 @@ export async function executeAskAI(
     const resolvedPrompt = replacePlaceholdersInConfig({ prompt }, nodeOutputs)
       .prompt as string
 
-    // Use HuggingFace Inference Client
-    const client = new InferenceClient(HF_TOKEN)
-
-    const response = await client.chatCompletion({
-      model: 'meta-llama/Llama-3.1-8B-Instruct',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: resolvedPrompt }
-      ],
-      max_tokens: 800,
-      temperature: 0.3
-    })
-
-    // Extract content from response
-    let content = response.choices?.[0]?.message?.content?.trim()
-
-    if (!content) {
-      return {
-        success: false,
-        error: 'No response from AI'
-      }
-    }
+    const content = process.env.GEMINI_API_KEY
+      ? await generateWithGemini({
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt: resolvedPrompt,
+          maxTokens: 800,
+          temperature: 0.3,
+          responseMimeType: 'application/json'
+        })
+      : await generateWithHuggingFace({
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt: resolvedPrompt,
+          maxTokens: 800,
+          temperature: 0.3
+        })
 
     // Clean and parse response - remove any markdown code blocks
-    content = content
+    let normalizedContent = content
       .replace(/```json\n?/g, '')
       .replace(/\n?```/g, '')
       .trim()
@@ -102,14 +93,14 @@ export async function executeAskAI(
     let aiResponse: AIResponse
 
     try {
-      aiResponse = JSON.parse(content)
+      aiResponse = JSON.parse(normalizedContent)
     } catch (parseError) {
       // If parsing fails, return the raw content as the answer
       aiResponse = {
-        answer: content,
+        answer: normalizedContent,
         explanation: 'Raw response (JSON parsing failed)',
         confidence: 'medium',
-        data: { raw: content },
+        data: { raw: normalizedContent },
         metadata: { question_type: 'other' }
       }
     }
@@ -127,6 +118,7 @@ export async function executeAskAI(
       }
     }
   } catch (error: any) {
+    console.log('ErROR', error)
     return {
       success: false,
       error: error.message || 'Failed to get AI response'

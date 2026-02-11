@@ -73,6 +73,11 @@ export const BaseConfigurationForm = ({
 
   const credentials = credentialsData?.data || []
 
+  const localTimeZone =
+    typeof Intl !== 'undefined'
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kathmandu'
+      : 'Asia/Kathmandu'
+
   const credentialSchema = z.object({
     credentialId: z.string().min(1, 'Please select a valid credential')
   })
@@ -106,6 +111,7 @@ export const BaseConfigurationForm = ({
       attachments: '',
       date: '',
       time: '',
+      timezone: localTimeZone,
       loop: false,
       ...initialConfig
     }

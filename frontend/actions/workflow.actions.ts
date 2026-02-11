@@ -20,6 +20,7 @@ type ScheduleConfig = {
   date?: string
   time?: string
   loop?: boolean
+  timezone?: string
 }
 
 type AIWorkflowResponse = {

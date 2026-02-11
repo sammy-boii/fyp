@@ -65,7 +65,9 @@ export async function login(data: TLoginForm) {
     const cookieStore = await cookies()
     cookieStore.set('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
+      sameSite: 'lax',
+      domain: '.' + 'samrajya.com.np', // available to all sub-domains
       maxAge: 60 * 60 * 24 * 30 // 30 days
     })
 

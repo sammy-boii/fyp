@@ -13,7 +13,7 @@ export const app = new Hono()
 app.use(
   '/api/*',
   cors({
-    origin: [Bun.env.FRONTEND_BASE_URL || 'http://localhost:3000'],
+    origin: [Bun.env.FRONTEND_BASE_URL as string],
     credentials: true
   })
 )

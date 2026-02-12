@@ -77,5 +77,8 @@ export async function login(data: TLoginForm) {
 
 export async function logout() {
   const cookieStore = await cookies()
-  cookieStore.delete('token')
+  cookieStore.delete({
+    name: 'token',
+    domain: '.' + 'samrajya.com.np'
+  })
 }

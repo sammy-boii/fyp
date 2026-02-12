@@ -49,7 +49,7 @@ import { toast } from 'sonner'
 import { useGetProfile } from '@/hooks/use-user'
 import { Kbd } from '../ui/kbd'
 import { AnimatedThemeToggler } from '../magicui/animated-theme-toggler'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Palette } from 'lucide-react'
 
 // Menu items.

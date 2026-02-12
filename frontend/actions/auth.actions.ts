@@ -82,6 +82,9 @@ export async function logout() {
   const cookieStore = await cookies()
   cookieStore.delete({
     name: 'token',
-    domain: '.' + 'samrajya.com.np'
+    domain:
+      process.env.NODE_ENV === 'production'
+        ? '.' + process.env.RESEND_FROM_DOMAIN
+        : ''
   })
 }

@@ -16,6 +16,7 @@ export const api: KyInstance = ky.create({
         if (typeof window !== 'undefined') return
         const cookieStore = await cookies()
         const token = cookieStore.get('token')?.value
+        console.log('TOKEN', token)
         if (token) {
           req.headers.set('Authorization', `Bearer ${token}`)
         }

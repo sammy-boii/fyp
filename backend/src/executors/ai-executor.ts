@@ -118,7 +118,7 @@ export async function executeAskAI(
       }
     }
   } catch (error: any) {
-    console.log('ErROR', error)
+    console.log('ERR', error)
     return {
       success: false,
       error: error.message || 'Failed to get AI response'

@@ -47,8 +47,6 @@ export default function LoginPage() {
     startTransition(async () => {
       const { error } = await login(parsedCredentials.data)
 
-      console.log('login', error)
-
       if (error) {
         toast.error(error)
         return

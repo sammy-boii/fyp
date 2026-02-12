@@ -19,8 +19,6 @@ export function EmptyWorkflowPlaceholder({
 }: EmptyWorkflowPlaceholderProps) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  console.log(isAIGenerating)
-
   return (
     <div
       className={cn(

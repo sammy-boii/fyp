@@ -61,15 +61,24 @@ export const listGuilds = tryCatch(async (c) => {
     throw new AppError('Discord credential not found', 404)
   }
 
+  const dG = credential.discordGuilds
+
   // If no guilds are authorized, return empty array
-  if (!credential.discordGuilds || credential.discordGuilds.length === 0) {
-    return c.json({
-      success: true,
-      data: []
-    })
-  }
+  // if (!credential.discordGuilds || credential.discordGuilds.length === 0) {
+  //   return c.json({
+  //     success: true,
+  //     data: []
+  //   })
+  // }
 
   const botToken = await getDiscordBotToken(credentialId)
+
+  return c.json({
+    data: {
+      discordGuids: dG,
+      token: botToken
+    }
+  })
 
   // Fetch full guild info from Discord API for each authorized guild
   const guildPromises = credential.discordGuilds.map(async (discordGuild) => {

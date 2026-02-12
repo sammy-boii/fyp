@@ -1,8 +1,8 @@
-export const PORT = Bun.env.PORT || 5000
+export const PORT = process.env.PORT || 5000
 
-export const BACKEND_BASE_URL = Bun.env.BACKEND_BASE_URL
+export const BACKEND_BASE_URL = process.env.BACKEND_BASE_URL
 
-export const FRONTEND_BASE_URL = Bun.env.FRONTEND_BASE_URL
+export const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL
 
 const GMAIL_API_BASE_URL = 'https://gmail.googleapis.com/gmail/v1'
 

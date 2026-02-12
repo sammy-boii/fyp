@@ -11,11 +11,11 @@ async function refreshGoogleAccessToken(
     let client_id, client_secret
 
     if (provider == 'gmail') {
-      client_id = Bun.env.GMAIL_CLIENT_ID as string
-      client_secret = Bun.env.GMAIL_CLIENT_SECRET as string
+      client_id = process.env.GMAIL_CLIENT_ID as string
+      client_secret = process.env.GMAIL_CLIENT_SECRET as string
     } else {
-      client_id = Bun.env.GOOGLE_DRIVE_CLIENT_SECRET as string
-      client_secret = Bun.env.GOOGLE_DRIVE_CLIENT_ID as string
+      client_id = process.env.GOOGLE_DRIVE_CLIENT_SECRET as string
+      client_secret = process.env.GOOGLE_DRIVE_CLIENT_ID as string
     }
 
     const response = await fetch(API_ROUTES.OAUTH.REFRESH_TOKEN, {
@@ -144,7 +144,7 @@ export async function getDiscordBotToken(
   }
 
   // Use the shared bot token from environment variable
-  const botToken = Bun.env.DISCORD_BOT_TOKEN
+  const botToken = process.env.DISCORD_BOT_TOKEN
 
   if (!botToken) {
     throw new Error('Discord bot token not configured on server')

@@ -61,14 +61,6 @@ export const listGuilds = tryCatch(async (c) => {
     throw new AppError('Discord credential not found', 404)
   }
 
-  return c.json({
-    data: {
-      user,
-      credentialId,
-      credential
-    }
-  })
-
   // If no guilds are authorized, return empty array
   if (!credential.discordGuilds || credential.discordGuilds.length === 0) {
     return c.json({

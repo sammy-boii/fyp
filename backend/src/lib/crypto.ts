@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 
-const SECRET_KEY = Buffer.from(Bun.env.OAUTH_SECRET!, 'hex')
+const SECRET_KEY = Buffer.from(process.env.OAUTH_SECRET!, 'hex')
 
 const ALGORITHM = 'aes-256-gcm'
 

@@ -1,7 +1,7 @@
 import { API_ROUTES } from '@/src/constants'
 import { prisma } from '@shared/db/prisma'
 
-const GMAIL_PUBSUB_TOPIC = Bun.env.GMAIL_PUBSUB_TOPIC!
+const GMAIL_PUBSUB_TOPIC = process.env.GMAIL_PUBSUB_TOPIC!
 
 export interface GmailWatchResponse {
   historyId: string

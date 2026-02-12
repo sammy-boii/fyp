@@ -20,7 +20,7 @@ export const authMiddleware = async (c: Context, next: Next) => {
   try {
     const decoded = jwt.verify(
       token,
-      Bun.env.JWT_SECRET as string
+      process.env.JWT_SECRET as string
     ) as JwtPayload
 
     const findUser = await prisma.user.findUniqueOrThrow({

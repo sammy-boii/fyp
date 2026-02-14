@@ -7,6 +7,10 @@ import { ContentfulStatusCode } from 'hono/utils/http-status'
 
 const DISCORD_API_BASE = 'https://discord.com/api/v10'
 
+function logErr(res: Response, ctx: string) {
+  console.log(`[ERROR] [${ctx}] `, res.status, res.statusText, res)
+}
+
 // Helper to make Discord API requests
 async function discordRequest(
   endpoint: string,
@@ -25,8 +29,8 @@ async function discordRequest(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
     throw new AppError(
-      error.message || `Discord API error: ${response.status}`,
-      response.status as ContentfulStatusCode
+      `[DISCORD ERROR] ${endpoint} ${response.statusText} ${response.status} ${error.message ?? ''}`,
+      500
     )
   }
 
@@ -61,24 +65,15 @@ export const listGuilds = tryCatch(async (c) => {
     throw new AppError('Discord credential not found', 404)
   }
 
-  const dG = credential.discordGuilds
-
   // If no guilds are authorized, return empty array
-  // if (!credential.discordGuilds || credential.discordGuilds.length === 0) {
-  //   return c.json({
-  //     success: true,
-  //     data: []
-  //   })
-  // }
+  if (!credential.discordGuilds || credential.discordGuilds.length === 0) {
+    return c.json({
+      success: true,
+      data: []
+    })
+  }
 
   const botToken = await getDiscordBotToken(credentialId)
-
-  return c.json({
-    data: {
-      discordGuids: dG,
-      token: botToken
-    }
-  })
 
   // Fetch full guild info from Discord API for each authorized guild
   const guildPromises = credential.discordGuilds.map(async (discordGuild) => {

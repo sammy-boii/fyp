@@ -17,7 +17,21 @@ let isConnecting = false
 
 const DEFAULT_LOGIN_TIMEOUT_MS = 30_000
 const DEFAULT_PREFLIGHT_TIMEOUT_MS = 12_000
+const DEFAULT_RETRY_DELAY_MS = 60_000
+const MAX_RETRY_DELAY_MS = 10 * 60_000
 const DISCORD_GATEWAY_BOT_URL = 'https://discord.com/api/v10/gateway/bot'
+
+class DiscordPreflightError extends Error {
+  status: number
+  retryAfterMs?: number
+
+  constructor(message: string, status: number, retryAfterMs?: number) {
+    super(message)
+    this.name = 'DiscordPreflightError'
+    this.status = status
+    this.retryAfterMs = retryAfterMs
+  }
+}
 
 const toErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
@@ -88,10 +102,62 @@ const getPreflightTimeoutMs = (): number => {
   return DEFAULT_PREFLIGHT_TIMEOUT_MS
 }
 
+const getMaxLoginAttempts = (): number => {
+  const parsed = Number(process.env.DISCORD_LOGIN_MAX_ATTEMPTS)
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return Math.floor(parsed)
+  }
+  return 0
+}
+
 const isTruthy = (value: string | undefined): boolean => {
   if (!value) return false
   const normalized = value.toLowerCase().trim()
   return normalized === '1' || normalized === 'true' || normalized === 'yes'
+}
+
+const sleep = async (ms: number): Promise<void> => {
+  await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+const parseRetryAfterMs = (headers: Headers): number | undefined => {
+  const retryAfter = headers.get('retry-after')
+
+  if (retryAfter) {
+    const seconds = Number(retryAfter)
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return Math.ceil(seconds * 1000)
+    }
+
+    const dateMs = Date.parse(retryAfter)
+    if (!Number.isNaN(dateMs)) {
+      const diff = dateMs - Date.now()
+      if (diff > 0) return diff
+    }
+  }
+
+  const resetAfter = headers.get('x-ratelimit-reset-after')
+  if (resetAfter) {
+    const seconds = Number(resetAfter)
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return Math.ceil(seconds * 1000)
+    }
+  }
+
+  return undefined
+}
+
+const clampRetryDelay = (ms: number): number => {
+  return Math.max(1_000, Math.min(ms, MAX_RETRY_DELAY_MS))
+}
+
+const getFallbackRetryDelayMs = (attempt: number): number => {
+  const delay = DEFAULT_RETRY_DELAY_MS * Math.max(1, attempt)
+  return clampRetryDelay(delay)
+}
+
+const isAuthStatus = (status: number): boolean => {
+  return status === 401 || status === 403
 }
 
 const runDiscordPreflight = async (token: string): Promise<void> => {
@@ -120,8 +186,12 @@ const runDiscordPreflight = async (token: string): Promise<void> => {
 
   if (!response.ok) {
     const body = await response.text()
-    throw new Error(
-      `Discord preflight failed with status ${response.status}. Response: ${body.slice(0, 300)}`
+    const retryAfterMs = parseRetryAfterMs(response.headers)
+
+    throw new DiscordPreflightError(
+      `Discord preflight failed with status ${response.status}. Response: ${body.slice(0, 300)}`,
+      response.status,
+      retryAfterMs
     )
   }
 
@@ -279,31 +349,85 @@ export async function initDiscordBot() {
   }
 
   const timeoutMs = getLoginTimeoutMs()
+  const maxAttempts = getMaxLoginAttempts()
   isConnecting = true
+  let attempt = 0
 
-  try {
-    await runDiscordPreflight(token)
-    console.log(`[discord] login attempt started (timeout=${timeoutMs}ms)`)
-    console.log('CONNECTING...')
-    console.log('🔌 Discord bot connection initiated...')
+  while (!isReady) {
+    attempt += 1
+    let retryDelayMs = getFallbackRetryDelayMs(attempt)
 
-    await withTimeout(
-      client.login(token),
-      timeoutMs,
-      `Discord login timed out after ${timeoutMs}ms`
-    )
+    try {
+      try {
+        await runDiscordPreflight(token)
+      } catch (error) {
+        if (error instanceof DiscordPreflightError) {
+          if (error.retryAfterMs) {
+            retryDelayMs = clampRetryDelay(error.retryAfterMs)
+          }
 
-    console.log('[discord] login() promise resolved')
-  } catch (error) {
-    isConnecting = false
-    console.error(
-      `[discord] failed to initialize bot: ${toErrorMessage(error)}`
-    )
-    console.error('❌ Failed to initialize Discord bot:', error)
-  } finally {
-    if (!isReady) {
-      isConnecting = false
+          if (isAuthStatus(error.status)) {
+            throw error
+          }
+
+          console.warn(
+            `[discord] preflight warning (status=${error.status}). Continuing to login attempt.`
+          )
+        } else {
+          console.warn(
+            `[discord] preflight warning: ${toErrorMessage(error)}. Continuing to login attempt.`
+          )
+        }
+      }
+
+      console.log(
+        `[discord] login attempt ${attempt}${maxAttempts > 0 ? `/${maxAttempts}` : ''} started (timeout=${timeoutMs}ms)`
+      )
+      console.log('CONNECTING...')
+      console.log('🔌 Discord bot connection initiated...')
+
+      await withTimeout(
+        client.login(token),
+        timeoutMs,
+        `Discord login timed out after ${timeoutMs}ms`
+      )
+
+      console.log('[discord] login() promise resolved')
+      break
+    } catch (error) {
+      if (error instanceof DiscordPreflightError && isAuthStatus(error.status)) {
+        console.error(
+          `[discord] failed to initialize bot: invalid bot token or forbidden (status ${error.status})`
+        )
+        console.error('❌ Failed to initialize Discord bot:', error)
+        break
+      }
+
+      console.error(
+        `[discord] failed to initialize bot: ${toErrorMessage(error)}`
+      )
+      console.error('❌ Failed to initialize Discord bot:', error)
+
+      try {
+        client.destroy()
+      } catch {
+        // best-effort cleanup before retry
+      }
+
+      if (maxAttempts > 0 && attempt >= maxAttempts) {
+        console.error(
+          `[discord] reached max login attempts (${maxAttempts}); stopping retries`
+        )
+        break
+      }
+
+      console.warn(`[discord] retrying login in ${retryDelayMs}ms...`)
+      await sleep(retryDelayMs)
     }
+  }
+
+  if (!isReady) {
+    isConnecting = false
   }
 }
 

@@ -13,12 +13,93 @@ const client = new Client({
 
 // Track if bot is ready
 let isReady = false
+let isConnecting = false
+
+const DEFAULT_LOGIN_TIMEOUT_MS = 30_000
+
+const toErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return `${error.name}: ${error.message}`
+  }
+
+  return String(error)
+}
+
+const getLoginTimeoutMs = (): number => {
+  const parsed = Number(process.env.DISCORD_LOGIN_TIMEOUT_MS)
+
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return parsed
+  }
+
+  return DEFAULT_LOGIN_TIMEOUT_MS
+}
+
+const withTimeout = async <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: string
+): Promise<T> => {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          reject(new Error(timeoutMessage))
+        }, timeoutMs)
+      })
+    ])
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle)
+    }
+  }
+}
 
 // Listen for when the bot is ready
 client.once(Events.ClientReady, (readyClient) => {
   isReady = true
+  isConnecting = false
+
+  console.log(`[discord] bot ready as ${readyClient.user.tag}`)
+  console.log(
+    `[discord] joined guild count: ${readyClient.guilds.cache.size} server(s)`
+  )
+
   console.log(`🤖 Discord bot logged in as ${readyClient.user.tag}`)
   console.log(`📡 Bot is in ${readyClient.guilds.cache.size} server(s)`)
+})
+
+client.on(Events.Warn, (warning) => {
+  console.warn(`[discord] warning: ${warning}`)
+})
+
+client.on(Events.Error, (error) => {
+  console.error(`[discord] client error: ${toErrorMessage(error)}`)
+})
+
+client.on(Events.ShardDisconnect, (event, shardId) => {
+  console.warn(
+    `[discord] shard ${shardId} disconnected (code=${event.code}, reason=${event.reason || 'unknown'})`
+  )
+})
+
+client.on(Events.ShardReconnecting, (shardId) => {
+  console.warn(`[discord] shard ${shardId} reconnecting`)
+})
+
+client.on(Events.ShardResume, (shardId, replayedEvents) => {
+  console.log(
+    `[discord] shard ${shardId} resumed (replayedEvents=${replayedEvents})`
+  )
+})
+
+client.on(Events.ShardError, (error, shardId) => {
+  console.error(
+    `[discord] shard ${shardId} error: ${toErrorMessage(error)}`
+  )
 })
 
 // Listen for new messages
@@ -116,12 +197,61 @@ export async function initDiscordBot() {
     return
   }
 
+  if (isReady) {
+    console.log('[discord] init requested but bot is already ready')
+    return
+  }
+
+  if (isConnecting) {
+    console.log('[discord] init requested while login is already in progress')
+    return
+  }
+
+  const timeoutMs = getLoginTimeoutMs()
+  isConnecting = true
+
   try {
+    console.log(`[discord] login attempt started (timeout=${timeoutMs}ms)`)
     console.log('CONNECTING...')
-    await client.login(token)
     console.log('🔌 Discord bot connection initiated...')
+
+    await withTimeout(
+      client.login(token),
+      timeoutMs,
+      `Discord login timed out after ${timeoutMs}ms`
+    )
+
+    console.log('[discord] login() promise resolved')
   } catch (error) {
+    isConnecting = false
+    console.error(
+      `[discord] failed to initialize bot: ${toErrorMessage(error)}`
+    )
     console.error('❌ Failed to initialize Discord bot:', error)
+  } finally {
+    if (!isReady) {
+      isConnecting = false
+    }
+  }
+}
+
+export async function shutdownDiscordBot(): Promise<void> {
+  if (!isReady && !isConnecting) {
+    console.log('[discord] shutdown requested but bot is already stopped')
+    return
+  }
+
+  try {
+    console.log('[discord] destroying Discord client...')
+    client.destroy()
+    console.log('[discord] Discord client destroyed')
+  } catch (error) {
+    console.error(
+      `[discord] error while destroying Discord client: ${toErrorMessage(error)}`
+    )
+  } finally {
+    isReady = false
+    isConnecting = false
   }
 }
 

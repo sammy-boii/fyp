@@ -4,7 +4,7 @@ import { routes } from './routes'
 import { PORT } from './constants'
 import { cors } from 'hono/cors'
 import { websocketHandler } from './lib/websocket'
-import { initDiscordBot } from './lib/discord-bot'
+import { initDiscordBot, shutdownDiscordBot } from './lib/discord-bot'
 import { initTriggerCache } from './lib/trigger-cache'
 import { initWorkflowScheduler } from './lib/workflow-scheduler'
 
@@ -20,7 +20,7 @@ app.use(
 
 app.route('/api', routes)
 
-Bun.serve({
+const server = Bun.serve({
   fetch(req, server) {
     const url = new URL(req.url)
 
@@ -53,9 +53,48 @@ console.log(
   `Server running at PORT ${PORT} & WS at ws://localhost:${PORT}/ws/workflow/:workflowId`
 )
 
-// Initialize trigger cache first, then scheduled workflows, then Discord bot
-initTriggerCache()
-  .then(() => initWorkflowScheduler())
-  .then(() => {
-    initDiscordBot()
-  })
+const bootstrapBackgroundServices = async (): Promise<void> => {
+  try {
+    // Initialize trigger cache first, then scheduled workflows, then Discord bot.
+    await initTriggerCache()
+    await initWorkflowScheduler()
+    await initDiscordBot()
+  } catch (error) {
+    console.error('❌ Failed to bootstrap background services:', error)
+  }
+}
+
+void bootstrapBackgroundServices()
+
+let isShuttingDown = false
+
+const gracefulShutdown = async (signal: 'SIGTERM' | 'SIGINT') => {
+  if (isShuttingDown) return
+  isShuttingDown = true
+
+  console.warn(`[shutdown] received ${signal}, shutting down services...`)
+
+  try {
+    await shutdownDiscordBot()
+  } catch (error) {
+    console.error('[shutdown] error during Discord shutdown:', error)
+  }
+
+  try {
+    server.stop(true)
+    console.warn('[shutdown] HTTP server stopped')
+  } catch (error) {
+    console.error('[shutdown] error while stopping HTTP server:', error)
+  }
+
+  console.warn('[shutdown] process exit')
+  process.exit(0)
+}
+
+process.on('SIGTERM', () => {
+  void gracefulShutdown('SIGTERM')
+})
+
+process.on('SIGINT', () => {
+  void gracefulShutdown('SIGINT')
+})

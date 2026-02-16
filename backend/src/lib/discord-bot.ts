@@ -117,6 +117,7 @@ export async function initDiscordBot() {
   }
 
   try {
+    console.log('CONNECTING...')
     await client.login(token)
     console.log('🔌 Discord bot connection initiated...')
   } catch (error) {

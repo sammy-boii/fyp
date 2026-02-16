@@ -16,6 +16,8 @@ let isReady = false
 let isConnecting = false
 
 const DEFAULT_LOGIN_TIMEOUT_MS = 30_000
+const DEFAULT_PREFLIGHT_TIMEOUT_MS = 12_000
+const DISCORD_GATEWAY_BOT_URL = 'https://discord.com/api/v10/gateway/bot'
 
 const toErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
@@ -56,6 +58,77 @@ const withTimeout = async <T>(
       clearTimeout(timeoutHandle)
     }
   }
+}
+
+const withAbortableTimeout = async <T>(
+  fn: (signal: AbortSignal) => Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: string
+): Promise<T> => {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fn(controller.signal)
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(timeoutMessage)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+const getPreflightTimeoutMs = (): number => {
+  const parsed = Number(process.env.DISCORD_PREFLIGHT_TIMEOUT_MS)
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return parsed
+  }
+  return DEFAULT_PREFLIGHT_TIMEOUT_MS
+}
+
+const isTruthy = (value: string | undefined): boolean => {
+  if (!value) return false
+  const normalized = value.toLowerCase().trim()
+  return normalized === '1' || normalized === 'true' || normalized === 'yes'
+}
+
+const runDiscordPreflight = async (token: string): Promise<void> => {
+  if (isTruthy(process.env.DISCORD_SKIP_PREFLIGHT)) {
+    console.log('[discord] preflight skipped by DISCORD_SKIP_PREFLIGHT')
+    return
+  }
+
+  const timeoutMs = getPreflightTimeoutMs()
+  console.log(
+    `[discord] preflight: checking ${DISCORD_GATEWAY_BOT_URL} (timeout=${timeoutMs}ms)`
+  )
+
+  const response = await withAbortableTimeout(
+    async (signal) =>
+      fetch(DISCORD_GATEWAY_BOT_URL, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bot ${token}`
+        },
+        signal
+      }),
+    timeoutMs,
+    `Discord preflight timed out after ${timeoutMs}ms`
+  )
+
+  if (!response.ok) {
+    const body = await response.text()
+    throw new Error(
+      `Discord preflight failed with status ${response.status}. Response: ${body.slice(0, 300)}`
+    )
+  }
+
+  const payload = await response.json()
+  console.log(
+    `[discord] preflight success: gateway=${payload.url}, shards=${payload.shards ?? 'n/a'}`
+  )
 }
 
 // Listen for when the bot is ready
@@ -209,6 +282,7 @@ export async function initDiscordBot() {
   isConnecting = true
 
   try {
+    await runDiscordPreflight(token)
     console.log(`[discord] login attempt started (timeout=${timeoutMs}ms)`)
     console.log('CONNECTING...')
     console.log('🔌 Discord bot connection initiated...')

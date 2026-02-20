@@ -1,160 +1,163 @@
 import { Context } from 'hono'
-import { generateWithGemini, generateWithHuggingFace } from '../../lib/ai-client'
+import {
+  generateWithGemini,
+  generateWithHuggingFace
+} from '../../lib/ai-client'
 
 // Simplified node types for AI to understand
 const AVAILABLE_NODES = `
-NODE TYPES (use these exact values for "type" field):
-- MANUAL_TRIGGER: Starts workflow manually (REQUIRED as first node)
-- GMAIL_WEBHOOK_TRIGGER: Triggers on new Gmail emails
-- DISCORD_WEBHOOK_TRIGGER: Triggers on Discord events  
-- SCHEDULE_TRIGGER: Triggers on a schedule
-- GMAIL: Send, read, or delete emails
-- GOOGLE_DRIVE: Create folders/files, list files, delete files
-- DISCORD: Send messages to channels or DMs
-- AI: Ask AI questions or process text
-- HTTP: Make HTTP requests to external APIs
-- CONDITION: Branch workflow based on conditions
+  NODE TYPES (use these exact values for "type" field):
+  - MANUAL_TRIGGER: Starts workflow manually (REQUIRED as first node)
+  - GMAIL_WEBHOOK_TRIGGER: Triggers on new Gmail emails
+  - DISCORD_WEBHOOK_TRIGGER: Triggers on Discord events  
+  - SCHEDULE_TRIGGER: Triggers on a schedule
+  - GMAIL: Send, read, or delete emails
+  - GOOGLE_DRIVE: Create folders/files, list files, delete files
+  - DISCORD: Send messages to channels or DMs
+  - AI: Ask AI questions or process text
+  - HTTP: Make HTTP requests to external APIs
+  - CONDITION: Branch workflow based on conditions
 
-ACTIONS (use these for "actionId" field):
-- MANUAL_TRIGGER: actionId = "on_demand"
-- GMAIL_WEBHOOK_TRIGGER: actionId = "gmail_webhook"
-- DISCORD_WEBHOOK_TRIGGER: actionId = "discord_webhook"
-- SCHEDULE_TRIGGER: actionId = "schedule_trigger"
-- GMAIL: actionId = "send_email" | "read_email" | "delete_email"
-- GOOGLE_DRIVE: actionId = "create_folder" | "create_file" | "list_files" | "delete_file" | "delete_folder"
-- DISCORD: actionId = "send_channel_message" | "send_dm" | "list_guilds" | "list_channels" | "create_channel"
-- AI: actionId = "ask_ai"
-- HTTP: actionId = "http_request"
-- CONDITION: actionId = "evaluate_condition"
-`
+  ACTIONS (use these for "actionId" field):
+  - MANUAL_TRIGGER: actionId = "on_demand"
+  - GMAIL_WEBHOOK_TRIGGER: actionId = "gmail_webhook"
+  - DISCORD_WEBHOOK_TRIGGER: actionId = "discord_webhook"
+  - SCHEDULE_TRIGGER: actionId = "schedule_trigger"
+  - GMAIL: actionId = "send_email" | "read_email" | "delete_email"
+  - GOOGLE_DRIVE: actionId = "create_folder" | "create_file" | "list_files" | "delete_file" | "delete_folder"
+  - DISCORD: actionId = "send_channel_message" | "send_dm" | "list_guilds" | "list_channels" | "create_channel"
+  - AI: actionId = "ask_ai"
+  - HTTP: actionId = "http_request"
+  - CONDITION: actionId = "evaluate_condition"
+  `
 
 const CONDITION_OPERATORS = `
-CONDITION OPERATORS (use these exact values for "operator"):
-- equals
-- not_equals
-- contains
-- not_contains
-- starts_with
-- ends_with
-- greater_than
-- less_than
-- greater_than_or_equal
-- less_than_or_equal
-- is_empty
-- is_not_empty
-`
+  CONDITION OPERATORS (use these exact values for "operator"):
+  - equals
+  - not_equals
+  - contains
+  - not_contains
+  - starts_with
+  - ends_with
+  - greater_than
+  - less_than
+  - greater_than_or_equal
+  - less_than_or_equal
+  - is_empty
+  - is_not_empty
+  `
 
 const SYSTEM_PROMPT = `You are a workflow automation assistant that generates React Flow node structures.
 
-${AVAILABLE_NODES}
-${CONDITION_OPERATORS}
+  ${AVAILABLE_NODES}
+  ${CONDITION_OPERATORS}
 
-STRICTNESS:
-- If the user's prompt is unclear, nonsensical, or cannot be mapped to the available node types/actions, return ONLY:
-  {"error":"Failed to generate workflow"}
-- Do NOT output nodes/edges when returning an error.
-- Do NOT invent new node types or actionIds.
-- If a condition is implied but the condition details are missing, return an error instead of guessing.
+  STRICTNESS:
+  - If the user's prompt is unclear, nonsensical, or cannot be mapped to the available node types/actions, return ONLY:
+    {"error":"Failed to generate workflow"}
+  - Do NOT output nodes/edges when returning an error.
+  - Do NOT invent new node types or actionIds.
+  - If a condition is implied but the condition details are missing, return an error instead of guessing.
 
-OUTPUT FORMAT - Return ONLY valid JSON with this exact structure:
-{
-  "nodes": [
-    {
-      "id": "n1",
-      "type": "trigger_node" | "custom_node" | "condition_node",
-      "position": { "x": number, "y": number },
-      "data": {
-        "type": "NODE_TYPE_FROM_LIST_ABOVE",
-        "actionId": "action_id_from_list_above",
-        "config": {}
-      }
-    }
-  ],
-  "edges": [
-    {
-      "id": "e_n1_n2",
-      "source": "n1",
-      "target": "n2",
-      "sourceHandle": "true" | "false"
-    }
-  ]
-}
-Note: "sourceHandle" is required ONLY for edges whose source is a CONDITION node; omit it for all other edges.
-
-CONDITION NODE CONFIG:
-- data.type must be "CONDITION"
-- data.actionId must be "evaluate_condition"
-- data.config MUST be:
+  OUTPUT FORMAT - Return ONLY valid JSON with this exact structure:
   {
-    "matchType": "all" | "any",
-    "conditions": [
-      { "field": "<string>", "operator": "<operator>", "value": "<string>" }
+    "nodes": [
+      {
+        "id": "n1",
+        "type": "trigger_node" | "custom_node" | "condition_node",
+        "position": { "x": number, "y": number },
+        "data": {
+          "type": "NODE_TYPE_FROM_LIST_ABOVE",
+          "actionId": "action_id_from_list_above",
+          "config": {}
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_n1_n2",
+        "source": "n1",
+        "target": "n2",
+        "sourceHandle": "true" | "false"
+      }
     ]
   }
-- For operators "is_empty" and "is_not_empty", omit "value".
-- If a branch needs multiple actions, chain them in sequence after the condition node.
-- Do NOT connect multiple nodes directly from the same condition handle.
+  Note: "sourceHandle" is required ONLY for edges whose source is a CONDITION node; omit it for all other edges.
 
-COMMON INTENTS:
-- "save to google drive" or "save in drive" => type "GOOGLE_DRIVE" with actionId "create_file"
-- "reply with ai" => use "AI" (ask_ai) then "GMAIL" (send_email)
-- "if ... then ... else ..." => use a "CONDITION" node with true/false branches (edges with sourceHandle)
+  CONDITION NODE CONFIG:
+  - data.type must be "CONDITION"
+  - data.actionId must be "evaluate_condition"
+  - data.config MUST be:
+    {
+      "matchType": "all" | "any",
+      "conditions": [
+        { "field": "<string>", "operator": "<operator>", "value": "<string>" }
+      ]
+    }
+  - For operators "is_empty" and "is_not_empty", omit "value".
+  - If a branch needs multiple actions, chain them in sequence after the condition node.
+  - Do NOT connect multiple nodes directly from the same condition handle.
 
-RULES:
-1. ALWAYS start with a trigger node (MANUAL_TRIGGER if not specified)
-2. Use "trigger_node" for type when data.type ends with "_TRIGGER"
-3. Use "condition_node" for type when data.type is "CONDITION"
-4. Use "custom_node" for all other node types
-5. Trigger nodes can ONLY appear as the starting node (no other trigger nodes in the flow).
-6. Each non-condition node must have at most 1 incoming edge and at most 1 outgoing edge.
-7. Condition node rules:
-   - It must have at most 1 incoming edge.
-   - It may have up to 2 outgoing edges, but ONLY one per handle.
-   - "true" handle can connect to ONLY one node.
-   - "false" handle can connect to ONLY one node.
-8. No loops/cycles are allowed in the graph.
-9. All nodes must be connected (no standalone or disconnected nodes).
-10. Position nodes horizontally with x increasing by 300 for each step
-11. Keep y position around 160 for a straight line layout
-12. If there is a condition node, create TWO branches:
-   - True branch (sourceHandle "true") goes above (y - 120)
-   - False branch (sourceHandle "false") goes below (y + 120)
-   - Use sourceHandle ONLY on edges that originate from a condition node
-13. Generate unique IDs like "n1", "n2", "n3" etc.
-14. Edge IDs should be "e_source_target" format
-15. Connect nodes in sequence with edges
-16. Return ONLY the JSON, no markdown, no explanation
-17. config should be an empty object {} for non-condition nodes
-`
+  COMMON INTENTS:
+  - "save to google drive" or "save in drive" => type "GOOGLE_DRIVE" with actionId "create_file"
+  - "reply with ai" => use "AI" (ask_ai) then "GMAIL" (send_email)
+  - "if ... then ... else ..." => use a "CONDITION" node with true/false branches (edges with sourceHandle)
+
+  RULES:
+  1. ALWAYS start with a trigger node (MANUAL_TRIGGER if not specified)
+  2. Use "trigger_node" for type when data.type ends with "_TRIGGER"
+  3. Use "condition_node" for type when data.type is "CONDITION"
+  4. Use "custom_node" for all other node types
+  5. Trigger nodes can ONLY appear as the starting node (no other trigger nodes in the flow).
+  6. Each non-condition node must have at most 1 incoming edge and at most 1 outgoing edge.
+  7. Condition node rules:
+    - It must have at most 1 incoming edge.
+    - It may have up to 2 outgoing edges, but ONLY one per handle.
+    - "true" handle can connect to ONLY one node.
+    - "false" handle can connect to ONLY one node.
+  8. No loops/cycles are allowed in the graph.
+  9. All nodes must be connected (no standalone or disconnected nodes).
+  10. Position nodes horizontally with x increasing by 300 for each step
+  11. Keep y position around 160 for a straight line layout
+  12. If there is a condition node, create TWO branches:
+    - True branch (sourceHandle "true") goes above (y - 120)
+    - False branch (sourceHandle "false") goes below (y + 120)
+    - Use sourceHandle ONLY on edges that originate from a condition node
+  13. Generate unique IDs like "n1", "n2", "n3" etc.
+  14. Edge IDs should be "e_source_target" format
+  15. Connect nodes in sequence with edges
+  16. Return ONLY the JSON, no markdown, no explanation
+  17. config should be an empty object {} for non-condition nodes
+  `
 
 const INTENT_SYSTEM_PROMPT = `You are a workflow intent parser.
 
-${AVAILABLE_NODES}
+  ${AVAILABLE_NODES}
 
-Return ONLY valid JSON with this structure:
-{
-  "status": "ready" | "needs_clarification" | "unsupported",
-  "reason": "<short reason string>",
-  "questions": ["<question 1>", "<question 2>"],
-  "normalizedPrompt": "<rewritten prompt for workflow generation>",
-  "triggerType": "MANUAL_TRIGGER" | "GMAIL_WEBHOOK_TRIGGER" | "DISCORD_WEBHOOK_TRIGGER" | "SCHEDULE_TRIGGER" | null,
-  "steps": [
-    {
-      "type": "GMAIL" | "GOOGLE_DRIVE" | "DISCORD" | "AI" | "HTTP" | "CONDITION",
-      "actionId": "<action id>"
-    }
-  ]
-}
+  Return ONLY valid JSON with this structure:
+  {
+    "status": "ready" | "needs_clarification" | "unsupported",
+    "reason": "<short reason string>",
+    "questions": ["<question 1>", "<question 2>"],
+    "normalizedPrompt": "<rewritten prompt for workflow generation>",
+    "triggerType": "MANUAL_TRIGGER" | "GMAIL_WEBHOOK_TRIGGER" | "DISCORD_WEBHOOK_TRIGGER" | "SCHEDULE_TRIGGER" | null,
+    "steps": [
+      {
+        "type": "GMAIL" | "GOOGLE_DRIVE" | "DISCORD" | "AI" | "HTTP" | "CONDITION",
+        "actionId": "<action id>"
+      }
+    ]
+  }
 
-INTENT RULES:
-- Use "ready" only when the request can be turned into a concrete workflow.
-- Use "needs_clarification" if essential details are missing or ambiguous.
-- Use "unsupported" when request cannot be mapped to available nodes/actions.
-- For "needs_clarification", include 1-3 short questions.
-- If trigger is unspecified but intent is clear, use triggerType "MANUAL_TRIGGER".
-- Keep normalizedPrompt concise and specific for the workflow builder.
-- Never return markdown fences or extra commentary.
-`
+  INTENT RULES:
+  - Use "ready" only when the request can be turned into a concrete workflow.
+  - Use "needs_clarification" if essential details are missing or ambiguous.
+  - Use "unsupported" when request cannot be mapped to available nodes/actions.
+  - For "needs_clarification", include 1-3 short questions.
+  - If trigger is unspecified but intent is clear, use triggerType "MANUAL_TRIGGER".
+  - Keep normalizedPrompt concise and specific for the workflow builder.
+  - Never return markdown fences or extra commentary.
+  `
 
 interface GeneratedWorkflow {
   nodes: Array<{
@@ -477,9 +480,10 @@ const isPromptLikelyAmbiguous = (prompt: string): boolean => {
     return true
   }
 
-  const hasConcreteAction = /(send|read|delete|create|save|upload|reply|list|schedule|webhook|api|http|if|then|else|gmail|drive|discord)/i.test(
-    normalized
-  )
+  const hasConcreteAction =
+    /(send|read|delete|create|save|upload|reply|list|schedule|webhook|api|http|if|then|else|gmail|drive|discord)/i.test(
+      normalized
+    )
   if (!hasConcreteAction) {
     return true
   }
@@ -648,7 +652,10 @@ const toUserFacingValidationError = (error: string): string => {
     return 'I could not reliably generate a workflow from this prompt. Please specify trigger, app, and exact actions.'
   }
 
-  if (normalized.includes('unsupported node type') || normalized.includes('unsupported actionid')) {
+  if (
+    normalized.includes('unsupported node type') ||
+    normalized.includes('unsupported actionid')
+  ) {
     return 'I could not map this request to supported actions. Mention the app and action clearly (for example: Gmail send_email, Google Drive create_file).'
   }
 
@@ -660,7 +667,10 @@ const toUserFacingValidationError = (error: string): string => {
     return 'Please specify one trigger, or leave it implicit to use a manual trigger.'
   }
 
-  if (normalized.includes('invalid workflow structure') || normalized.includes('starting node')) {
+  if (
+    normalized.includes('invalid workflow structure') ||
+    normalized.includes('starting node')
+  ) {
     return 'I could not produce a valid workflow graph from this prompt. Please make the steps more explicit.'
   }
 
@@ -683,7 +693,11 @@ const styleWorkflowEdges = (workflow: GeneratedWorkflow) =>
 const generateWorkflowWithRepair = async (
   prompt: string,
   preferStrongerModel: boolean
-): Promise<{ workflow?: GeneratedWorkflow; error?: string; lastResponse?: string }> => {
+): Promise<{
+  workflow?: GeneratedWorkflow
+  error?: string
+  lastResponse?: string
+}> => {
   const maxAttempts = 3
   let userPrompt = `Generate a workflow for: ${prompt}`
   let lastError = ''
@@ -706,7 +720,9 @@ const generateWorkflowWithRepair = async (
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
       lastError = 'Invalid JSON response from model'
     } else {
-      const validation = validateAndNormalizeWorkflow(payload as GeneratedWorkflow)
+      const validation = validateAndNormalizeWorkflow(
+        payload as GeneratedWorkflow
+      )
       if (!validation.error) {
         return { workflow: validation.workflow }
       }
@@ -717,16 +733,16 @@ const generateWorkflowWithRepair = async (
     if (attempt < maxAttempts) {
       userPrompt = `Your previous response was invalid.
 
-Original request:
-${prompt}
+  Original request:
+  ${prompt}
 
-Validation error:
-${lastError}
+  Validation error:
+  ${lastError}
 
-Previous response:
-${cleaned}
+  Previous response:
+  ${cleaned}
 
-Return ONLY corrected JSON that satisfies all workflow rules.`
+  Return ONLY corrected JSON that satisfies all workflow rules.`
     }
   }
 
@@ -791,8 +807,7 @@ const validateAndNormalizeWorkflow = (
     }
 
     if (!VALID_ACTION_IDS.has(actionId)) {
-      const alias =
-        ACTION_ID_ALIASES_BY_NODE_TYPE[nodeType]?.[actionId] || null
+      const alias = ACTION_ID_ALIASES_BY_NODE_TYPE[nodeType]?.[actionId] || null
       if (alias) {
         actionId = alias
       } else {
@@ -819,8 +834,7 @@ const validateAndNormalizeWorkflow = (
       const config = node.data.config
       if (!config || typeof config !== 'object') {
         return {
-          error:
-            'Condition node requires config with matchType and conditions'
+          error: 'Condition node requires config with matchType and conditions'
         }
       }
 
@@ -829,15 +843,13 @@ const validateAndNormalizeWorkflow = (
 
       if (matchType !== 'all' && matchType !== 'any') {
         return {
-          error:
-            'Condition node config.matchType must be "all" or "any"'
+          error: 'Condition node config.matchType must be "all" or "any"'
         }
       }
 
       if (!Array.isArray(conditions) || conditions.length === 0) {
         return {
-          error:
-            'Condition node config.conditions must be a non-empty array'
+          error: 'Condition node config.conditions must be a non-empty array'
         }
       }
 
@@ -858,8 +870,7 @@ const validateAndNormalizeWorkflow = (
             condition.value === ''
           ) {
             return {
-              error:
-                'Condition value is required for the selected operator'
+              error: 'Condition value is required for the selected operator'
             }
           }
         }
@@ -882,7 +893,10 @@ const validateAndNormalizeWorkflow = (
 
   const incomingCounts = new Map<string, number>()
   const outgoingCounts = new Map<string, number>()
-  const conditionHandleCounts = new Map<string, { true: number; false: number }>()
+  const conditionHandleCounts = new Map<
+    string,
+    { true: number; false: number }
+  >()
 
   for (const nodeId of nodeIds) {
     incomingCounts.set(nodeId, 0)
@@ -912,8 +926,7 @@ const validateAndNormalizeWorkflow = (
     if (conditionNodeIds.has(edge.source)) {
       if (edge.sourceHandle !== 'true' && edge.sourceHandle !== 'false') {
         return {
-          error:
-            'Condition edges must include sourceHandle "true" or "false"'
+          error: 'Condition edges must include sourceHandle "true" or "false"'
         }
       }
 
@@ -1075,9 +1088,15 @@ export async function generateWorkflow(c: Context) {
 
     let parsedIntent: ParsedIntent | null = null
     try {
-      parsedIntent = await extractIntentFromPrompt(trimmedPrompt, preferStrongerModel)
+      parsedIntent = await extractIntentFromPrompt(
+        trimmedPrompt,
+        preferStrongerModel
+      )
     } catch (intentError) {
-      console.error('Intent extraction failed, continuing with workflow generation:', intentError)
+      console.error(
+        'Intent extraction failed, continuing with workflow generation:',
+        intentError
+      )
     }
 
     if (parsedIntent?.status === 'needs_clarification') {
@@ -1103,10 +1122,16 @@ export async function generateWorkflow(c: Context) {
     }
 
     if (parsedIntent?.status === 'ready') {
-      const deterministicWorkflow = buildDeterministicLinearWorkflow(parsedIntent)
+      const deterministicWorkflow =
+        buildDeterministicLinearWorkflow(parsedIntent)
       if (deterministicWorkflow) {
-        const deterministicValidation = validateAndNormalizeWorkflow(deterministicWorkflow)
-        if (!deterministicValidation.error && deterministicValidation.workflow) {
+        const deterministicValidation = validateAndNormalizeWorkflow(
+          deterministicWorkflow
+        )
+        if (
+          !deterministicValidation.error &&
+          deterministicValidation.workflow
+        ) {
           return c.json({
             nodes: deterministicValidation.workflow.nodes,
             edges: styleWorkflowEdges(deterministicValidation.workflow)

@@ -127,6 +127,35 @@ RULES:
 17. config should be an empty object {} for non-condition nodes
 `
 
+const INTENT_SYSTEM_PROMPT = `You are a workflow intent parser.
+
+${AVAILABLE_NODES}
+
+Return ONLY valid JSON with this structure:
+{
+  "status": "ready" | "needs_clarification" | "unsupported",
+  "reason": "<short reason string>",
+  "questions": ["<question 1>", "<question 2>"],
+  "normalizedPrompt": "<rewritten prompt for workflow generation>",
+  "triggerType": "MANUAL_TRIGGER" | "GMAIL_WEBHOOK_TRIGGER" | "DISCORD_WEBHOOK_TRIGGER" | "SCHEDULE_TRIGGER" | null,
+  "steps": [
+    {
+      "type": "GMAIL" | "GOOGLE_DRIVE" | "DISCORD" | "AI" | "HTTP" | "CONDITION",
+      "actionId": "<action id>"
+    }
+  ]
+}
+
+INTENT RULES:
+- Use "ready" only when the request can be turned into a concrete workflow.
+- Use "needs_clarification" if essential details are missing or ambiguous.
+- Use "unsupported" when request cannot be mapped to available nodes/actions.
+- For "needs_clarification", include 1-3 short questions.
+- If trigger is unspecified but intent is clear, use triggerType "MANUAL_TRIGGER".
+- Keep normalizedPrompt concise and specific for the workflow builder.
+- Never return markdown fences or extra commentary.
+`
+
 interface GeneratedWorkflow {
   nodes: Array<{
     id: string
@@ -145,6 +174,20 @@ interface GeneratedWorkflow {
     sourceHandle?: 'true' | 'false'
   }>
   error?: string
+}
+
+interface IntentStep {
+  type: string
+  actionId: string
+}
+
+interface ParsedIntent {
+  status: 'ready' | 'needs_clarification' | 'unsupported'
+  reason: string
+  questions: string[]
+  normalizedPrompt: string
+  triggerType: string | null
+  steps: IntentStep[]
 }
 
 const GENERIC_AI_ERROR = 'Failed to generate workflow'
@@ -249,6 +292,21 @@ const ACTION_IDS_BY_NODE_TYPE: Record<string, string[]> = {
   CONDITION: ['evaluate_condition']
 }
 
+const TRIGGER_NODE_TYPES = new Set([
+  'MANUAL_TRIGGER',
+  'GMAIL_WEBHOOK_TRIGGER',
+  'DISCORD_WEBHOOK_TRIGGER',
+  'SCHEDULE_TRIGGER'
+])
+
+const DETERMINISTIC_STEP_TYPES = new Set([
+  'GMAIL',
+  'GOOGLE_DRIVE',
+  'DISCORD',
+  'AI',
+  'HTTP'
+])
+
 const VALID_CONDITION_OPERATORS = new Set([
   'equals',
   'not_equals',
@@ -272,6 +330,411 @@ const normalizeActionId = (actionId: string): string =>
     .toLowerCase()
     .replace(/[\s-]+/g, '_')
     .replace(/_{2,}/g, '_')
+
+const normalizeNodeType = (nodeType: string): string =>
+  nodeType
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_')
+    .replace(/_{2,}/g, '_')
+
+const normalizeNodeAndAction = (
+  nodeTypeRaw: string,
+  actionIdRaw: string
+): IntentStep | null => {
+  const nodeType = normalizeNodeType(nodeTypeRaw)
+  const allowedActions = ACTION_IDS_BY_NODE_TYPE[nodeType]
+
+  if (!allowedActions) {
+    return null
+  }
+
+  let actionId = normalizeActionId(actionIdRaw)
+  if (!VALID_ACTION_IDS.has(actionId)) {
+    const alias = ACTION_ID_ALIASES_BY_NODE_TYPE[nodeType]?.[actionId] || null
+    if (!alias) {
+      return null
+    }
+    actionId = alias
+  }
+
+  if (!allowedActions.includes(actionId)) {
+    return null
+  }
+
+  return { type: nodeType, actionId }
+}
+
+const cleanModelContent = (content: string): string => {
+  const stripped = content
+    .replace(/```json\n?/gi, '')
+    .replace(/```/g, '')
+    .trim()
+
+  const firstBrace = stripped.indexOf('{')
+  const lastBrace = stripped.lastIndexOf('}')
+
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return stripped.slice(firstBrace, lastBrace + 1).trim()
+  }
+
+  return stripped
+}
+
+const parseJsonFromContent = (content: string): unknown | null => {
+  const cleaned = cleanModelContent(content)
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    return null
+  }
+}
+
+const toQuestionArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 3)
+}
+
+const parseIntentPayload = (payload: unknown): ParsedIntent | null => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return null
+  }
+
+  const raw = payload as Record<string, unknown>
+  const statusRaw =
+    typeof raw.status === 'string' ? raw.status.trim().toLowerCase() : ''
+
+  if (
+    statusRaw !== 'ready' &&
+    statusRaw !== 'needs_clarification' &&
+    statusRaw !== 'unsupported'
+  ) {
+    return null
+  }
+
+  const reason =
+    typeof raw.reason === 'string' && raw.reason.trim()
+      ? raw.reason.trim()
+      : statusRaw === 'needs_clarification'
+        ? 'I need a little more detail before generating this workflow.'
+        : GENERIC_AI_ERROR
+
+  const questions = toQuestionArray(raw.questions)
+
+  const normalizedPrompt =
+    typeof raw.normalizedPrompt === 'string' ? raw.normalizedPrompt.trim() : ''
+
+  const triggerType =
+    typeof raw.triggerType === 'string'
+      ? normalizeNodeType(raw.triggerType)
+      : null
+
+  const normalizedTriggerType =
+    triggerType && TRIGGER_NODE_TYPES.has(triggerType) ? triggerType : null
+
+  const steps: IntentStep[] = Array.isArray(raw.steps)
+    ? raw.steps
+        .map((step) => {
+          if (!step || typeof step !== 'object' || Array.isArray(step)) {
+            return null
+          }
+
+          const rawStep = step as Record<string, unknown>
+          const type = typeof rawStep.type === 'string' ? rawStep.type : ''
+          const actionId =
+            typeof rawStep.actionId === 'string' ? rawStep.actionId : ''
+
+          if (!type || !actionId) {
+            return null
+          }
+
+          return normalizeNodeAndAction(type, actionId)
+        })
+        .filter((step): step is IntentStep => !!step)
+    : []
+
+  return {
+    status: statusRaw,
+    reason,
+    questions,
+    normalizedPrompt,
+    triggerType: normalizedTriggerType,
+    steps
+  }
+}
+
+const isPromptLikelyAmbiguous = (prompt: string): boolean => {
+  const normalized = prompt.toLowerCase().trim()
+  const words = normalized.split(/\s+/).filter(Boolean)
+  if (words.length <= 4) {
+    return true
+  }
+
+  const hasConcreteAction = /(send|read|delete|create|save|upload|reply|list|schedule|webhook|api|http|if|then|else|gmail|drive|discord)/i.test(
+    normalized
+  )
+  if (!hasConcreteAction) {
+    return true
+  }
+
+  const vagueMarkers = [
+    'something',
+    'anything',
+    'whatever',
+    'stuff',
+    'thing',
+    'do it',
+    'make it',
+    'help me'
+  ]
+  return vagueMarkers.some((marker) => normalized.includes(marker))
+}
+
+type RoutedGenerationOptions = {
+  systemPrompt: string
+  userPrompt: string
+  maxTokens: number
+  temperature: number
+  responseMimeType?: string
+  preferStrongerModel?: boolean
+}
+
+const generateWithProviderRouting = async (
+  options: RoutedGenerationOptions
+): Promise<string> => {
+  if (process.env.GEMINI_API_KEY) {
+    const models = options.preferStrongerModel
+      ? ['gemini-2.5-flash', 'gemini-2.5-flash-lite']
+      : ['gemini-2.5-flash-lite']
+
+    let lastError: unknown = null
+    for (const model of models) {
+      try {
+        return await generateWithGemini({
+          systemPrompt: options.systemPrompt,
+          userPrompt: options.userPrompt,
+          maxTokens: options.maxTokens,
+          temperature: options.temperature,
+          model,
+          responseMimeType: options.responseMimeType
+        })
+      } catch (error) {
+        lastError = error
+      }
+    }
+
+    throw lastError || new Error('Gemini generation failed')
+  }
+
+  const models = options.preferStrongerModel
+    ? ['meta-llama/Llama-3.3-70B-Instruct', 'meta-llama/Llama-3.1-8B-Instruct']
+    : ['meta-llama/Llama-3.1-8B-Instruct']
+
+  let lastError: unknown = null
+  for (const model of models) {
+    try {
+      return await generateWithHuggingFace({
+        systemPrompt: options.systemPrompt,
+        userPrompt: options.userPrompt,
+        maxTokens: options.maxTokens,
+        temperature: options.temperature,
+        model
+      })
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  throw lastError || new Error('HuggingFace generation failed')
+}
+
+const buildDeterministicLinearWorkflow = (
+  intent: ParsedIntent
+): GeneratedWorkflow | null => {
+  if (intent.status !== 'ready') {
+    return null
+  }
+
+  const triggerType =
+    intent.triggerType && TRIGGER_NODE_TYPES.has(intent.triggerType)
+      ? intent.triggerType
+      : 'MANUAL_TRIGGER'
+
+  const triggerActionId = ACTION_IDS_BY_NODE_TYPE[triggerType]?.[0]
+  if (!triggerActionId) {
+    return null
+  }
+
+  const steps = intent.steps.filter((step) =>
+    DETERMINISTIC_STEP_TYPES.has(step.type)
+  )
+
+  if (steps.length === 0 || steps.length !== intent.steps.length) {
+    return null
+  }
+
+  const nodes: GeneratedWorkflow['nodes'] = []
+  const edges: GeneratedWorkflow['edges'] = []
+
+  nodes.push({
+    id: 'n1',
+    type: 'trigger_node',
+    position: { x: 280, y: 160 },
+    data: {
+      type: triggerType,
+      actionId: triggerActionId,
+      config: {}
+    }
+  })
+
+  steps.forEach((step, index) => {
+    const nodeId = `n${index + 2}`
+    nodes.push({
+      id: nodeId,
+      type: 'custom_node',
+      position: { x: 280 + (index + 1) * 300, y: 160 },
+      data: {
+        type: step.type,
+        actionId: step.actionId,
+        config: {}
+      }
+    })
+  })
+
+  for (let i = 1; i < nodes.length; i++) {
+    const source = nodes[i - 1].id
+    const target = nodes[i].id
+    edges.push({
+      id: `e_${source}_${target}`,
+      source,
+      target
+    })
+  }
+
+  return { nodes, edges }
+}
+
+const extractIntentFromPrompt = async (
+  prompt: string,
+  preferStrongerModel: boolean
+): Promise<ParsedIntent | null> => {
+  const content = await generateWithProviderRouting({
+    systemPrompt: INTENT_SYSTEM_PROMPT,
+    userPrompt: `Extract workflow intent for: ${prompt}`,
+    maxTokens: 600,
+    temperature: 0,
+    responseMimeType: 'application/json',
+    preferStrongerModel
+  })
+
+  const payload = parseJsonFromContent(content)
+  return parseIntentPayload(payload)
+}
+
+const toUserFacingValidationError = (error: string): string => {
+  const normalized = error.toLowerCase()
+
+  if (
+    normalized.includes('failed to generate workflow') ||
+    normalized.includes('invalid json response')
+  ) {
+    return 'I could not reliably generate a workflow from this prompt. Please specify trigger, app, and exact actions.'
+  }
+
+  if (normalized.includes('unsupported node type') || normalized.includes('unsupported actionid')) {
+    return 'I could not map this request to supported actions. Mention the app and action clearly (for example: Gmail send_email, Google Drive create_file).'
+  }
+
+  if (normalized.includes('condition')) {
+    return 'Your condition logic is incomplete. Include field, operator, and value (or use is_empty / is_not_empty).'
+  }
+
+  if (normalized.includes('trigger')) {
+    return 'Please specify one trigger, or leave it implicit to use a manual trigger.'
+  }
+
+  if (normalized.includes('invalid workflow structure') || normalized.includes('starting node')) {
+    return 'I could not produce a valid workflow graph from this prompt. Please make the steps more explicit.'
+  }
+
+  return error || GENERIC_AI_ERROR
+}
+
+const styleWorkflowEdges = (workflow: GeneratedWorkflow) =>
+  workflow.edges.map((edge) => ({
+    ...edge,
+    type: 'adaptive',
+    style: { strokeWidth: 2, stroke: '#9ca3af' },
+    markerEnd: {
+      type: 'arrowclosed',
+      color: '#9ca3af',
+      width: 12,
+      height: 12
+    }
+  }))
+
+const generateWorkflowWithRepair = async (
+  prompt: string,
+  preferStrongerModel: boolean
+): Promise<{ workflow?: GeneratedWorkflow; error?: string; lastResponse?: string }> => {
+  const maxAttempts = 3
+  let userPrompt = `Generate a workflow for: ${prompt}`
+  let lastError = ''
+  let lastResponse = ''
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const content = await generateWithProviderRouting({
+      systemPrompt: SYSTEM_PROMPT,
+      userPrompt,
+      maxTokens: 1500,
+      temperature: 0,
+      responseMimeType: 'application/json',
+      preferStrongerModel
+    })
+
+    const cleaned = cleanModelContent(content)
+    lastResponse = cleaned
+
+    const payload = parseJsonFromContent(cleaned)
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      lastError = 'Invalid JSON response from model'
+    } else {
+      const validation = validateAndNormalizeWorkflow(payload as GeneratedWorkflow)
+      if (!validation.error) {
+        return { workflow: validation.workflow }
+      }
+
+      lastError = validation.error
+    }
+
+    if (attempt < maxAttempts) {
+      userPrompt = `Your previous response was invalid.
+
+Original request:
+${prompt}
+
+Validation error:
+${lastError}
+
+Previous response:
+${cleaned}
+
+Return ONLY corrected JSON that satisfies all workflow rules.`
+    }
+  }
+
+  return {
+    error: lastError || GENERIC_AI_ERROR,
+    lastResponse
+  }
+}
 
 const validateAndNormalizeWorkflow = (
   workflow: GeneratedWorkflow
@@ -608,72 +1071,101 @@ export async function generateWorkflow(c: Context) {
     if (!process.env.GEMINI_API_KEY && !process.env.HF_TOKEN) {
       return c.json({ error: 'AI service not configured' }, 500)
     }
+    const preferStrongerModel = isPromptLikelyAmbiguous(trimmedPrompt)
 
-    let content = process.env.GEMINI_API_KEY
-      ? await generateWithGemini({
-          systemPrompt: SYSTEM_PROMPT,
-          userPrompt: `Generate a workflow for: ${trimmedPrompt}`,
-          maxTokens: 1500,
-          temperature: 0,
-          responseMimeType: 'application/json'
-        })
-      : await generateWithHuggingFace({
-          systemPrompt: SYSTEM_PROMPT,
-          userPrompt: `Generate a workflow for: ${trimmedPrompt}`,
-          maxTokens: 1500,
-          temperature: 0
-        })
-
-    // Clean response - remove markdown code blocks if present
-    content = content
-      .replace(/```json\n?/gi, '')
-      .replace(/```\n?/g, '')
-      .trim()
-
-    // Try to extract JSON object from the response (in case there's extra text)
-    const jsonMatch = content.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      content = jsonMatch[0]
-    }
-
-    // Parse and validate the response
-    let workflow: GeneratedWorkflow
+    let parsedIntent: ParsedIntent | null = null
     try {
-      workflow = JSON.parse(content)
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', content)
-      console.error('Parse error:', parseError)
-      return c.json({ error: GENERIC_AI_ERROR }, 500)
+      parsedIntent = await extractIntentFromPrompt(trimmedPrompt, preferStrongerModel)
+    } catch (intentError) {
+      console.error('Intent extraction failed, continuing with workflow generation:', intentError)
     }
 
-    const validation = validateAndNormalizeWorkflow(workflow)
-    if (validation.error) {
-      console.error('AI workflow validation failed', {
-        error: validation.error,
-        prompt: trimmedPrompt,
-        aiResponse: content
-      })
-      return c.json({ error: GENERIC_AI_ERROR }, 400)
+    if (parsedIntent?.status === 'needs_clarification') {
+      return c.json(
+        {
+          error: parsedIntent.reason,
+          needsClarification: true,
+          questions:
+            parsedIntent.questions.length > 0
+              ? parsedIntent.questions
+              : [
+                  'Which app should this workflow use (Gmail, Google Drive, Discord, AI, or HTTP)?',
+                  'What should trigger the workflow?',
+                  'What exact action should happen next?'
+                ]
+        },
+        422
+      )
     }
 
-    workflow = validation.workflow!
+    if (parsedIntent?.status === 'unsupported') {
+      return c.json({ error: parsedIntent.reason }, 400)
+    }
 
-    // Add default edge styling
-    const styledEdges = workflow.edges.map((edge) => ({
-      ...edge,
-      type: 'adaptive',
-      style: { strokeWidth: 2, stroke: '#9ca3af' },
-      markerEnd: {
-        type: 'arrowclosed',
-        color: '#9ca3af',
-        width: 12,
-        height: 12
+    if (parsedIntent?.status === 'ready') {
+      const deterministicWorkflow = buildDeterministicLinearWorkflow(parsedIntent)
+      if (deterministicWorkflow) {
+        const deterministicValidation = validateAndNormalizeWorkflow(deterministicWorkflow)
+        if (!deterministicValidation.error && deterministicValidation.workflow) {
+          return c.json({
+            nodes: deterministicValidation.workflow.nodes,
+            edges: styleWorkflowEdges(deterministicValidation.workflow)
+          })
+        }
       }
-    }))
+    }
+
+    const promptForGeneration =
+      parsedIntent?.normalizedPrompt && parsedIntent.normalizedPrompt.length > 0
+        ? parsedIntent.normalizedPrompt
+        : trimmedPrompt
+
+    const generation = await generateWorkflowWithRepair(
+      promptForGeneration,
+      preferStrongerModel
+    )
+
+    if (!generation.workflow || generation.error) {
+      const userError = toUserFacingValidationError(
+        generation.error || GENERIC_AI_ERROR
+      )
+
+      const clarificationQuestions =
+        parsedIntent?.questions && parsedIntent.questions.length > 0
+          ? parsedIntent.questions
+          : [
+              'Which trigger do you want (manual, Gmail webhook, Discord webhook, schedule)?',
+              'Which app/action should run next?',
+              'If you need branching, what exact condition should be evaluated?'
+            ]
+
+      const needsClarification =
+        userError.includes('Please specify') ||
+        userError.includes('incomplete') ||
+        userError.includes('make the steps more explicit')
+
+      console.error('AI workflow generation failed', {
+        error: generation.error,
+        prompt: trimmedPrompt,
+        promptForGeneration,
+        aiResponse: generation.lastResponse
+      })
+
+      return c.json(
+        needsClarification
+          ? {
+              error: userError,
+              needsClarification: true,
+              questions: clarificationQuestions
+            }
+          : { error: userError },
+        needsClarification ? 422 : 400
+      )
+    }
 
     return c.json({
-      nodes: workflow.nodes,
-      edges: styledEdges
+      nodes: generation.workflow.nodes,
+      edges: styleWorkflowEdges(generation.workflow)
     })
   } catch (error) {
     console.error('Generate workflow error:', error)

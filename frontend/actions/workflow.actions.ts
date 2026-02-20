@@ -24,9 +24,11 @@ type ScheduleConfig = {
 }
 
 type AIWorkflowResponse = {
-  nodes: any[]
-  edges: any[]
+  nodes?: any[]
+  edges?: any[]
   error?: string
+  needsClarification?: boolean
+  questions?: string[]
 }
 
 function buildScheduleValue(nodes?: any[]): string | null | undefined {
@@ -318,7 +320,21 @@ export async function generateWorkflowFromPrompt(prompt: string) {
       .json<AIWorkflowResponse>()
 
     if (data.error) {
-      return { data: null, error: data.error || 'Failed to generate workflow' }
+      let message = data.error || 'Failed to generate workflow'
+
+      if (
+        data.needsClarification &&
+        Array.isArray(data.questions) &&
+        data.questions.length > 0
+      ) {
+        const numberedQuestions = data.questions
+          .slice(0, 3)
+          .map((question, index) => `${index + 1}. ${question}`)
+          .join(' ')
+        message = `${message} ${numberedQuestions}`.trim()
+      }
+
+      return { data: null, error: message }
     }
 
     return { data, error: null }

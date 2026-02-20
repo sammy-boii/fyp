@@ -54,13 +54,13 @@ const statusOptions: FilterOption[] = [
     value: 'FAILED',
     icon: <XCircle className='h-3.5 w-3.5' />,
     color: 'text-red-500'
-  },
-  {
-    label: 'Cancelled',
-    value: 'CANCELLED',
-    icon: <XCircle className='h-3.5 w-3.5' />,
-    color: 'text-muted-foreground'
   }
+  // {
+  //   label: 'Cancelled',
+  //   value: 'CANCELLED',
+  //   icon: <XCircle className='h-3.5 w-3.5' />,
+  //   color: 'text-muted-foreground'
+  // }
 ]
 
 const triggerOptions: FilterOption[] = [

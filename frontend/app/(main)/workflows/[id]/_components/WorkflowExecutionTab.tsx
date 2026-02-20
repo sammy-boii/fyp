@@ -211,11 +211,11 @@ const WorkflowExecutionTab = ({
           case 'node:complete':
             return <BadgeCheck className='h-5 w-5' />
           case 'node:error':
-            return <XCircle className='h-5 w-5' />
+            return <XCircle className='text-white h-5 w-5' />
           case 'workflow:complete':
             return <BadgeCheck className='h-5 w-5' />
           case 'workflow:error':
-            return <XCircle className='h-5 w-5' />
+            return <XCircle className='text-white h-5 w-5' />
           default:
             return <Cog className='h-5 w-5' />
         }

@@ -441,7 +441,7 @@ export default function ActivityExecutionPage() {
             return <BadgeCheck className='h-5 w-5' />
           case 'node:error':
           case 'workflow:error':
-            return <XCircle className='h-5 w-5' />
+            return <XCircle className='h-5 text-white w-5' />
           default:
             return <Cog className='h-5 w-5' />
         }

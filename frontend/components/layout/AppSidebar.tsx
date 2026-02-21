@@ -52,6 +52,22 @@ import { AnimatedThemeToggler } from '../magicui/animated-theme-toggler'
 import { useEffect, useRef, useState } from 'react'
 import { Palette } from 'lucide-react'
 
+const defaultAccent = '#22c55e'
+const ACCENT_STORAGE_KEY = 'app-accent-color'
+const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
+
+function normalizeAccentColor(color: string | null | undefined) {
+  if (!color) return defaultAccent
+  const value = color.trim()
+  return HEX_COLOR_REGEX.test(value) ? value : defaultAccent
+}
+
+function applyAccentColorToRoot(accentColor: string) {
+  const root = document.documentElement
+  root.style.setProperty('--primary', accentColor)
+  root.style.setProperty('--sidebar-primary', accentColor)
+}
+
 // Menu items.
 const mainItems = [
   {
@@ -206,22 +222,24 @@ function NavUser({
 
   const router = useRouter()
   const fallbackInitial = user.name?.charAt(0)?.toUpperCase() || 'U'
-  const defaultAccent = '#22c55e'
   const [accentColor, setAccentColor] = useState(defaultAccent)
+  const [isAccentReady, setIsAccentReady] = useState(false)
 
   useEffect(() => {
-    const stored = window.localStorage.getItem('app-accent-color')
-    if (stored) {
-      setAccentColor(stored)
-    }
+    const stored = window.localStorage.getItem(ACCENT_STORAGE_KEY)
+    const initialAccent = normalizeAccentColor(stored)
+    setAccentColor(initialAccent)
+    applyAccentColorToRoot(initialAccent)
+    setIsAccentReady(true)
   }, [])
 
   useEffect(() => {
-    const root = document.documentElement
-    root.style.setProperty('--primary', accentColor)
-    root.style.setProperty('--sidebar-primary', accentColor)
-    window.localStorage.setItem('app-accent-color', accentColor)
-  }, [accentColor])
+    if (!isAccentReady) return
+
+    const normalizedAccent = normalizeAccentColor(accentColor)
+    applyAccentColorToRoot(normalizedAccent)
+    window.localStorage.setItem(ACCENT_STORAGE_KEY, normalizedAccent)
+  }, [accentColor, isAccentReady])
 
   return (
     <SidebarMenu>

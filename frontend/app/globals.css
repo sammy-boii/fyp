@@ -128,6 +128,24 @@
   }
 }
 
+/* Keep canvas pan affordance explicit */
+.react-flow__pane.draggable {
+  cursor: -webkit-grab !important;
+  cursor: grab !important;
+}
+
+.react-flow__pane.dragging {
+  cursor: -webkit-grabbing !important;
+  cursor: grabbing !important;
+}
+
+/* Avoid white hand cursor on nodes/selection rectangle */
+.react-flow__node.draggable,
+.react-flow__node.draggable.dragging,
+.react-flow__nodesselection-rect {
+  cursor: inherit !important;
+}
+
 /* Executing node animation - Orbiting primary segment behind the node */
 @keyframes executing-ring-rotate {
   to {

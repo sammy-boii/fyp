@@ -63,16 +63,20 @@ export async function login(data: TLoginForm) {
     )
 
     const cookieStore = await cookies()
-    cookieStore.set('token', token, {
+
+    const cookieOptions: any = {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
-      domain:
-        process.env.NODE_ENV === 'production'
-          ? process.env.FRONTEND_COOKIE_DOMAIN
-          : '',
       maxAge: 60 * 60 * 24 * 30 // 30 days
-    })
+    }
+
+    // for testing
+    if (process.env.FRONTEND_COOKIE_DOMAIN) {
+      cookieOptions.domain = process.env.FRONTEND_COOKIE_DOMAIN
+    }
+
+    cookieStore.set('token', token, cookieOptions)
 
     return user
   })

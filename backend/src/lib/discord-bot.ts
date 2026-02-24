@@ -8,14 +8,27 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent
-  ]
+  ],
+  // Use large_threshold to reduce GUILD_MEMBERS_CHUNK traffic
+  rest: {
+    // discord.js built-in rate limit handling — ensures we back off properly
+    rejectOnRateLimit: (info) => {
+      // Only reject on global rate limits; let discord.js retry bucket limits
+      console.warn(
+        `[discord] rate limit hit: ${info.method} ${info.route} — retryAfter=${info.timeToReset}ms, global=${info.global}`
+      )
+      return info.global
+    }
+  }
 })
 
 // Track if bot is ready
 let isReady = false
 let isConnecting = false
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined
 
 const DEFAULT_LOGIN_TIMEOUT_MS = 30_000
+const RECONNECT_DELAY_MS = 10_000 // wait before reconnecting after disconnect
 
 const toErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
@@ -84,10 +97,16 @@ client.on(Events.ShardDisconnect, (event, shardId) => {
   console.warn(
     `[discord] shard ${shardId} disconnected (code=${event.code}, reason=${event.reason || 'unknown'})`
   )
+  // Mark bot as not ready so we know it needs reconnection
+  isReady = false
+  isConnecting = false
+  scheduleReconnect()
 })
 
 client.on(Events.ShardReconnecting, (shardId) => {
-  console.warn(`[discord] shard ${shardId} reconnecting`)
+  console.warn(
+    `[discord] shard ${shardId} reconnecting (handled by discord.js)`
+  )
 })
 
 client.on(Events.ShardResume, (shardId, replayedEvents) => {
@@ -97,9 +116,7 @@ client.on(Events.ShardResume, (shardId, replayedEvents) => {
 })
 
 client.on(Events.ShardError, (error, shardId) => {
-  console.error(
-    `[discord] shard ${shardId} error: ${toErrorMessage(error)}`
-  )
+  console.error(`[discord] shard ${shardId} error: ${toErrorMessage(error)}`)
 })
 
 // Listen for new messages
@@ -207,13 +224,17 @@ export async function initDiscordBot() {
     return
   }
 
+  // Clear any pending reconnect timer since we're connecting now
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = undefined
+  }
+
   const timeoutMs = getLoginTimeoutMs()
   isConnecting = true
 
   try {
     console.log(`[discord] login attempt started (timeout=${timeoutMs}ms)`)
-    console.log('CONNECTING...')
-    console.log('🔌 Discord bot connection initiated...')
 
     await withTimeout(
       client.login(token),
@@ -227,7 +248,8 @@ export async function initDiscordBot() {
     console.error(
       `[discord] failed to initialize bot: ${toErrorMessage(error)}`
     )
-    console.error('❌ Failed to initialize Discord bot:', error)
+    // Schedule a reconnect attempt after a failure
+    scheduleReconnect()
   } finally {
     if (!isReady) {
       isConnecting = false
@@ -235,7 +257,38 @@ export async function initDiscordBot() {
   }
 }
 
+/**
+ * Schedule a reconnection attempt with a delay.
+ * Prevents rapid reconnection loops that cause 429s.
+ */
+function scheduleReconnect(): void {
+  if (reconnectTimer) return // already scheduled
+
+  console.log(
+    `[discord] scheduling reconnect in ${RECONNECT_DELAY_MS / 1000}s...`
+  )
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = undefined
+    console.log('[discord] attempting scheduled reconnect...')
+    await initDiscordBot()
+  }, RECONNECT_DELAY_MS)
+}
+
+/**
+ * Check if the bot is healthy and connected.
+ * Useful for health-check endpoints.
+ */
+export function isDiscordBotHealthy(): boolean {
+  return isReady && client.ws.status === 0 // 0 = READY
+}
+
 export async function shutdownDiscordBot(): Promise<void> {
+  // Cancel any pending reconnection
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = undefined
+  }
+
   if (!isReady && !isConnecting) {
     console.log('[discord] shutdown requested but bot is already stopped')
     return

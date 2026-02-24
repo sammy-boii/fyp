@@ -6,14 +6,32 @@ const DISCORD_API_BASE = 'https://discord.com/api/v10'
 
 /**
  * Fetch guild info from Discord API using the bot token
+ * Includes 429 rate limit retry handling.
  */
-async function fetchGuildInfo(guildId: string, botToken: string) {
+async function fetchGuildInfo(
+  guildId: string,
+  botToken: string,
+  retryCount = 0
+): Promise<any> {
   const response = await fetch(`${DISCORD_API_BASE}/guilds/${guildId}`, {
     headers: {
       Authorization: `Bot ${botToken}`,
       'Content-Type': 'application/json'
     }
   })
+
+  if (response.status === 429 && retryCount < 3) {
+    const retryData = await response.json().catch(() => ({}))
+    const retryAfterSec =
+      retryData.retry_after ??
+      parseFloat(response.headers.get('Retry-After') || '1')
+    const waitMs = Math.ceil(retryAfterSec * 1000) + 100
+    console.warn(
+      `[discord-credential] 429 on /guilds/${guildId} — retrying in ${waitMs}ms`
+    )
+    await new Promise((resolve) => setTimeout(resolve, waitMs))
+    return fetchGuildInfo(guildId, botToken, retryCount + 1)
+  }
 
   if (!response.ok) {
     return null

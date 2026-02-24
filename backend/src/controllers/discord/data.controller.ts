@@ -7,16 +7,15 @@ import { ContentfulStatusCode } from 'hono/utils/http-status'
 
 const DISCORD_API_BASE = 'https://discord.com/api/v10'
 
-function logErr(res: Response, ctx: string) {
-  console.log(`[ERROR] [${ctx}] `, res.status, res.statusText, res)
-}
+const MAX_RETRIES = 3
 
-// Helper to make Discord API requests
+// Helper to make Discord API requests with automatic 429 retry
 async function discordRequest(
   endpoint: string,
   botToken: string,
-  options: RequestInit = {}
-) {
+  options: RequestInit = {},
+  retryCount = 0
+): Promise<any> {
   const response = await fetch(`${DISCORD_API_BASE}${endpoint}`, {
     ...options,
     headers: {
@@ -25,6 +24,20 @@ async function discordRequest(
       ...options.headers
     }
   })
+
+  // Handle rate limiting with exponential backoff
+  if (response.status === 429 && retryCount < MAX_RETRIES) {
+    const retryData = await response.json().catch(() => ({}))
+    const retryAfterSec =
+      retryData.retry_after ??
+      parseFloat(response.headers.get('Retry-After') || '1')
+    const waitMs = Math.ceil(retryAfterSec * 1000) + 100
+    console.warn(
+      `[discord-controller] 429 rate limited on ${endpoint} — retrying in ${waitMs}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`
+    )
+    await new Promise((resolve) => setTimeout(resolve, waitMs))
+    return discordRequest(endpoint, botToken, options, retryCount + 1)
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))

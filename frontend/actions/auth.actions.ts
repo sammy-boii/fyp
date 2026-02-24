@@ -69,7 +69,7 @@ export async function login(data: TLoginForm) {
       sameSite: 'lax',
       domain:
         process.env.NODE_ENV === 'production'
-          ? '.' + process.env.RESEND_FROM_DOMAIN
+          ? process.env.FRONTEND_COOKIE_DOMAIN
           : '',
       maxAge: 60 * 60 * 24 * 30 // 30 days
     })

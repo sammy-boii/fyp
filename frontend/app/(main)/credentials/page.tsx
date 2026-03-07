@@ -105,7 +105,10 @@ export default function CredentialsPage() {
   return (
     <div className='w-full bg-background'>
       <div className='mx-auto flex flex-col gap-6 p-8'>
-        <header className='flex flex-wrap items-center justify-between gap-3'>
+        <header
+          className='flex flex-wrap items-center justify-between gap-3'
+          data-tour='credentials-header'
+        >
           <div className='flex items-center gap-3'>
             <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10'>
               <KeyRound className='h-5 w-5 text-primary' />
@@ -121,7 +124,7 @@ export default function CredentialsPage() {
           </div>
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-              <Button className='gap-2'>
+              <Button className='gap-2' data-tour='credentials-add'>
                 <Plus className='h-4 w-4' />
                 Add credential
               </Button>
@@ -240,7 +243,9 @@ export default function CredentialsPage() {
             </Empty>
           </div>
         ) : (
-          <DataTable columns={columns} data={rows} />
+          <div data-tour='credentials-table'>
+            <DataTable columns={columns} data={rows} />
+          </div>
         )}
       </div>
     </div>

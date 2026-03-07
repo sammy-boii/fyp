@@ -40,7 +40,10 @@ export default function WorkflowsPage() {
   return (
     <div className='w-full bg-background'>
       <div className='mx-auto flex flex-col gap-6 p-8'>
-        <header className='flex flex-wrap items-center justify-between gap-3'>
+        <header
+          className='flex flex-wrap items-center justify-between gap-3'
+          data-tour='workflows-header'
+        >
           <div className='flex items-center gap-3'>
             <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br from-primary/15 via-primary/10 to-primary/5 ring-1 ring-primary/10'>
               <Workflow className='h-5 w-5 text-primary' />
@@ -56,6 +59,7 @@ export default function WorkflowsPage() {
           </div>
           <Button
             className='gap-2'
+            data-tour='workflows-add'
             onClick={() => {
               setNewWorkflowName('')
               setNewWorkflowDescription('')
@@ -205,7 +209,9 @@ export default function WorkflowsPage() {
             </Empty>
           </div>
         ) : (
-          <DataTable columns={columns} data={workflows} />
+          <div data-tour='workflows-table'>
+            <DataTable columns={columns} data={workflows} />
+          </div>
         )}
       </div>
     </div>

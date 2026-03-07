@@ -1,0 +1,161 @@
+/*
+ * Custom driver.js styles for Flux walkthrough
+ * Matches shadcn/ui theme using CSS variables
+ */
+
+/* Overlay / backdrop */
+.driver-overlay {
+  background-color: rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Highlighted element stage */
+.driver-active-element {
+  border-radius: 8px;
+}
+
+/* Popover (tooltip bubble) */
+.flux-tour-popover.driver-popover {
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  padding: 0 !important;
+  max-width: 340px !important;
+  min-width: 260px !important;
+}
+
+/* Arrow */
+.flux-tour-popover.driver-popover .driver-popover-arrow {
+  border: 1px solid hsl(var(--border)) !important;
+  background-color: hsl(var(--popover)) !important;
+}
+
+.flux-tour-popover.driver-popover .driver-popover-arrow-side-left,
+.flux-tour-popover.driver-popover .driver-popover-arrow-side-right,
+.flux-tour-popover.driver-popover .driver-popover-arrow-side-top,
+.flux-tour-popover.driver-popover .driver-popover-arrow-side-bottom {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Title */
+.flux-tour-popover .driver-popover-title {
+  font-size: 0.9375rem !important;
+  font-weight: 600 !important;
+  color: hsl(var(--foreground)) !important;
+  padding: 16px 16px 0 16px !important;
+  margin: 0 !important;
+  font-family: inherit !important;
+  line-height: 1.4 !important;
+}
+
+/* Description */
+.flux-tour-popover .driver-popover-description {
+  font-size: 0.8125rem !important;
+  color: hsl(var(--muted-foreground)) !important;
+  padding: 6px 16px 16px 16px !important;
+  margin: 0 !important;
+  font-family: inherit !important;
+  line-height: 1.5 !important;
+}
+
+/* Footer (buttons + progress) */
+.flux-tour-popover .driver-popover-footer {
+  padding: 10px 16px !important;
+  border-top: 1px solid hsl(var(--border)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  background-color: hsl(var(--muted) / 0.3) !important;
+  border-radius: 0 0 12px 12px !important;
+}
+
+/* Progress bar text */
+.flux-tour-popover .driver-popover-progress-text {
+  font-size: 0.6875rem !important;
+  color: hsl(var(--muted-foreground)) !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+}
+
+/* Navigation buttons wrapper */
+.flux-tour-popover .driver-popover-navigation-btns {
+  display: flex !important;
+  gap: 6px !important;
+}
+
+/* All buttons base */
+.flux-tour-popover .driver-popover-prev-btn,
+.flux-tour-popover .driver-popover-next-btn,
+.flux-tour-popover .driver-popover-close-btn {
+  font-family: inherit !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  padding: 5px 12px !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+  text-shadow: none !important;
+  line-height: 1.4 !important;
+}
+
+/* Previous button — ghost style */
+.flux-tour-popover .driver-popover-prev-btn {
+  background-color: transparent !important;
+  color: hsl(var(--muted-foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+.flux-tour-popover .driver-popover-prev-btn:hover {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+}
+
+/* Next / Done button — primary style */
+.flux-tour-popover .driver-popover-next-btn {
+  background-color: var(--primary, hsl(var(--primary))) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border: none !important;
+}
+
+.flux-tour-popover .driver-popover-next-btn:hover {
+  opacity: 0.9 !important;
+}
+
+/* Close X button */
+.flux-tour-popover .driver-popover-close-btn {
+  background-color: transparent !important;
+  color: hsl(var(--muted-foreground)) !important;
+  border: none !important;
+  padding: 4px 8px !important;
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  font-size: 1rem !important;
+  line-height: 1 !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+}
+
+.flux-tour-popover .driver-popover-close-btn:hover {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Ensure good contrast in dark mode */
+:root.dark .flux-tour-popover.driver-popover,
+[data-theme='dark'] .flux-tour-popover.driver-popover,
+.dark .flux-tour-popover.driver-popover {
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.3),
+    0 4px 6px -4px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}

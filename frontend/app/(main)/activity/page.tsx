@@ -141,7 +141,10 @@ const ActivityPage = () => {
       <div className='mx-auto flex flex-col gap-6 p-8'>
         {/* Header Section */}
         <header className='flex flex-col gap-6'>
-          <div className='flex flex-wrap items-center justify-between gap-3'>
+          <div
+            className='flex flex-wrap items-center justify-between gap-3'
+            data-tour='activity-header'
+          >
             <div className='flex items-center gap-3'>
               <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10'>
                 <Activity className='h-5 w-5 text-primary' />
@@ -162,7 +165,10 @@ const ActivityPage = () => {
                 </p>
               </div>
             </div>
-            <div className='flex flex-wrap items-center gap-2'>
+            <div
+              className='flex flex-wrap items-center gap-2'
+              data-tour='activity-live-indicator'
+            >
               {isConnected ? (
                 <Badge
                   variant='outline'
@@ -191,6 +197,7 @@ const ActivityPage = () => {
                     size='sm'
                     className='gap-2'
                     disabled={rows.length === 0 || clearActivity.isPending}
+                    data-tour='activity-clear'
                   >
                     <Trash2 className='h-4 w-4' />
                     Clear logs
@@ -237,7 +244,10 @@ const ActivityPage = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+          <div
+            className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'
+            data-tour='activity-stats'
+          >
             <StatsCard
               label='Total'
               value={totalExecutions}
@@ -353,7 +363,9 @@ const ActivityPage = () => {
             </Empty>
           </Card>
         ) : (
-          <DataTable columns={columns} data={rows} />
+          <div data-tour='activity-table'>
+            <DataTable columns={columns} data={rows} />
+          </div>
         )}
       </div>
     </div>

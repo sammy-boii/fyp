@@ -128,7 +128,10 @@ const DashboardPage = () => {
   return (
     <div className='w-full bg-background'>
       <div className='mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 md:px-10'>
-        <header className='flex flex-wrap items-center justify-between gap-4'>
+        <header
+          className='flex flex-wrap items-center justify-between gap-4'
+          data-tour='dashboard-header'
+        >
           <div className='flex items-center gap-4'>
             <Avatar className='h-16 w-16'>
               <AvatarImage
@@ -151,7 +154,12 @@ const DashboardPage = () => {
 
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
             <DialogTrigger asChild>
-              <Button size='sm' variant='outline' className='gap-2'>
+              <Button
+                size='sm'
+                variant='outline'
+                className='gap-2'
+                data-tour='dashboard-edit-profile'
+              >
                 <Pencil className='h-4 w-4' />
                 Edit Profile
               </Button>
@@ -305,7 +313,10 @@ const DashboardPage = () => {
           </Dialog>
         </header>
 
-        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+        <div
+          className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'
+          data-tour='dashboard-stats'
+        >
           <Card className='relative overflow-hidden border-0 shadow-md ring-1 ring-border transition-all duration-300 hover:shadow-md'>
             <CardHeader className='pb-2'>
               <div className='flex items-center gap-3'>
@@ -393,7 +404,9 @@ const DashboardPage = () => {
           </Card>
         </div>
 
-        <ProfileAreaChart />
+        <div data-tour='dashboard-chart'>
+          <ProfileAreaChart />
+        </div>
 
         <div className='grid gap-4 md:grid-cols-2'>
           <ProfileRadarChart />

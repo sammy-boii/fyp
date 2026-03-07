@@ -46,6 +46,7 @@ export function WorkflowHeader({
           size='icon'
           onClick={onBack}
           className='h-8 w-8 text-sidebar-foreground/70 hover:bg-sidebar-accent shrink-0'
+          data-tour='editor-back'
         >
           <ArrowLeft className='size-3.5' />
         </Button>
@@ -59,12 +60,16 @@ export function WorkflowHeader({
           size='icon'
           className='h-8 w-8 text-foreground/70 hover:text-sidebar-foreground shrink-0'
           onClick={onEdit}
+          data-tour='editor-edit-name'
         >
           <SquarePen className='size-3.5' />
         </Button>
       </div>
       <div className='flex items-center gap-3 shrink-0'>
-        <div className='flex items-center mr-4 gap-2'>
+        <div
+          className='flex items-center mr-4 gap-2'
+          data-tour='editor-active-toggle'
+        >
           <span className='text-xs font-medium text-muted-foreground'>
             {isActive ? 'Active' : 'Inactive'}
           </span>
@@ -80,6 +85,7 @@ export function WorkflowHeader({
           className='gap-1.5 px-2 w-24 h-8 text-xs'
           onClick={onExecute}
           isLoading={isExecuting}
+          data-tour='editor-execute'
           disabled={
             isAnyOperationPending ||
             !workflowId ||
@@ -96,6 +102,7 @@ export function WorkflowHeader({
           onClick={onSave}
           isLoading={isSaving}
           disabled={isAnyOperationPending || !workflowId}
+          data-tour='editor-save'
         >
           <Save className='h-3.5 w-3.5' />
           Save

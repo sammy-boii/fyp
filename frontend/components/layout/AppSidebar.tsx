@@ -2,6 +2,7 @@
 
 import {
   Activity,
+  CircleHelp,
   KeyRound,
   LayoutDashboard,
   Workflow,
@@ -51,6 +52,7 @@ import { Kbd } from '../ui/kbd'
 import { AnimatedThemeToggler } from '../magicui/animated-theme-toggler'
 import { useEffect, useRef, useState } from 'react'
 import { Palette } from 'lucide-react'
+import { useWalkthrough } from '@/lib/walkthrough'
 
 const defaultAccent = '#22c55e'
 const ACCENT_STORAGE_KEY = 'app-accent-color'
@@ -100,6 +102,7 @@ export function AppSidebar() {
   const pathName = usePathname()
 
   const { data } = useGetProfile()
+  const { startTour, startFullTour, startPageTour } = useWalkthrough()
 
   const isActive = (url: string) => {
     return (
@@ -113,7 +116,11 @@ export function AppSidebar() {
       <SidebarHeader className='relative'>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link className='flex items-center gap-2.5 p-2 relative' href='/'>
+            <Link
+              className='flex items-center gap-2.5 p-2 relative'
+              href='/'
+              data-tour='sidebar-logo'
+            >
               <div className='relative'>
                 <ZapIcon
                   className='
@@ -142,9 +149,12 @@ export function AppSidebar() {
             Navigate
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu data-tour='sidebar-nav'>
               {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem
+                  key={item.title}
+                  data-tour={`sidebar-${item.title.toLowerCase()}`}
+                >
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(item.url)}
@@ -167,9 +177,29 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Help / Tour */}
+        <SidebarGroup className='mt-auto'>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem data-tour='sidebar-help'>
+                <SidebarMenuButton
+                  tooltip='Start Tour'
+                  onClick={() => {
+                    // Start page-specific tour, or sidebar tour as fallback
+                    startPageTour(pathName, true)
+                  }}
+                >
+                  <CircleHelp className='size-4' />
+                  <span>Start Tour</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter data-tour='sidebar-user'>
         <NavUser
           user={{
             name: data?.data?.name || 'Anonymous',

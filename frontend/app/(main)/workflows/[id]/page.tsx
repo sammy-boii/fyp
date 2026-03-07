@@ -345,7 +345,9 @@ function WorkflowViewPageInner() {
           missingActionNodes.push(label)
         }
 
-        if (!connectedNodeIds.has(node.id)) {
+        // Only flag standalone nodes when there are multiple nodes
+        // A single node workflow is valid on its own
+        if (nodesToValidate.length > 1 && !connectedNodeIds.has(node.id)) {
           standaloneNodes.push(label)
         }
       })
@@ -820,22 +822,26 @@ function WorkflowViewPageInner() {
     >
       <div className='relative flex flex-col h-screen'>
         {/* Top Bar */}
-        <WorkflowHeader
-          workflowName={workflowName}
-          workflowDescription={workflowDescription}
-          onBack={() => router.push('/workflows')}
-          onEdit={() => setEditDialogOpen(true)}
-          onSave={handleSaveWorkflow}
-          isSaving={updateWorkflow.isPending}
-          workflowId={workflowId}
-          onExecute={handleExecuteWorkflow}
-          isExecuting={executeWorkflow.isPending || isExecuting}
-          isActive={isActive}
-          onToggleActive={handleToggleActive}
-          isTogglingActive={isTogglingActive}
-          isWorkflowEmpty={nodes.length === 0}
-          isManualTrigger={nodes.some((n) => n.data?.actionId === 'on_demand')}
-        />
+        <div data-tour='editor-header'>
+          <WorkflowHeader
+            workflowName={workflowName}
+            workflowDescription={workflowDescription}
+            onBack={() => router.push('/workflows')}
+            onEdit={() => setEditDialogOpen(true)}
+            onSave={handleSaveWorkflow}
+            isSaving={updateWorkflow.isPending}
+            workflowId={workflowId}
+            onExecute={handleExecuteWorkflow}
+            isExecuting={executeWorkflow.isPending || isExecuting}
+            isActive={isActive}
+            onToggleActive={handleToggleActive}
+            isTogglingActive={isTogglingActive}
+            isWorkflowEmpty={nodes.length === 0}
+            isManualTrigger={nodes.some(
+              (n) => n.data?.actionId === 'on_demand'
+            )}
+          />
+        </div>
 
         {/* Edit Workflow Dialog */}
         <EditWorkflowDialog
@@ -857,7 +863,10 @@ function WorkflowViewPageInner() {
             }
           }}
         >
-          <TabsList className='absolute left-1/2 top-8 -translate-x-1/2 z-10'>
+          <TabsList
+            className='absolute left-1/2 top-8 -translate-x-1/2 z-10'
+            data-tour='editor-tabs'
+          >
             <TabsTrigger value='editor'>Editor</TabsTrigger>
             <TabsTrigger value='executions' className='relative'>
               Executions
@@ -878,7 +887,10 @@ function WorkflowViewPageInner() {
               ref={reactFlowWrapper}
             >
               {/* Top Right Add Nodes Plus Button */}
-              <div className='absolute right-4 top-6 z-10'>
+              <div
+                className='absolute right-4 top-6 z-10'
+                data-tour='editor-add-node'
+              >
                 <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                   <SheetTrigger asChild>
                     <Button
@@ -923,6 +935,7 @@ function WorkflowViewPageInner() {
                 nodesConnectable={true}
                 elementsSelectable={true}
                 onPaneContextMenu={onPaneContextMenu}
+                data-tour='editor-canvas'
               >
                 <Background gap={40} />
               </ReactFlow>
@@ -935,10 +948,12 @@ function WorkflowViewPageInner() {
               )}
 
               {/* AI Prompt Input */}
-              <MorphingInput
-                onSend={handleAiPromptSend}
-                placeholder='Describe your workflow...'
-              />
+              <div data-tour='editor-ai-prompt'>
+                <MorphingInput
+                  onSend={handleAiPromptSend}
+                  placeholder='Describe your workflow...'
+                />
+              </div>
 
               {/* Context menu for selected nodes */}
               {contextMenu && (

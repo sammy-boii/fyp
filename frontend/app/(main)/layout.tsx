@@ -1,4 +1,5 @@
 import { AppSidebar } from '@/components/layout/AppSidebar'
+import { WalkthroughProvider } from '@/components/walkthrough/WalkthroughProvider'
 import '@xyflow/react/dist/style.css'
 
 export default function MainLayout({
@@ -11,7 +12,10 @@ export default function MainLayout({
       <aside>
         <AppSidebar />
       </aside>
-      <main className='grow'>{children}</main>
+      <main className='grow'>
+        <WalkthroughProvider />
+        {children}
+      </main>
     </main>
   )
 }

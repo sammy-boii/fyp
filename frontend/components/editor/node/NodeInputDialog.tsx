@@ -271,10 +271,10 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
           <Braces className='h-8 w-8 text-muted-foreground/60' />
         </div>
         <div className='text-muted-foreground space-y-1'>
-          <p className='font-medium'>No inputs available</p>
+          <p className='font-medium'>No connected inputs yet</p>
           <p className='text-xs max-w-[220px] text-muted-foreground/70'>
-            Execute previous nodes in the workflow to see their outputs here as
-            available inputs
+            Connect this node to previous nodes to see inferred fields before
+            execution and real outputs after execution
           </p>
         </div>
       </div>
@@ -400,6 +400,7 @@ const NodeInputDialog = ({ availableInputs }: NodeInputDialogProps) => {
                     className='text-[10px] shrink-0 h-5'
                   >
                     {source.variables.length} fields
+                    {source.isInferred ? ' (inferred)' : ''}
                   </Badge>
                 </div>
               </CollapsibleTrigger>

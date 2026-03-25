@@ -8,6 +8,7 @@ export type NodeOutputData = {
   actionId: TActionID
   output: Record<string, any>
   executedAt: Date
+  isInferred?: boolean
 }
 
 export type NodeVariable = {
@@ -26,7 +27,7 @@ export type NodeInputSource = {
   isInferred?: boolean
 }
 
-const createInferredOutputForAction = (
+export const createInferredOutputForAction = (
   actionId?: TActionID
 ): Record<string, any> | undefined => {
   if (!actionId) return undefined
@@ -310,6 +311,28 @@ const createInferredOutputForAction = (
   }
 }
 
+export const isOutputEmpty = (output?: Record<string, any>): boolean => {
+  if (!output) return true
+  return Object.keys(output).length === 0
+}
+
+export const resolveOutputWithInference = (
+  actionId?: TActionID,
+  lastOutput?: Record<string, any>
+): { output?: Record<string, any>; isInferred: boolean } => {
+  const inferredOutput = createInferredOutputForAction(actionId)
+
+  if (!isOutputEmpty(lastOutput)) {
+    return { output: lastOutput, isInferred: false }
+  }
+
+  if (!inferredOutput) {
+    return { output: undefined, isInferred: false }
+  }
+
+  return { output: inferredOutput, isInferred: true }
+}
+
 // Helper to flatten an object into variable paths
 export const flattenObject = (
   obj: Record<string, any>,
@@ -410,8 +433,10 @@ export const getAvailableInputsFromNodes = (
       const node = nodes.find((n) => n.id === nodeId)
       if (!node) return null
 
-      const inferredOutput = createInferredOutputForAction(node.data.actionId)
-      const output = node.data.lastOutput ?? inferredOutput
+      const { output, isInferred } = resolveOutputWithInference(
+        node.data.actionId,
+        node.data.lastOutput
+      )
 
       if (!output) return null
 
@@ -421,7 +446,7 @@ export const getAvailableInputsFromNodes = (
         actionId: node.data.actionId,
         variables: flattenObject(output),
         rawOutput: output,
-        isInferred: !node.data.lastOutput
+        isInferred
       }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)

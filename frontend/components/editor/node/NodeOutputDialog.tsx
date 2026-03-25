@@ -6,6 +6,7 @@ import {
   Copy,
   Check,
   Clock,
+  Sparkles,
   ChevronDown,
   ChevronRight,
   Info,
@@ -14,7 +15,7 @@ import {
   Braces
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { NodeOutputData } from '@/lib/node-execution-store'
+import { NodeOutputData, isOutputEmpty } from '@/lib/node-execution-store'
 import { createPlaceholder } from '@/lib/placeholder-utils'
 import {
   Collapsible,
@@ -214,7 +215,7 @@ const OutputField = ({
 }
 
 const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
-  if (!output) {
+  if (!output || isOutputEmpty(output.output)) {
     return (
       <div className='flex flex-col items-center justify-center py-16 text-center'>
         <div className='p-4 rounded-xl bg-linear-to-br from-muted/50 to-muted/30 mb-4 ring-1 ring-border/50'>
@@ -223,8 +224,8 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
         <div className='text-muted-foreground space-y-1'>
           <p className='font-medium'>No output yet</p>
           <p className='text-xs max-w-[220px] text-muted-foreground/70'>
-            Execute this node to see its output here. The output will be
-            available as input for subsequent nodes.
+            Configure an action to preview possible output fields. Real
+            execution output will appear here after running the node.
           </p>
         </div>
       </div>
@@ -243,11 +244,20 @@ const NodeOutputDialog = ({ output }: NodeOutputDialogProps) => {
           </div>
           <div className='flex-1 min-w-0'>
             <p className='text-sm font-medium text-foreground truncate'>
-              {parsedOutput.summary || 'Execution Result'}
+              {output.isInferred
+                ? 'Possible Output Fields'
+                : parsedOutput.summary || 'Execution Result'}
             </p>
-            <p className='text-[10px] text-muted-foreground'>
-              Last executed: {output.executedAt.toLocaleTimeString()}
-            </p>
+            {output.isInferred ? (
+              <p className='text-[10px] text-muted-foreground flex items-center gap-1'>
+                <Sparkles className='h-3 w-3' />
+                Inferred from selected action
+              </p>
+            ) : (
+              <p className='text-[10px] text-muted-foreground'>
+                Last executed: {output.executedAt.toLocaleTimeString()}
+              </p>
+            )}
           </div>
           <Tooltip>
             <TooltipTrigger asChild>

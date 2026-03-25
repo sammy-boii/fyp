@@ -21,7 +21,8 @@ import { useParams } from 'next/navigation'
 import { useExecuteNode } from '@/hooks/use-workflows'
 import {
   getAvailableInputsFromNodes,
-  NodeOutputData
+  NodeOutputData,
+  resolveOutputWithInference
 } from '@/lib/node-execution-store'
 
 import { NodeActionsSheet } from './NodeActionsSheet'
@@ -87,17 +88,25 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
   // Get this node's output from its data - use useStore to ensure reactivity
   const nodeOutput: NodeOutputData | undefined = useStore((state) => {
     const currentNode = state.nodes.find((n) => n.id === id)
-    if (currentNode?.data?.lastOutput) {
-      return {
-        nodeId: id,
-        actionId: (currentNode.data.actionId as TActionID) || '',
-        output: currentNode.data.lastOutput as Record<string, any>,
-        executedAt: currentNode.data.lastExecutedAt
-          ? new Date(currentNode.data.lastExecutedAt as string)
-          : new Date()
-      }
+    if (!currentNode?.data) return undefined
+
+    const actionId = currentNode.data.actionId as TActionID | undefined
+    const { output, isInferred } = resolveOutputWithInference(
+      actionId,
+      currentNode.data.lastOutput as Record<string, any> | undefined
+    )
+
+    if (!output || !actionId) return undefined
+
+    return {
+      nodeId: id,
+      actionId,
+      output,
+      executedAt: currentNode.data.lastExecutedAt
+        ? new Date(currentNode.data.lastExecutedAt as string)
+        : new Date(),
+      isInferred
     }
-    return undefined
   })
 
   // Check if this node has outgoing edges - subscribe to edge changes via useStore

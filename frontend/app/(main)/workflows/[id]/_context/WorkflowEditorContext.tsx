@@ -12,6 +12,7 @@ import { useUpdateWorkflow } from '@/hooks/use-workflows'
 
 type WorkflowEditorContextValue = {
   saveIfChanged: () => Promise<void>
+  hasUnsavedChanges: boolean
   isSaving: boolean
   isExecutingWorkflow: boolean
   isExecutingNode: boolean
@@ -40,6 +41,7 @@ type WorkflowEditorProviderProps = {
   workflowId: string
   workflowName: string
   workflowDescription: string
+  hasUnsavedChanges: boolean
   initialStateRef: React.MutableRefObject<{
     nodesHash: string
     edgesHash: string
@@ -60,6 +62,7 @@ export function WorkflowEditorProvider({
   workflowId,
   workflowName,
   workflowDescription,
+  hasUnsavedChanges,
   initialStateRef,
   getNodesHash,
   getEdgesHash,
@@ -165,6 +168,7 @@ export function WorkflowEditorProvider({
     <WorkflowEditorContext.Provider
       value={{
         saveIfChanged,
+        hasUnsavedChanges,
         isSaving,
         isExecutingWorkflow,
         isExecutingNode,
@@ -178,4 +182,3 @@ export function WorkflowEditorProvider({
     </WorkflowEditorContext.Provider>
   )
 }
-

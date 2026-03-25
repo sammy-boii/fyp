@@ -61,6 +61,7 @@ import {
 import WorkflowExecutionTab from './_components/WorkflowExecutionTab'
 import { NodeContextMenu } from './_components/NodeContextMenu'
 import { DeleteNodesDialog } from './_components/DeleteNodesDialog'
+import { UnsavedChangesDialog } from './_components/UnsavedChangesDialog'
 import { useWorkflowWebSocket } from '@/hooks/use-workflow-websocket'
 import { WorkflowEditorProvider } from './_context/WorkflowEditorContext'
 import DropletLoader from '@/components/animation/DropletLoader'
@@ -112,6 +113,11 @@ function WorkflowViewPageInner() {
   const [deleteSelectedDialogOpen, setDeleteSelectedDialogOpen] =
     useState(false)
   const [isAIGenerating, setIsAIGenerating] = useState(false)
+  const [leaveConfirmationOpen, setLeaveConfirmationOpen] = useState(false)
+  const [pendingNavigation, setPendingNavigation] = useState<
+    (() => void) | null
+  >(null)
+  const [isSavingAndLeaving, setIsSavingAndLeaving] = useState(false)
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const lastExecutionIdRef = useRef<string | null>(null)
   const hasInitialized = useRef(false)
@@ -198,6 +204,32 @@ function WorkflowViewPageInner() {
       }))
     )
   }, [])
+
+  const getIsWorkflowDirty = useCallback(
+    (
+      nodesToCheck: Node[],
+      edgesToCheck: Edge[],
+      nameToCheck: string,
+      descriptionToCheck: string
+    ) => {
+      const currentNodesHash = getNodesHash(nodesToCheck)
+      const currentEdgesHash = getEdgesHash(edgesToCheck)
+
+      return (
+        !initialStateRef.current ||
+        currentNodesHash !== initialStateRef.current.nodesHash ||
+        currentEdgesHash !== initialStateRef.current.edgesHash ||
+        nameToCheck !== initialStateRef.current.name ||
+        descriptionToCheck !== initialStateRef.current.description
+      )
+    },
+    [getNodesHash, getEdgesHash]
+  )
+
+  const hasUnsavedChanges = useMemo(
+    () => getIsWorkflowDirty(nodes, edges, workflowName, workflowDescription),
+    [getIsWorkflowDirty, nodes, edges, workflowName, workflowDescription]
+  )
 
   // WebSocket for live execution updates
   const { isConnected, executionLogs, currentExecution, clearLogs } =
@@ -364,6 +396,17 @@ function WorkflowViewPageInner() {
           ok: false,
           message: `Select an action for: ${formatNodeList(missingActionNodes)}`
         } as const
+      }
+
+      if (nodesToValidate.length === 1) {
+        if (nodesToValidate[0].type !== 'trigger_node') {
+          return {
+            ok: false,
+            message: 'A single-node workflow must use a trigger node'
+          } as const
+        }
+
+        return { ok: true } as const
       }
 
       if (standaloneNodes.length > 0) {
@@ -748,9 +791,20 @@ function WorkflowViewPageInner() {
         }
       })
 
+      const currentNodesHash = getNodesHash(sanitized)
+      const currentEdgesHash = getEdgesHash(edges)
+      initialStateRef.current = {
+        nodesHash: currentNodesHash,
+        edgesHash: currentEdgesHash,
+        name: workflowName,
+        description: workflowDescription
+      }
+
       toast.success('Workflow saved')
+      return true
     } catch (err: any) {
       toast.error(err.message || 'Failed to save workflow')
+      return false
     }
   }, [
     workflowId,
@@ -760,9 +814,122 @@ function WorkflowViewPageInner() {
     edges,
     isActive,
     updateWorkflow,
+    getNodesHash,
+    getEdgesHash,
     stripTransientNodeState,
     validateWorkflowForPersist
   ])
+
+  const requestNavigation = useCallback(
+    (navigate: () => void) => {
+      if (hasUnsavedChanges) {
+        setPendingNavigation(() => navigate)
+        setLeaveConfirmationOpen(true)
+        return
+      }
+
+      navigate()
+    },
+    [hasUnsavedChanges]
+  )
+
+  const handleBackNavigation = useCallback(() => {
+    requestNavigation(() => router.push('/workflows'))
+  }, [requestNavigation, router])
+
+  const handleLeaveWithoutSaving = useCallback(() => {
+    const nextNavigation = pendingNavigation
+    setLeaveConfirmationOpen(false)
+    setPendingNavigation(null)
+    nextNavigation?.()
+  }, [pendingNavigation])
+
+  const handleSaveAndLeave = useCallback(async () => {
+    if (!pendingNavigation) {
+      return
+    }
+
+    setIsSavingAndLeaving(true)
+    const saved = await handleSaveWorkflow()
+    setIsSavingAndLeaving(false)
+
+    if (!saved) {
+      return
+    }
+
+    const nextNavigation = pendingNavigation
+    setLeaveConfirmationOpen(false)
+    setPendingNavigation(null)
+    nextNavigation()
+  }, [pendingNavigation, handleSaveWorkflow])
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges) {
+        return
+      }
+
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [hasUnsavedChanges])
+
+  useEffect(() => {
+    const handleDocumentNavigation = (event: MouseEvent) => {
+      if (!hasUnsavedChanges || event.defaultPrevented) {
+        return
+      }
+
+      if (event.button !== 0) {
+        return
+      }
+
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return
+      }
+
+      const target = event.target as HTMLElement | null
+      const anchor = target?.closest('a[href]') as HTMLAnchorElement | null
+      if (!anchor) {
+        return
+      }
+
+      const href = anchor.getAttribute('href')
+      if (!href || href.startsWith('#')) {
+        return
+      }
+
+      if (anchor.target && anchor.target !== '_self') {
+        return
+      }
+
+      const url = new URL(anchor.href, window.location.href)
+      if (url.origin !== window.location.origin) {
+        return
+      }
+
+      const currentUrl =
+        window.location.pathname + window.location.search + window.location.hash
+      const nextUrl = url.pathname + url.search + url.hash
+
+      if (currentUrl === nextUrl) {
+        return
+      }
+
+      event.preventDefault()
+      requestNavigation(() => router.push(nextUrl))
+    }
+
+    document.addEventListener('click', handleDocumentNavigation, true)
+    return () => {
+      document.removeEventListener('click', handleDocumentNavigation, true)
+    }
+  }, [hasUnsavedChanges, requestNavigation, router])
 
   const handleToggleActive = useCallback((active: boolean) => {
     setIsActive(active)
@@ -809,6 +976,7 @@ function WorkflowViewPageInner() {
       workflowId={workflowId!}
       workflowName={workflowName}
       workflowDescription={workflowDescription}
+      hasUnsavedChanges={hasUnsavedChanges}
       initialStateRef={initialStateRef}
       getNodesHash={getNodesHash}
       getEdgesHash={getEdgesHash}
@@ -823,7 +991,7 @@ function WorkflowViewPageInner() {
         <WorkflowHeader
           workflowName={workflowName}
           workflowDescription={workflowDescription}
-          onBack={() => router.push('/workflows')}
+          onBack={handleBackNavigation}
           onEdit={() => setEditDialogOpen(true)}
           onSave={handleSaveWorkflow}
           isSaving={updateWorkflow.isPending}
@@ -846,6 +1014,15 @@ function WorkflowViewPageInner() {
           workflowId={workflowId}
           onNameChange={setWorkflowName}
           onDescriptionChange={setWorkflowDescription}
+        />
+
+        <UnsavedChangesDialog
+          open={leaveConfirmationOpen}
+          onOpenChange={setLeaveConfirmationOpen}
+          onStay={() => setLeaveConfirmationOpen(false)}
+          onLeaveWithoutSaving={handleLeaveWithoutSaving}
+          onSaveAndLeave={handleSaveAndLeave}
+          isSavingAndLeaving={isSavingAndLeaving}
         />
 
         <Tabs

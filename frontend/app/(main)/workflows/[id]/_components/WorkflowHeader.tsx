@@ -36,7 +36,7 @@ export function WorkflowHeader({
   isWorkflowEmpty,
   isManualTrigger
 }: WorkflowHeaderProps) {
-  const { isAnyOperationPending } = useWorkflowEditor()
+  const { isAnyOperationPending, hasUnsavedChanges } = useWorkflowEditor()
 
   return (
     <div className='w-full h-14 bg-sidebar z-10 flex items-center justify-between px-4'>
@@ -53,6 +53,11 @@ export function WorkflowHeader({
           <h1 className='text-sm font-semibold text-sidebar-foreground truncate block'>
             {workflowName || 'Untitled Workflow'}
           </h1>
+          {hasUnsavedChanges ? (
+            <span className='text-[11px] text-amber-600 leading-none'>
+              Unsaved changes
+            </span>
+          ) : null}
         </div>
         <Button
           variant='ghost'

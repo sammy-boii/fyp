@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button'
 interface UnsavedChangesDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onStay: () => void
   onLeaveWithoutSaving: () => void
   onSaveAndLeave: () => void
   isSavingAndLeaving: boolean
@@ -22,7 +21,6 @@ interface UnsavedChangesDialogProps {
 export function UnsavedChangesDialog({
   open,
   onOpenChange,
-  onStay,
   onLeaveWithoutSaving,
   onSaveAndLeave,
   isSavingAndLeaving
@@ -38,9 +36,6 @@ export function UnsavedChangesDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant='outline' onClick={onStay}>
-            Stay
-          </Button>
           <Button variant='destructive' onClick={onLeaveWithoutSaving}>
             Leave without saving
           </Button>

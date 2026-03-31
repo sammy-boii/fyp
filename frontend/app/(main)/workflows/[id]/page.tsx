@@ -1019,7 +1019,6 @@ function WorkflowViewPageInner() {
         <UnsavedChangesDialog
           open={leaveConfirmationOpen}
           onOpenChange={setLeaveConfirmationOpen}
-          onStay={() => setLeaveConfirmationOpen(false)}
           onLeaveWithoutSaving={handleLeaveWithoutSaving}
           onSaveAndLeave={handleSaveAndLeave}
           isSavingAndLeaving={isSavingAndLeaving}

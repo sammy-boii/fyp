@@ -169,6 +169,15 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
         nodeId: id
       })
 
+      if (result?.data?.output !== undefined) {
+        console.log('[Node Output][Single Execute]', {
+          workflowId,
+          nodeId: id,
+          actionId: data.actionId,
+          output: result.data.output
+        })
+      }
+
       // Store the output in the node's data (persisted with workflow)
       if (result?.data?.output !== undefined) {
         setNodes((nds) =>

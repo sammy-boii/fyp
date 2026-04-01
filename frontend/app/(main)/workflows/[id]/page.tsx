@@ -303,6 +303,13 @@ function WorkflowViewPageInner() {
       },
       onNodeComplete: (nodeId, output) => {
         setExecutingNodeId(null)
+        if (output !== undefined) {
+          console.log('[Node Output][Workflow Run]', {
+            workflowId,
+            nodeId,
+            output
+          })
+        }
         // Update node data to clear executing state and store output
         setNodes((nds) =>
           nds.map((n) => ({

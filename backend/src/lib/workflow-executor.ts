@@ -53,6 +53,9 @@ export async function executeWorkflowById(
 
     const startTime = Date.now()
 
+    // Emit workflow start before any node events so frontend reset happens first.
+    emitWorkflowStart(workflowId, execution.id, nodes.length)
+
     // Store outputs from executed nodes for placeholder replacement
     const nodeOutputs = new Map<string, Record<string, any>>()
 
@@ -63,6 +66,18 @@ export async function executeWorkflowById(
         node.data?.actionId?.includes('webhook')
       )
       if (triggerNode) {
+        const triggerProgress = { current: 1, total: nodes.length }
+
+        // Emit trigger start so frontend can show executing state on trigger nodes.
+        emitNodeStart(
+          workflowId,
+          execution.id,
+          triggerNode.id,
+          triggerNode.data?.type || 'Trigger',
+          (triggerNode.data?.actionId || 'unknown') as any,
+          triggerProgress
+        )
+
         nodeOutputs.set(triggerNode.id, triggerData)
 
         // Create NodeExecution record for the trigger node
@@ -86,13 +101,10 @@ export async function executeWorkflowById(
           execution.id,
           triggerNode.id,
           triggerData,
-          { current: 1, total: nodes.length }
+          triggerProgress
         )
       }
     }
-
-    // Emit workflow start event
-    emitWorkflowStart(workflowId, execution.id, nodes.length)
 
     try {
       // Build execution order

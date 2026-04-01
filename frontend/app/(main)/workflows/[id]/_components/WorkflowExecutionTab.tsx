@@ -1,6 +1,9 @@
 'use client'
 
-import { ExecutionLog } from '@/hooks/use-workflow-websocket'
+import type {
+  ExecutionEventType,
+  ExecutionLog
+} from '@/hooks/use-workflow-websocket'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -89,6 +92,33 @@ interface ExecutionGroup {
   logs: ExecutionLog[]
 }
 
+const EVENT_ORDER: Record<ExecutionEventType, number> = {
+  'workflow:start': 0,
+  'node:start': 1,
+  'node:complete': 2,
+  'node:error': 2,
+  'workflow:complete': 3,
+  'workflow:error': 3
+}
+
+const sortExecutionLogs = (logs: ExecutionLog[]) => {
+  return [...logs].sort((a, b) => {
+    const timeDelta =
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+
+    if (timeDelta !== 0) {
+      return timeDelta
+    }
+
+    const orderDelta = EVENT_ORDER[a.type] - EVENT_ORDER[b.type]
+    if (orderDelta !== 0) {
+      return orderDelta
+    }
+
+    return a.id.localeCompare(b.id)
+  })
+}
+
 const WorkflowExecutionTab = ({
   isConnected,
   executionLogs,
@@ -173,8 +203,25 @@ const WorkflowExecutionTab = ({
       }
     })
 
-    // Reverse to show newest executions first
-    return Array.from(groups.values()).reverse()
+    groups.forEach((group) => {
+      const sortedLogs = sortExecutionLogs(group.logs)
+      group.logs = sortedLogs
+
+      const workflowStartLog = sortedLogs.find(
+        (log) => log.type === 'workflow:start'
+      )
+
+      group.startTime =
+        workflowStartLog?.timestamp ??
+        sortedLogs[0]?.timestamp ??
+        group.startTime
+    })
+
+    // Show newest executions first.
+    return Array.from(groups.values()).sort(
+      (a, b) =>
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+    )
   }, [executionLogs])
 
   // Convert execution group logs to timeline items

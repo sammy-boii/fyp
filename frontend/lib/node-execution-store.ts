@@ -316,14 +316,24 @@ export const isOutputEmpty = (output?: Record<string, any>): boolean => {
   return Object.keys(output).length === 0
 }
 
+const normalizeOutputRecord = (value: any): Record<string, any> => {
+  if (value !== null && typeof value === 'object') {
+    return value as Record<string, any>
+  }
+
+  return { value }
+}
+
 export const resolveOutputWithInference = (
   actionId?: TActionID,
-  lastOutput?: Record<string, any>
+  lastOutput?: any
 ): { output?: Record<string, any>; isInferred: boolean } => {
   const inferredOutput = createInferredOutputForAction(actionId)
 
-  if (!isOutputEmpty(lastOutput)) {
-    return { output: lastOutput, isInferred: false }
+  const hasConcreteOutput = lastOutput !== undefined && lastOutput !== null
+
+  if (hasConcreteOutput) {
+    return { output: normalizeOutputRecord(lastOutput), isInferred: false }
   }
 
   if (!inferredOutput) {

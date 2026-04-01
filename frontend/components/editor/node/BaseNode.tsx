@@ -96,7 +96,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
       currentNode.data.lastOutput as Record<string, any> | undefined
     )
 
-    if (!output || !actionId) return undefined
+    if (output === undefined || output === null || !actionId) return undefined
 
     return {
       nodeId: id,
@@ -170,7 +170,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
       })
 
       // Store the output in the node's data (persisted with workflow)
-      if (result?.data?.output) {
+      if (result?.data?.output !== undefined) {
         setNodes((nds) =>
           nds.map((n) =>
             n.id === id

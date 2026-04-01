@@ -89,11 +89,18 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
   // Get this node's output from its data
   const nodeOutput: NodeOutputData | undefined = useStore((state) => {
     const currentNode = state.nodes.find((n) => n.id === id)
-    if (currentNode?.data?.lastOutput) {
+    if (
+      currentNode?.data?.lastOutput !== undefined &&
+      currentNode?.data?.lastOutput !== null
+    ) {
       return {
         nodeId: id,
         actionId: (currentNode.data.actionId as TActionID) || '',
-        output: currentNode.data.lastOutput as Record<string, any>,
+        output:
+          currentNode.data.lastOutput !== null &&
+          typeof currentNode.data.lastOutput === 'object'
+            ? (currentNode.data.lastOutput as Record<string, any>)
+            : { value: currentNode.data.lastOutput },
         executedAt: currentNode.data.lastExecutedAt
           ? new Date(currentNode.data.lastExecutedAt as string)
           : new Date()
@@ -238,7 +245,7 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
       })
 
       // Store the output in the node's data (persisted with workflow)
-      if (result?.data?.output) {
+      if (result?.data?.output !== undefined) {
         setNodes((nds) =>
           nds.map((n) =>
             n.id === id

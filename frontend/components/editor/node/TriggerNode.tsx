@@ -83,7 +83,7 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
       currentNode.data.lastOutput as Record<string, any> | undefined
     )
 
-    if (!output || !actionId) return undefined
+    if (output === undefined || output === null || !actionId) return undefined
 
     return {
       nodeId: id,

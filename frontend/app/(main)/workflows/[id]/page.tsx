@@ -311,7 +311,7 @@ function WorkflowViewPageInner() {
               ...n.data,
               isExecuting: false,
               lastStatus: n.id === nodeId ? 'completed' : n.data.lastStatus,
-              ...(n.id === nodeId && output
+              ...(n.id === nodeId && output !== undefined
                 ? {
                     lastOutput: output,
                     lastExecutedAt: new Date().toISOString()

@@ -41,32 +41,44 @@ export const createInferredOutputForAction = (
 
     case TRIGGER_ACTION_ID.GMAIL_WEBHOOK_TRIGGER:
       return {
-        triggered: true,
-        type: 'gmail_webhook',
-        email: {
-          id: 'message_id',
-          threadId: 'thread_id',
-          from: 'sender@example.com',
-          to: 'recipient@example.com',
-          subject: 'Subject',
-          snippet: 'Message snippet',
-          body: 'Message body',
-          date: '2026-03-13T00:00:00.000Z'
-        }
+        id: 'message_id',
+        threadId: 'thread_id',
+        from: 'Sender Name <sender@example.com>',
+        to: 'Recipient Name <recipient@example.com>',
+        subject: 'Subject',
+        snippet: 'Message snippet',
+        body: 'Message body',
+        date: 'Wed, 1 Apr 2026 23:24:16 +0545',
+        labelIds: ['INBOX', 'IMPORTANT'],
+        attachments: [
+          {
+            filename: 'attachment.bin',
+            mimeType: 'application/octet-stream',
+            data: 'base64_data_here'
+          }
+        ],
+        triggeredBy: 'gmail_webhook'
       }
 
     case TRIGGER_ACTION_ID.DISCORD_WEBHOOK_TRIGGER:
       return {
-        triggered: true,
-        type: 'discord_webhook',
-        message: {
-          id: 'message_id',
-          guildId: 'guild_id',
-          channelId: 'channel_id',
-          authorId: 'author_id',
-          content: 'Message content',
-          timestamp: '2026-03-13T00:00:00.000Z'
-        }
+        messageId: 'message_id',
+        guildId: 'guild_id',
+        guildName: 'My Server',
+        channelId: 'channel_id',
+        channelName: 'general',
+        authorId: 'author_id',
+        authorUsername: 'username',
+        authorTag: 'username',
+        content: 'Message content',
+        timestamp: '2026-04-01T17:44:29.149Z',
+        attachments: [
+          {
+            name: 'file.txt',
+            url: 'https://cdn.discordapp.com/attachments/.../file.txt',
+            contentType: null
+          }
+        ]
       }
 
     case TRIGGER_ACTION_ID.SCHEDULE_TRIGGER:
@@ -74,14 +86,12 @@ export const createInferredOutputForAction = (
         triggered: true,
         type: 'schedule',
         schedule: {
-          startDate: '2026-03-13',
+          date: '2026-01-01',
+          loop: false,
           time: '09:00',
-          timezone: 'UTC',
-          repeat: 'daily'
+          timezone: 'UTC'
         },
-        event: {
-          triggeredAt: '2026-03-13T09:00:00.000Z'
-        }
+        event: null
       }
 
     case NODE_ACTION_ID.GMAIL.SEND_EMAIL:

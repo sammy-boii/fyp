@@ -53,20 +53,26 @@ export function WorkflowHeader({
           <h1 className='text-sm font-semibold text-sidebar-foreground truncate block'>
             {workflowName || 'Untitled Workflow'}
           </h1>
+        </div>
+        <div className='flex items-center gap-1.5 shrink-0'>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-8 w-8 text-foreground/70 hover:text-sidebar-foreground shrink-0'
+            onClick={onEdit}
+          >
+            <SquarePen className='size-3.5' />
+          </Button>
           {hasUnsavedChanges ? (
-            <span className='text-[11px] text-amber-600 leading-none'>
-              Unsaved changes
+            <span
+              aria-label='Unsaved changes'
+              title='Unsaved changes'
+              className='h-2 w-2 rounded-full bg-amber-500 ring-2 ring-amber-500/20'
+            >
+              <span className='sr-only'>Unsaved changes</span>
             </span>
           ) : null}
         </div>
-        <Button
-          variant='ghost'
-          size='icon'
-          className='h-8 w-8 text-foreground/70 hover:text-sidebar-foreground shrink-0'
-          onClick={onEdit}
-        >
-          <SquarePen className='size-3.5' />
-        </Button>
       </div>
       <div className='flex items-center gap-3 shrink-0'>
         <div className='flex items-center mr-4 gap-2'>

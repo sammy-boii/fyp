@@ -178,30 +178,61 @@ function WorkflowViewPageInner() {
     setContextMenu(null)
   }, [selectedNodes, setNodes, setEdges])
 
-  // Helper to extract comparable node data (excludes transient properties)
-  const getNodesHash = useCallback((nodes: Node[]) => {
-    return JSON.stringify(
-      nodes.map((n) => ({
-        id: n.id,
-        type: n.type,
-        position: n.position,
-        data: {
-          type: n.data.type,
-          actionId: n.data.actionId,
-          config: n.data.config
-        }
-      }))
-    )
+  // Stable normalization prevents false dirty states caused by key or array ordering.
+  const normalizeForHash = useCallback((value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map((item) => normalizeForHash(item))
+    }
+
+    if (value && typeof value === 'object') {
+      return Object.keys(value as Record<string, unknown>)
+        .sort()
+        .reduce(
+          (acc, key) => {
+            acc[key] = normalizeForHash((value as Record<string, unknown>)[key])
+            return acc
+          },
+          {} as Record<string, unknown>
+        )
+    }
+
+    return value
   }, [])
+
+  // Helper to extract comparable node data (excludes transient properties)
+  const getNodesHash = useCallback(
+    (nodes: Node[]) => {
+      return JSON.stringify(
+        nodes
+          .map((n) => ({
+            id: n.id,
+            type: n.type,
+            data: {
+              type: n.data.type,
+              actionId: n.data.actionId,
+              config: normalizeForHash(n.data.config)
+            }
+          }))
+          .sort((a, b) => a.id.localeCompare(b.id))
+      )
+    },
+    [normalizeForHash]
+  )
 
   // Helper to extract comparable edge data
   const getEdgesHash = useCallback((edges: Edge[]) => {
     return JSON.stringify(
-      edges.map((e) => ({
-        id: e.id,
-        source: e.source,
-        target: e.target
-      }))
+      edges
+        .map((e) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target
+        }))
+        .sort((a, b) =>
+          `${a.id}:${a.source}:${a.target}`.localeCompare(
+            `${b.id}:${b.source}:${b.target}`
+          )
+        )
     )
   }, [])
 
@@ -366,6 +397,14 @@ function WorkflowViewPageInner() {
         return (NODE_DEFINITIONS as any)[type]?.label ?? type
       }
 
+      const isTriggerNode = (node: Node) => {
+        const nodeType = (node as any)?.data?.type as string | undefined
+        return Boolean(
+          node.type === 'trigger_node' ||
+          (nodeType && (TRIGGER_NODE_DEFINITIONS as any)[nodeType])
+        )
+      }
+
       const missingActionNodes: string[] = []
       const standaloneNodes: string[] = []
 
@@ -399,7 +438,7 @@ function WorkflowViewPageInner() {
       }
 
       if (nodesToValidate.length === 1) {
-        if (nodesToValidate[0].type !== 'trigger_node') {
+        if (!isTriggerNode(nodesToValidate[0])) {
           return {
             ok: false,
             message: 'A single-node workflow must use a trigger node'
@@ -505,30 +544,13 @@ function WorkflowViewPageInner() {
       hasInitialized.current = true
       // Store initial state hashes for change detection
       initialStateRef.current = {
-        nodesHash: JSON.stringify(
-          sanitizedNodes.map((n) => ({
-            id: n.id,
-            type: n.type,
-            position: n.position,
-            data: {
-              type: n.data.type,
-              actionId: n.data.actionId,
-              config: n.data.config
-            }
-          }))
-        ),
-        edgesHash: JSON.stringify(
-          formattedEdges.map((e) => ({
-            id: e.id,
-            source: e.source,
-            target: e.target
-          }))
-        ),
+        nodesHash: getNodesHash(sanitizedNodes),
+        edgesHash: getEdgesHash(formattedEdges),
         name: workflow.name || '',
         description: workflow.description || ''
       }
     }
-  }, [data, stripTransientNodeState])
+  }, [data, stripTransientNodeState, getNodesHash, getEdgesHash])
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
     setNodes((nds) => applyNodeChanges(changes, nds))
@@ -864,13 +886,13 @@ function WorkflowViewPageInner() {
   }, [pendingNavigation, handleSaveWorkflow])
 
   useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    const handleBeforeUnload = (evt: BeforeUnloadEvent) => {
       if (!hasUnsavedChanges) {
         return
       }
 
-      event.preventDefault()
-      event.returnValue = ''
+      evt.preventDefault()
+      evt.returnValue = ''
     }
 
     window.addEventListener('beforeunload', handleBeforeUnload)

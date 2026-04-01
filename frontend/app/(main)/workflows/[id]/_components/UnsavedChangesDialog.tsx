@@ -9,6 +9,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { AlertTriangle } from 'lucide-react'
 
 interface UnsavedChangesDialogProps {
   open: boolean
@@ -27,20 +28,29 @@ export function UnsavedChangesDialog({
 }: UnsavedChangesDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>Leave with unsaved changes?</DialogTitle>
+          <DialogTitle className='flex items-center gap-2'>
+            <span className='inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/15 text-amber-600'>
+              <AlertTriangle className='h-4 w-4' />
+            </span>
+            Leave this workflow?
+          </DialogTitle>
           <DialogDescription>
-            You have unsaved changes in this workflow. If you leave now, those
-            edits will be lost.
+            You have draft edits that are not saved yet. Save before leaving to
+            keep your latest workflow updates.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
+        <DialogFooter className='gap-2'>
           <Button variant='destructive' onClick={onLeaveWithoutSaving}>
-            Leave without saving
+            Discard
           </Button>
-          <Button onClick={onSaveAndLeave} isLoading={isSavingAndLeaving}>
-            Save and leave
+          <Button
+            className='min-w-20'
+            onClick={onSaveAndLeave}
+            isLoading={isSavingAndLeaving}
+          >
+            Save
           </Button>
         </DialogFooter>
       </DialogContent>

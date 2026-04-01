@@ -49,10 +49,10 @@ export const createInferredOutputForAction = (
         snippet: 'Message snippet',
         body: 'Message body',
         date: 'Wed, 1 Apr 2026 23:24:16 +0545',
-        labelIds: ['INBOX', 'IMPORTANT'],
+        labelIds: ['UNREAD', 'INBOX', 'IMPORTANT'],
         attachments: [
           {
-            filename: 'attachment.bin',
+            filename: 'file.txt',
             mimeType: 'application/octet-stream',
             data: 'base64_data_here'
           }
@@ -257,40 +257,41 @@ export const createInferredOutputForAction = (
       return {
         result: true,
         branchTaken: 'true',
-        matchType: 'all',
+        matchType: 'all | any',
         conditionResults: [
           {
             condition: {
-              field: 'value',
+              field: 'field_1',
               operator: 'equals',
-              value: 'value'
+              value: 'value_1'
             },
             result: true
+          },
+          {
+            condition: {
+              field: 'field_2',
+              operator: 'greater_than',
+              value: 'value_2'
+            },
+            result: false
+          },
+          {
+            condition: {
+              field: 'field_3',
+              operator: 'is_empty',
+              value: 'value_3'
+            },
+            result: false
           }
         ]
       }
 
     case NODE_ACTION_ID.AI.ASK_AI:
       return {
-        prompt: 'User prompt',
-        answer: 'AI answer',
-        explanation: 'AI explanation',
-        confidence: 'high',
-        details: {
-          category: 'general'
-        },
-        questionType: 'analysis',
-        fullResponse: {
-          answer: 'AI answer',
-          explanation: 'AI explanation',
-          confidence: 'high',
-          data: {
-            category: 'general'
-          },
-          metadata: {
-            question_type: 'analysis'
-          }
-        }
+        answer: 'Generated answer',
+        explanation: 'Explanation of the generated answer',
+        confidence: 'high | medium | low',
+        details: {}
       }
 
     case NODE_ACTION_ID.HTTP.HTTP_REQUEST:
@@ -299,10 +300,15 @@ export const createInferredOutputForAction = (
         statusText: 'OK',
         ok: true,
         headers: {
-          'content-type': 'application/json'
+          'content-type': 'application/json',
+          'x-request-id': 'req_123456'
         },
         body: {
-          message: 'Success'
+          message: 'Request succeeded',
+          data: {
+            id: 'resource_id',
+            name: 'Sample Resource'
+          }
         },
         url: 'https://api.example.com/resource',
         duration: 120,
@@ -310,9 +316,13 @@ export const createInferredOutputForAction = (
           method: 'GET',
           url: 'https://api.example.com/resource',
           headers: {
-            Authorization: 'Bearer token'
+            Authorization: 'Bearer <token>'
           },
-          body: ''
+          query: {
+            limit: 10,
+            page: 1
+          },
+          body: null
         }
       }
 

@@ -113,8 +113,7 @@ export async function executeAskAI(
         explanation: aiResponse.explanation,
         confidence: aiResponse.confidence,
         details: aiResponse.data,
-        questionType: aiResponse.metadata?.question_type || 'other',
-        fullResponse: aiResponse
+        questionType: aiResponse.metadata?.question_type || 'other'
       }
     }
   } catch (error: any) {

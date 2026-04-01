@@ -168,18 +168,19 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
         workflowId,
         nodeId: id
       })
+      const output = result?.data?.output
 
-      if (result?.data?.output !== undefined) {
+      if (output !== undefined) {
         console.log('[Node Output][Single Execute]', {
           workflowId,
           nodeId: id,
           actionId: data.actionId,
-          output: result.data.output
+          output
         })
       }
 
       // Store the output in the node's data (persisted with workflow)
-      if (result?.data?.output !== undefined) {
+      if (output !== undefined) {
         setNodes((nds) =>
           nds.map((n) =>
             n.id === id
@@ -187,7 +188,7 @@ export function BaseNode({ data, id }: NodeProps<BaseNodeProps>) {
                   ...n,
                   data: {
                     ...n.data,
-                    lastOutput: result.data.output,
+                    lastOutput: output,
                     lastExecutedAt: new Date().toISOString(),
                     lastStatus: 'completed'
                   }

@@ -271,6 +271,32 @@ const dedupeLogs = (logs: ExecutionLog[]) => {
   })
 }
 
+const sortExecutionLogs = (logs: ExecutionLog[]) => {
+  return logs
+    .map((log, index) => ({ log, index }))
+    .sort((a, b) => {
+      const timeDelta =
+        new Date(a.log.timestamp).getTime() -
+        new Date(b.log.timestamp).getTime()
+
+      if (timeDelta !== 0) {
+        return timeDelta
+      }
+
+      if (a.log.type === 'workflow:start' && b.log.type !== 'workflow:start') {
+        return -1
+      }
+
+      if (b.log.type === 'workflow:start' && a.log.type !== 'workflow:start') {
+        return 1
+      }
+
+      // Preserve original insertion order for same-timestamp events.
+      return a.index - b.index
+    })
+    .map(({ log }) => log)
+}
+
 const getActiveNodeId = (logs: ExecutionLog[]) => {
   const finished = new Set<string>()
 
@@ -404,10 +430,7 @@ export default function ActivityExecutionPage() {
   const storedLogs = useMemo(() => buildStoredLogs(execution), [execution])
   const mergedLogs = useMemo(() => {
     const combined = dedupeLogs([...storedLogs, ...liveLogs])
-    return combined.sort(
-      (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    )
+    return sortExecutionLogs(combined)
   }, [storedLogs, liveLogs])
 
   const activeNodeId = useMemo(() => getActiveNodeId(mergedLogs), [mergedLogs])
@@ -426,7 +449,7 @@ export default function ActivityExecutionPage() {
       const getIcon = () => {
         switch (log.type) {
           case 'workflow:start':
-            return <Play className='h-5 w-5 animate-pulse' />
+            return <Play className='h-5 w-5' />
           case 'node:start':
             return (
               <Cog

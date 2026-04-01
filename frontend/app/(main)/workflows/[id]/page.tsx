@@ -257,14 +257,36 @@ function WorkflowViewPageInner() {
     [getNodesHash, getEdgesHash]
   )
 
-  const hasUnsavedChanges = useMemo(
-    () => getIsWorkflowDirty(nodes, edges, workflowName, workflowDescription),
-    [getIsWorkflowDirty, nodes, edges, workflowName, workflowDescription]
+  const hasUnsavedChanges = getIsWorkflowDirty(
+    nodes,
+    edges,
+    workflowName,
+    workflowDescription
   )
+
+  const clearExecutionNodeState = useCallback(() => {
+    setExecutingNodeId(null)
+    setNodes((nds) =>
+      nds.map((n) => ({
+        ...n,
+        data: {
+          ...n.data,
+          isExecuting: false,
+          lastStatus: undefined,
+          lastOutput: undefined,
+          lastExecutedAt: undefined
+        }
+      }))
+    )
+  }, [])
 
   // WebSocket for live execution updates
   const { isConnected, executionLogs, currentExecution, clearLogs } =
     useWorkflowWebSocket(workflowId, {
+      onWorkflowStart: () => {
+        // Reset previous run markers as soon as a new execution starts.
+        clearExecutionNodeState()
+      },
       onNodeStart: (nodeId) => {
         setExecutingNodeId(nodeId)
         // Update node data to show executing state
@@ -315,7 +337,7 @@ function WorkflowViewPageInner() {
       },
       onWorkflowComplete: () => {
         setExecutingNodeId(null)
-        // Clear all executing states
+        // Keep completion markers but stop loading state.
         setNodes((nds) =>
           nds.map((n) => ({
             ...n,
@@ -328,7 +350,7 @@ function WorkflowViewPageInner() {
       },
       onWorkflowError: () => {
         setExecutingNodeId(null)
-        // Clear all executing states
+        // Keep failure markers but stop loading state.
         setNodes((nds) =>
           nds.map((n) => ({
             ...n,
@@ -734,6 +756,9 @@ function WorkflowViewPageInner() {
 
     setIsExecuting(true)
     try {
+      // Clear old run status markers before starting a fresh execution.
+      clearExecutionNodeState()
+
       // Check if workflow has changed before auto-saving
       const currentNodesHash = getNodesHash(sanitized)
       const currentEdgesHash = getEdgesHash(edges)
@@ -780,6 +805,7 @@ function WorkflowViewPageInner() {
     isExecutingNode,
     getNodesHash,
     getEdgesHash,
+    clearExecutionNodeState,
     stripTransientNodeState,
     validateWorkflowForPersist
   ])

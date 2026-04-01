@@ -1,9 +1,6 @@
 'use client'
 
-import type {
-  ExecutionEventType,
-  ExecutionLog
-} from '@/hooks/use-workflow-websocket'
+import type { ExecutionLog } from '@/hooks/use-workflow-websocket'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -92,31 +89,30 @@ interface ExecutionGroup {
   logs: ExecutionLog[]
 }
 
-const EVENT_ORDER: Record<ExecutionEventType, number> = {
-  'workflow:start': 0,
-  'node:start': 1,
-  'node:complete': 2,
-  'node:error': 2,
-  'workflow:complete': 3,
-  'workflow:error': 3
-}
-
 const sortExecutionLogs = (logs: ExecutionLog[]) => {
-  return [...logs].sort((a, b) => {
-    const timeDelta =
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  return logs
+    .map((log, index) => ({ log, index }))
+    .sort((a, b) => {
+      const timeDelta =
+        new Date(a.log.timestamp).getTime() -
+        new Date(b.log.timestamp).getTime()
 
-    if (timeDelta !== 0) {
-      return timeDelta
-    }
+      if (timeDelta !== 0) {
+        return timeDelta
+      }
 
-    const orderDelta = EVENT_ORDER[a.type] - EVENT_ORDER[b.type]
-    if (orderDelta !== 0) {
-      return orderDelta
-    }
+      if (a.log.type === 'workflow:start' && b.log.type !== 'workflow:start') {
+        return -1
+      }
 
-    return a.id.localeCompare(b.id)
-  })
+      if (b.log.type === 'workflow:start' && a.log.type !== 'workflow:start') {
+        return 1
+      }
+
+      // Preserve original insertion order for same-timestamp events.
+      return a.index - b.index
+    })
+    .map(({ log }) => log)
 }
 
 const WorkflowExecutionTab = ({
@@ -245,7 +241,7 @@ const WorkflowExecutionTab = ({
       const getIcon = () => {
         switch (log.type) {
           case 'workflow:start':
-            return <Play className='h-5 w-5 animate-pulse' />
+            return <Play className='h-5 w-5' />
           case 'node:start':
             return (
               <Cog

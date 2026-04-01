@@ -38,6 +38,7 @@ export type ExecutionLog = ExecutionEvent & {
 type UseWorkflowWebSocketOptions = {
   enabled?: boolean
   onEvent?: (event: ExecutionEvent) => void
+  onWorkflowStart?: () => void
   onNodeStart?: (nodeId: string) => void
   onNodeComplete?: (nodeId: string, output?: any) => void
   onNodeError?: (nodeId: string, error?: string) => void
@@ -52,6 +53,7 @@ export function useWorkflowWebSocket(
   const {
     enabled = true,
     onEvent,
+    onWorkflowStart,
     onNodeStart,
     onNodeComplete,
     onNodeError,
@@ -76,6 +78,7 @@ export function useWorkflowWebSocket(
   // Store callbacks in refs to avoid reconnection loops
   const callbacksRef = useRef({
     onEvent,
+    onWorkflowStart,
     onNodeStart,
     onNodeComplete,
     onNodeError,
@@ -87,6 +90,7 @@ export function useWorkflowWebSocket(
   useEffect(() => {
     callbacksRef.current = {
       onEvent,
+      onWorkflowStart,
       onNodeStart,
       onNodeComplete,
       onNodeError,
@@ -95,6 +99,7 @@ export function useWorkflowWebSocket(
     }
   }, [
     onEvent,
+    onWorkflowStart,
     onNodeStart,
     onNodeComplete,
     onNodeError,
@@ -169,6 +174,7 @@ export function useWorkflowWebSocket(
               progress: data.data?.progress
             })
             setExecutingNodeId(null)
+            callbacksRef.current.onWorkflowStart?.()
             break
 
           case 'node:start':

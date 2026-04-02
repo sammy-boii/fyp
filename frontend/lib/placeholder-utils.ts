@@ -96,6 +96,78 @@ export const createPlaceholder = (nodeId: string, path: string): string => {
 }
 
 /**
+ * Check if the value is a canonical placeholder token: {{nodeId.path}}
+ */
+export const isCanonicalPlaceholder = (value: string): boolean => {
+  return /^\{\{[^}]+\}\}$/.test(value.trim())
+}
+
+/**
+ * Split text into a leading canonical placeholder token and the remaining suffix.
+ * Example: "{{node.path}}-suffix" => { token: "{{node.path}}", remainder: "-suffix" }
+ */
+export const extractLeadingCanonicalPlaceholder = (
+  value: string
+): { token: string | null; remainder: string } => {
+  const match = value.match(/^(\{\{[^}]+\}\})([\s\S]*)$/)
+  if (!match) {
+    return { token: null, remainder: value }
+  }
+
+  return {
+    token: match[1],
+    remainder: match[2]
+  }
+}
+
+/**
+ * Split text into all contiguous leading canonical placeholder tokens and
+ * the remaining suffix.
+ * Example: "{{a.x}}{{b.y}}-suffix" =>
+ *   { tokens: ["{{a.x}}", "{{b.y}}"], remainder: "-suffix" }
+ */
+export const extractLeadingCanonicalPlaceholders = (
+  value: string
+): { tokens: string[]; remainder: string } => {
+  const tokens: string[] = []
+  let remainder = value
+
+  while (true) {
+    const match = remainder.match(/^(\{\{[^}]+\}\})/)
+    if (!match) break
+
+    tokens.push(match[1])
+    remainder = remainder.slice(match[1].length)
+  }
+
+  return { tokens, remainder }
+}
+
+/**
+ * Convert canonical placeholder text into a friendly display string for UI
+ * controls that do not support rich placeholder chips.
+ */
+export const formatPlaceholderForDisplay = (
+  value: string,
+  resolveNodeLabel: (nodeId: string) => string
+): string => {
+  const trimmed = value.trim()
+  if (!isCanonicalPlaceholder(trimmed)) {
+    return value
+  }
+
+  const content = trimmed.slice(2, -2).trim()
+  const dotIndex = content.indexOf('.')
+  if (dotIndex === -1) {
+    return value
+  }
+
+  const nodeId = content.substring(0, dotIndex)
+  const path = content.substring(dotIndex + 1)
+  return `${resolveNodeLabel(nodeId)}.${path}`
+}
+
+/**
  * Format a value for display in the UI
  */
 export const formatValueForDisplay = (value: any): string => {

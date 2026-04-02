@@ -14,6 +14,11 @@ import {
 import { Button } from '@/components/ui/button'
 import { Loader2, Folder, File, RefreshCw, ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { usePlaceholderResolver } from '@/components/ui/placeholder-input'
+import {
+  formatPlaceholderForDisplay,
+  extractLeadingCanonicalPlaceholders
+} from '@/lib/placeholder-utils'
 
 export type DriveItemPickerType = 'all' | 'files' | 'folders'
 
@@ -36,10 +41,10 @@ export function DriveItemPicker({
   className,
   'aria-invalid': ariaInvalid
 }: DriveItemPickerProps) {
+  const { resolveNodeLabel } = usePlaceholderResolver()
   const { watch } = useFormContext()
   const credentialId = watch('credentialId')
   const prevCredentialIdRef = useRef<string | null>(null)
-  const isInitializedRef = useRef(false)
 
   const [items, setItems] = useState<DriveItem[]>([])
   const [isPending, startTransition] = useTransition()
@@ -48,15 +53,25 @@ export function DriveItemPicker({
   const [folderStack, setFolderStack] = useState<
     { id: string; name: string }[]
   >([])
-  const [inputValue, setInputValue] = useState<string>(value || '')
+  const initialPlaceholderParts = extractLeadingCanonicalPlaceholders(
+    value || ''
+  )
+  const [inputValue, setInputValue] = useState<string>(
+    initialPlaceholderParts.remainder
+  )
   const [hasFetched, setHasFetched] = useState(false)
+  const { tokens: leadingPlaceholderTokens } =
+    extractLeadingCanonicalPlaceholders(value || '')
+  const leadingPlaceholderPrefix = leadingPlaceholderTokens.join('')
+  const isPlaceholderValue = leadingPlaceholderTokens.length > 0
+  const placeholderDisplayValues = leadingPlaceholderTokens.map((token) =>
+    formatPlaceholderForDisplay(token, resolveNodeLabel)
+  )
 
-  // Initialize inputValue from value prop (for pre-filled forms)
+  // Keep editable suffix in sync with controlled form value.
   useEffect(() => {
-    if (!isInitializedRef.current && value) {
-      setInputValue(value)
-      isInitializedRef.current = true
-    }
+    const { remainder } = extractLeadingCanonicalPlaceholders(value || '')
+    setInputValue(remainder)
   }, [value])
 
   const fetchItems = useCallback(
@@ -166,8 +181,27 @@ export function DriveItemPicker({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
     setInputValue(newValue)
-    // Allow user to type manual ID
+
+    if (leadingPlaceholderPrefix) {
+      onChange(`${leadingPlaceholderPrefix}${newValue}`)
+      return
+    }
+
+    // Allow user to type manual ID.
     onChange(newValue)
+  }
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!leadingPlaceholderPrefix) return
+
+    if (
+      (e.key === 'Backspace' || e.key === 'Delete') &&
+      inputValue.length === 0
+    ) {
+      e.preventDefault()
+      setInputValue('')
+      onChange('')
+    }
   }
 
   const handleNavigateIntoFolder = (itemId: string, e: React.MouseEvent) => {
@@ -182,8 +216,9 @@ export function DriveItemPicker({
   }
 
   // Filter items based on search
+  const searchValue = inputValue
   const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(inputValue.toLowerCase())
+    item.name.toLowerCase().includes(searchValue.toLowerCase())
   )
 
   if (!credentialId) {
@@ -211,8 +246,23 @@ export function DriveItemPicker({
           <ComboboxInput
             placeholder={placeholder}
             className={cn('h-9 text-sm flex-1', className)}
+            leadingAddon={
+              isPlaceholderValue ? (
+                <div className='flex max-w-44 items-center gap-1 overflow-hidden'>
+                  {placeholderDisplayValues.map((displayValue, index) => (
+                    <span
+                      key={`${leadingPlaceholderTokens[index]}-${index}`}
+                      className='inline-flex min-w-0 items-center truncate rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                    >
+                      {displayValue}
+                    </span>
+                  ))}
+                </div>
+              ) : undefined
+            }
             value={inputValue}
             onChange={handleInputChange}
+            onKeyDown={handleInputKeyDown}
             aria-invalid={ariaInvalid}
             disabled={disabled}
           />
@@ -258,7 +308,7 @@ export function DriveItemPicker({
 
                   {filteredItems.length === 0 ? (
                     <ComboboxEmpty>
-                      {inputValue
+                      {searchValue
                         ? 'No matches found. Using as ID.'
                         : 'No items found'}
                     </ComboboxEmpty>

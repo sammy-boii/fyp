@@ -15,6 +15,11 @@ import { Button } from '@/components/ui/button'
 import { Loader2, User, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
+import { usePlaceholderResolver } from '@/components/ui/placeholder-input'
+import {
+  formatPlaceholderForDisplay,
+  extractLeadingCanonicalPlaceholders
+} from '@/lib/placeholder-utils'
 
 interface UserPickerProps {
   value: string
@@ -35,24 +40,34 @@ export function UserPicker({
   className,
   'aria-invalid': ariaInvalid
 }: UserPickerProps) {
+  const { resolveNodeLabel } = usePlaceholderResolver()
   const { watch } = useFormContext()
   const credentialId = watch('credentialId')
   const watchedGuildId = watch('guildId') || guildId
   const prevGuildIdRef = useRef<string | null>(null)
-  const isInitializedRef = useRef(false)
 
   const [members, setMembers] = useState<GuildMember[]>([])
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [inputValue, setInputValue] = useState<string>(value || '')
+  const initialPlaceholderParts = extractLeadingCanonicalPlaceholders(
+    value || ''
+  )
+  const [inputValue, setInputValue] = useState<string>(
+    initialPlaceholderParts.remainder
+  )
   const [hasFetched, setHasFetched] = useState(false)
+  const { tokens: leadingPlaceholderTokens } =
+    extractLeadingCanonicalPlaceholders(value || '')
+  const leadingPlaceholderPrefix = leadingPlaceholderTokens.join('')
+  const isPlaceholderValue = leadingPlaceholderTokens.length > 0
+  const placeholderDisplayValues = leadingPlaceholderTokens.map((token) =>
+    formatPlaceholderForDisplay(token, resolveNodeLabel)
+  )
 
-  // Initialize inputValue from value prop (for pre-filled forms)
+  // Keep editable suffix in sync with controlled form value.
   useEffect(() => {
-    if (!isInitializedRef.current && value) {
-      setInputValue(value)
-      isInitializedRef.current = true
-    }
+    const { remainder } = extractLeadingCanonicalPlaceholders(value || '')
+    setInputValue(remainder)
   }, [value])
 
   const fetchMembers = useCallback(() => {
@@ -118,15 +133,35 @@ export function UserPicker({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
     setInputValue(newValue)
-    // Allow user to type manual ID
+
+    if (leadingPlaceholderPrefix) {
+      onChange(`${leadingPlaceholderPrefix}${newValue}`)
+      return
+    }
+
+    // Allow user to type manual ID.
     onChange(newValue)
   }
 
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!leadingPlaceholderPrefix) return
+
+    if (
+      (e.key === 'Backspace' || e.key === 'Delete') &&
+      inputValue.length === 0
+    ) {
+      e.preventDefault()
+      setInputValue('')
+      onChange('')
+    }
+  }
+
   // Filter members based on search
+  const searchValue = inputValue
   const filteredMembers = members.filter(
     (member) =>
-      member.displayName.toLowerCase().includes(inputValue.toLowerCase()) ||
-      member.username.toLowerCase().includes(inputValue.toLowerCase())
+      member.displayName.toLowerCase().includes(searchValue.toLowerCase()) ||
+      member.username.toLowerCase().includes(searchValue.toLowerCase())
   )
 
   if (!credentialId) {
@@ -163,8 +198,23 @@ export function UserPicker({
         <ComboboxInput
           placeholder={placeholder}
           className={cn('h-9 text-sm flex-1', className)}
+          leadingAddon={
+            isPlaceholderValue ? (
+              <div className='flex max-w-44 items-center gap-1 overflow-hidden'>
+                {placeholderDisplayValues.map((displayValue, index) => (
+                  <span
+                    key={`${leadingPlaceholderTokens[index]}-${index}`}
+                    className='inline-flex min-w-0 items-center truncate rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                  >
+                    {displayValue}
+                  </span>
+                ))}
+              </div>
+            ) : undefined
+          }
           value={inputValue}
           onChange={handleInputChange}
+          onKeyDown={handleInputKeyDown}
           aria-invalid={ariaInvalid}
           disabled={disabled}
         />
@@ -187,7 +237,7 @@ export function UserPicker({
               </div>
             ) : filteredMembers.length === 0 ? (
               <ComboboxEmpty>
-                {inputValue
+                {searchValue
                   ? 'No matches found. Using as ID.'
                   : 'No members found'}
               </ComboboxEmpty>
@@ -210,11 +260,11 @@ export function UserPicker({
                     ) : (
                       <User className='h-4 w-4 text-muted-foreground' />
                     )}
-                    <span className='truncate max-w-[160px]'>
+                    <span className='truncate max-w-40'>
                       {member.displayName}
                     </span>
                     {member.displayName !== member.username && (
-                      <span className='text-xs text-muted-foreground truncate max-w-[80px]'>
+                      <span className='text-xs text-muted-foreground truncate max-w-20'>
                         @{member.username}
                       </span>
                     )}

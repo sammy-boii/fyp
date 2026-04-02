@@ -58,13 +58,18 @@ function ComboboxInput({
   disabled = false,
   showTrigger = true,
   showClear = false,
+  leadingAddon,
   ...props
 }: ComboboxPrimitive.Input.Props & {
   showTrigger?: boolean
   showClear?: boolean
+  leadingAddon?: React.ReactNode
 }) {
   return (
     <InputGroup className={cn('w-auto', className)}>
+      {leadingAddon && (
+        <InputGroupAddon align='inline-start'>{leadingAddon}</InputGroupAddon>
+      )}
       <ComboboxPrimitive.Input
         render={<InputGroupInput disabled={disabled} />}
         {...props}

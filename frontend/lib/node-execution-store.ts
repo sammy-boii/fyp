@@ -154,42 +154,70 @@ export const createInferredOutputForAction = (
     case NODE_ACTION_ID['GOOGLE-DRIVE'].CREATE_FOLDER:
       return {
         folderId: 'folder_id',
-        name: 'My Folder',
-        webViewLink: 'https://drive.google.com/...',
+        name: 'New Folder',
         message: 'Folder created successfully'
       }
 
     case NODE_ACTION_ID['GOOGLE-DRIVE'].CREATE_FILE:
       return {
         fileId: 'file_id',
-        name: 'document.txt',
+        name: 'new-file.txt',
         mimeType: 'text/plain',
-        size: 1234,
+        size: '3',
         webViewLink: 'https://drive.google.com/...',
         message: 'File created successfully'
       }
 
     case NODE_ACTION_ID['GOOGLE-DRIVE'].LIST_FILES:
       return {
-        files: [
-          {
-            id: 'file_id',
-            name: 'file.txt',
-            mimeType: 'text/plain',
-            size: 123,
-            createdTime: '2026-03-13T00:00:00.000Z',
-            modifiedTime: '2026-03-13T00:00:00.000Z',
-            webViewLink: 'https://drive.google.com/...',
-            iconLink: 'https://.../icon.png',
-            content: 'file content',
-            contentType: 'text',
-            contentError: null
-          }
-        ],
-        count: 1,
+        count: 10,
         folderId: 'root',
         fileType: 'all',
-        includeContent: false
+        includeContent: true,
+        files: [
+          {
+            id: 'file_id_pdf',
+            name: 'sample.pdf',
+            mimeType: 'application/pdf',
+            size: 1237,
+            createdTime: '2026-04-02T14:52:58.041Z',
+            modifiedTime: '2026-04-02T14:52:58.041Z',
+            webViewLink: 'https://drive.google.com/file/d/file_id_pdf/view',
+            iconLink:
+              'https://drive-thirdparty.googleusercontent.com/16/type/application/pdf',
+            content: 'data:application/pdf;base64,JVBERi0xLjcK...',
+            contentType: 'base64',
+            contentError: null
+          },
+          {
+            id: 'file_id_text',
+            name: 'notes.txt',
+            mimeType: 'text/plain',
+            size: 3,
+            createdTime: '2026-04-02T14:51:49.700Z',
+            modifiedTime: '2026-04-02T14:51:49.700Z',
+            webViewLink: 'https://drive.google.com/file/d/file_id_text/view',
+            iconLink:
+              'https://drive-thirdparty.googleusercontent.com/16/type/text/plain',
+            content: 'hmm',
+            contentType: 'text',
+            contentError: null
+          },
+          {
+            id: 'folder_id',
+            name: 'sample-folder',
+            mimeType: 'application/vnd.google-apps.folder',
+            size: null,
+            createdTime: '2026-04-02T14:51:30.572Z',
+            modifiedTime: '2026-04-02T14:51:30.572Z',
+            webViewLink: 'https://drive.google.com/drive/folders/folder_id',
+            iconLink:
+              'https://drive-thirdparty.googleusercontent.com/16/type/application/vnd.google-apps.folder',
+            content: null,
+            contentType: null,
+            contentError: 'Folders have no content'
+          }
+        ]
       }
 
     case NODE_ACTION_ID['GOOGLE-DRIVE'].DELETE_FILE:
@@ -208,21 +236,21 @@ export const createInferredOutputForAction = (
       return {
         messageId: 'message_id',
         channelId: 'channel_id',
-        content: 'Message content',
-        timestamp: '2026-03-13T00:00:00.000Z',
+        content: 'Hello channel',
+        timestamp: '2026-04-02T14:44:11.799000+00:00',
         author: {
-          id: 'author_id',
-          username: 'bot_name'
+          id: 'bot_user_id',
+          username: 'Automation Bot'
         }
       }
 
     case NODE_ACTION_ID.DISCORD.SEND_DM:
       return {
         messageId: 'message_id',
-        channelId: 'channel_id',
-        recipientId: 'user_id',
-        content: 'Message content',
-        timestamp: '2026-03-13T00:00:00.000Z'
+        channelId: 'dm_channel_id',
+        recipientId: 'recipient_user_id',
+        content: 'Hello',
+        timestamp: '2026-04-02T14:44:10.946000+00:00'
       }
 
     case NODE_ACTION_ID.DISCORD.LIST_GUILDS:

@@ -100,15 +100,17 @@ export const createInferredOutputForAction = (
         threadId: 'thread_id',
         labelIds: ['SENT'],
         to: 'recipient@example.com',
-        cc: 'cc@example.com',
+        cc: 'cc1@example.com,cc2@example.com',
         bcc: 'bcc@example.com',
         subject: 'Subject',
-        body: 'Email body',
+        body: 'Body',
         attachmentCount: 1
       }
 
     case NODE_ACTION_ID.GMAIL.READ_EMAIL:
       return {
+        count: 5,
+        folder: 'INBOX',
         emails: [
           {
             id: 'message_id',
@@ -116,7 +118,7 @@ export const createInferredOutputForAction = (
             subject: 'Subject',
             from: 'sender@example.com',
             to: 'recipient@example.com',
-            date: '2026-03-13T00:00:00.000Z',
+            date: 'Mon, 30 Mar 2026 06:52:15 +0000 (GMT)',
             snippet: 'Message snippet',
             body: 'Message body',
             attachments: [
@@ -127,10 +129,20 @@ export const createInferredOutputForAction = (
               }
             ],
             attachmentCount: 1
+          },
+          {
+            id: 'message_id_2',
+            threadId: 'thread_id_2',
+            subject: 'Another Subject',
+            from: 'another.sender@example.com',
+            to: 'recipient@example.com',
+            date: 'Tue, 31 Mar 2026 10:20:00 +0000 (GMT)',
+            snippet: 'Another message snippet',
+            body: 'Plain text body',
+            attachments: [],
+            attachmentCount: 0
           }
-        ],
-        count: 1,
-        folder: 'INBOX'
+        ]
       }
 
     case NODE_ACTION_ID.GMAIL.DELETE_EMAIL:
@@ -215,31 +227,67 @@ export const createInferredOutputForAction = (
 
     case NODE_ACTION_ID.DISCORD.LIST_GUILDS:
       return {
+        count: 3,
         guilds: [
           {
-            id: 'guild_id',
-            name: 'My Server',
+            id: 'guild_id_1',
+            name: 'Server One',
             icon: 'https://cdn.discordapp.com/icons/...png',
-            owner: true,
-            permissions: '0'
+            owner: false,
+            permissions: '9007199254740991'
+          },
+          {
+            id: 'guild_id_2',
+            name: 'Server Two',
+            icon: null,
+            owner: false,
+            permissions: '9007199254740991'
           }
-        ],
-        count: 1
+        ]
       }
 
     case NODE_ACTION_ID.DISCORD.LIST_CHANNELS:
       return {
+        count: 8,
         channels: [
           {
-            id: 'channel_id',
+            id: 'category_id_1',
+            name: 'Text Channels',
+            type: 'category',
+            position: 0,
+            parentId: null
+          },
+          {
+            id: 'category_id_2',
+            name: 'Voice Channels',
+            type: 'category',
+            position: 0,
+            parentId: null
+          },
+          {
+            id: 'text_channel_id_1',
             name: 'general',
             type: 'text',
+            position: 1,
+            parentId: 'category_id_1',
+            topic: null
+          },
+          {
+            id: 'voice_channel_id_1',
+            name: 'General Voice',
+            type: 'voice',
             position: 0,
-            parentId: null,
-            topic: 'Channel topic'
+            parentId: 'category_id_2'
+          },
+          {
+            id: 'text_channel_id_2',
+            name: 'bots-stuff',
+            type: 'text',
+            position: 2,
+            parentId: 'category_id_1',
+            topic: null
           }
-        ],
-        count: 1
+        ]
       }
 
     case NODE_ACTION_ID.DISCORD.CREATE_CHANNEL:
@@ -248,9 +296,9 @@ export const createInferredOutputForAction = (
         name: 'new-channel',
         type: 'text',
         guildId: 'guild_id',
-        position: 0,
+        position: 4,
         parentId: null,
-        topic: 'Channel topic'
+        topic: 'This is a test channel'
       }
 
     case NODE_ACTION_ID.CONDITION.EVALUATE_CONDITION:

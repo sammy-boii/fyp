@@ -522,12 +522,12 @@ async function buildMessagePayload(
           throw new Error(`Failed to fetch attachment: ${url}`)
         }
         const arrayBuffer = await fileResponse.arrayBuffer()
+        const contentType =
+          fileResponse.headers.get('content-type') || attachment.mimeType
         const fileName = ensureFilenameExtension(
           attachment.filename || getFileNameFromUrl(url, index),
           contentType
         )
-        const contentType =
-          fileResponse.headers.get('content-type') || attachment.mimeType
 
         formData.append(
           `files[${index}]`,

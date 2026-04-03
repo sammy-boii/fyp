@@ -5,16 +5,12 @@ export const aiCustomFieldSchema = z.object({
   value: z.string().optional().default('')
 })
 
-export const aiPromptFormSchema = z
-  .object({
-    prompt: z.string().min(1, 'Prompt is required'),
-    systemPrompt: z.string().optional().default(''),
-    customFields: z.array(aiCustomFieldSchema).optional().default([])
-  })
-  .superRefine((value, ctx) => {
+const aiCustomFieldsSchema = z
+  .array(aiCustomFieldSchema)
+  .superRefine((fields, ctx) => {
     const seen = new Set<string>()
 
-    value.customFields.forEach((field, index) => {
+    fields.forEach((field, index) => {
       const normalizedKey = field.key.trim().toLowerCase()
       if (!normalizedKey) {
         return
@@ -24,13 +20,21 @@ export const aiPromptFormSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Duplicate field name',
-          path: ['customFields', index, 'key']
+          path: [index, 'key']
         })
       }
 
       seen.add(normalizedKey)
     })
   })
+  .optional()
+  .default([])
+
+export const aiPromptFormSchema = z.object({
+  prompt: z.string().min(1, 'Prompt is required'),
+  systemPrompt: z.string().optional().default(''),
+  customFields: aiCustomFieldsSchema
+})
 
 export type AICustomField = z.infer<typeof aiCustomFieldSchema>
 

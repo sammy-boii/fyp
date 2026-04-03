@@ -80,7 +80,8 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
         data: {
           type: n.data.type as string,
           actionId: n.data.actionId as TActionID | undefined,
-          lastOutput: n.data.lastOutput as Record<string, any> | undefined
+          lastOutput: n.data.lastOutput as Record<string, any> | undefined,
+          config: n.data.config as Record<string, any> | undefined
         }
       }))
     )

@@ -66,7 +66,8 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
         data: {
           type: n.data.type as string,
           actionId: n.data.actionId as TActionID | undefined,
-          lastOutput: n.data.lastOutput as Record<string, any> | undefined
+          lastOutput: n.data.lastOutput as Record<string, any> | undefined,
+          config: n.data.config as Record<string, any> | undefined
         }
       }))
     )
@@ -80,7 +81,8 @@ export function TriggerNode({ data, id }: NodeProps<BaseNodeProps>) {
     const actionId = currentNode.data.actionId as TActionID | undefined
     const { output, isInferred } = resolveOutputWithInference(
       actionId,
-      currentNode.data.lastOutput as Record<string, any> | undefined
+      currentNode.data.lastOutput as Record<string, any> | undefined,
+      currentNode.data.config as Record<string, any> | undefined
     )
 
     if (output === undefined || output === null || !actionId) return undefined

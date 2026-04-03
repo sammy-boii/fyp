@@ -27,8 +27,60 @@ export type NodeInputSource = {
   isInferred?: boolean
 }
 
+const isRecord = (value: unknown): value is Record<string, any> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+const getAICustomFieldInference = (
+  config?: Record<string, any>
+): Record<string, any> => {
+  if (!config) {
+    return {}
+  }
+
+  const customFieldsSource = config.customFields ?? config.custom_fields
+
+  if (Array.isArray(customFieldsSource)) {
+    return customFieldsSource.reduce<Record<string, any>>((acc, entry) => {
+      if (!isRecord(entry)) {
+        return acc
+      }
+
+      const key =
+        typeof entry.key === 'string'
+          ? entry.key.trim()
+          : String(entry.key ?? '').trim()
+
+      if (!key) {
+        return acc
+      }
+
+      acc[key] = null
+      return acc
+    }, {})
+  }
+
+  if (isRecord(customFieldsSource)) {
+    return Object.keys(customFieldsSource).reduce<Record<string, any>>(
+      (acc, key) => {
+        const normalizedKey = key.trim()
+        if (!normalizedKey) {
+          return acc
+        }
+
+        acc[normalizedKey] = null
+        return acc
+      },
+      {}
+    )
+  }
+
+  return {}
+}
+
 export const createInferredOutputForAction = (
-  actionId?: TActionID
+  actionId?: TActionID,
+  config?: Record<string, any>
 ): Record<string, any> | undefined => {
   if (!actionId) return undefined
 
@@ -368,8 +420,9 @@ export const createInferredOutputForAction = (
         explanation: 'Explanation of the generated answer',
         confidence: 'high | medium | low',
         details: {},
-        custom_fields: {
-          field1: 'value1'
+        custom_fields: getAICustomFieldInference(config),
+        metadata: {
+          question_type: 'analysis'
         },
         questionType: 'analysis'
       }
@@ -426,9 +479,10 @@ const normalizeOutputRecord = (value: any): Record<string, any> => {
 
 export const resolveOutputWithInference = (
   actionId?: TActionID,
-  lastOutput?: any
+  lastOutput?: any,
+  config?: Record<string, any>
 ): { output?: Record<string, any>; isInferred: boolean } => {
-  const inferredOutput = createInferredOutputForAction(actionId)
+  const inferredOutput = createInferredOutputForAction(actionId, config)
 
   const hasConcreteOutput = lastOutput !== undefined && lastOutput !== null
 
@@ -533,6 +587,7 @@ export const getAvailableInputsFromNodes = (
       type: string
       actionId?: TActionID
       lastOutput?: Record<string, any>
+      config?: Record<string, any>
     }
   }>
 ): NodeInputSource[] => {
@@ -545,7 +600,8 @@ export const getAvailableInputsFromNodes = (
 
       const { output, isInferred } = resolveOutputWithInference(
         node.data.actionId,
-        node.data.lastOutput
+        node.data.lastOutput,
+        node.data.config
       )
 
       if (!output) return null

@@ -367,7 +367,11 @@ export const createInferredOutputForAction = (
         answer: 'Generated answer',
         explanation: 'Explanation of the generated answer',
         confidence: 'high | medium | low',
-        details: {}
+        details: {},
+        custom_fields: {
+          field1: 'value1'
+        },
+        questionType: 'analysis'
       }
 
     case NODE_ACTION_ID.HTTP.HTTP_REQUEST:

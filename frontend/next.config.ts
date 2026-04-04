@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
             value: `
               default-src 'self';
               connect-src 'self' ${WS_BASE_URL} ${FRONTEND_BASE_URL};
+              img-src 'self' data: blob: https://res.cloudinary.com https://cdn.discordapp.com;
               script-src 'self' 'unsafe-inline' 'unsafe-eval';
               style-src 'self' 'unsafe-inline';
             `.replace(/\n/g, ' ')

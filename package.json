@@ -6,7 +6,9 @@
     "dev:backend": "bunx kill-port 5000 && bun -F backend dev",
     "build:frontend": "bun -F frontend build",
     "build:backend": "bun -F backend build",
-    "dev": "bun -F '*' dev"
+    "dev": "bun -F '*' dev",
+    "test": "bun -F backend test && bun -F frontend test",
+    "test:coverage": "bun -F backend test:coverage && bun -F frontend test:coverage"
   },
   "workspaces": [
     "shared",

@@ -5,7 +5,10 @@
     "dev": "npx kill-port 5000 && bun run --hot src/index.ts",
     "prisma:generate": "bun prisma generate --schema ../shared/src/prisma/schema.prisma",
     "build": " bun run prisma:generate && bun build src/index.ts --outdir dist --target bun",
-    "start": "bun dist/index.js"
+    "start": "bun dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
@@ -24,6 +27,8 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@vitest/coverage-v8": "^4.1.2",
+    "vitest": "^4.1.2"
   }
 }

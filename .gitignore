@@ -16,3 +16,7 @@ shared/.env
 
 
 backend/dist
+
+# test artifacts
+backend/coverage
+frontend/coverage

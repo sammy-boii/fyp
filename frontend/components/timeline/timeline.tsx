@@ -12,6 +12,114 @@ import {
   CollapsibleTrigger
 } from '@/components/ui/collapsible'
 
+const JSON_KEY_LINE_RE = /^(\s*)"([^"]+)"\s*:\s*(.*?)(,?)$/
+const JSON_NUMBER_RE = /^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/
+
+const tryFormatJson = (content: string): string | null => {
+  const trimmed = content.trim()
+  if (!trimmed || (!trimmed.startsWith('{') && !trimmed.startsWith('['))) {
+    return null
+  }
+
+  try {
+    return JSON.stringify(JSON.parse(trimmed), null, 2)
+  } catch {
+    return null
+  }
+}
+
+const renderJsonValue = (valueText: string) => {
+  const trimmed = valueText.trim()
+
+  if (!trimmed) {
+    return <span className='text-muted-foreground/70'>{valueText}</span>
+  }
+
+  if (
+    trimmed === '{' ||
+    trimmed === '}' ||
+    trimmed === '[' ||
+    trimmed === ']'
+  ) {
+    return <span className='text-muted-foreground'>{valueText}</span>
+  }
+
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    return (
+      <span className='text-emerald-600 dark:text-emerald-400'>
+        {valueText}
+      </span>
+    )
+  }
+
+  if (trimmed === 'true' || trimmed === 'false') {
+    return (
+      <span className='text-amber-600 dark:text-amber-400'>{valueText}</span>
+    )
+  }
+
+  if (trimmed === 'null') {
+    return <span className='text-zinc-500 dark:text-zinc-400'>{valueText}</span>
+  }
+
+  if (JSON_NUMBER_RE.test(trimmed)) {
+    return <span className='text-cyan-600 dark:text-cyan-400'>{valueText}</span>
+  }
+
+  return <span className='text-foreground'>{valueText}</span>
+}
+
+const renderJsonLine = (line: string) => {
+  const keyMatch = line.match(JSON_KEY_LINE_RE)
+
+  if (keyMatch) {
+    const [, indent, key, value, comma] = keyMatch
+    return (
+      <>
+        <span className='text-muted-foreground/70'>{indent}</span>
+        <span className='text-violet-600 dark:text-violet-400'>
+          &quot;{key}&quot;
+        </span>
+        <span className='text-muted-foreground'>: </span>
+        {renderJsonValue(value)}
+        {comma ? <span className='text-muted-foreground'>{comma}</span> : null}
+      </>
+    )
+  }
+
+  return renderJsonValue(line)
+}
+
+function JsonOutputViewer({ content }: { content: string }) {
+  const formattedJson = React.useMemo(() => tryFormatJson(content), [content])
+
+  if (!formattedJson) {
+    return <pre className='whitespace-pre-wrap wrap-break-word'>{content}</pre>
+  }
+
+  const lines = formattedJson.split('\n')
+
+  return (
+    <div className='max-h-80 overflow-auto rounded-md border border-border/70'>
+      <div className='p-3 font-mono text-[11px] leading-5'>
+        {lines.map((line, index) => (
+          <div
+            key={`${index}-${line}`}
+            className='grid grid-cols-[2rem_1fr] gap-3'
+          >
+            <span className='select-none text-right text-muted-foreground/60'>
+              {index + 1}
+            </span>
+            <span className='whitespace-pre'>
+              {line ? renderJsonLine(line) : ' '}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const timelineVariants = cva('flex flex-col relative', {
   variants: {
     size: {
@@ -293,15 +401,19 @@ const TimelineItem = React.forwardRef<HTMLLIElement, TimelineItemProps>(
               <CollapsibleContent>
                 <div
                   className={cn(
-                    'mt-2 p-3 rounded-lg text-xs font-mono overflow-x-auto max-w-md',
+                    'mt-2 p-3 rounded-lg text-xs overflow-x-auto max-w-xl',
                     expandableContent.type === 'error'
                       ? 'bg-destructive/5 text-destructive border border-destructive/20'
-                      : 'bg-muted/50 border'
+                      : ''
                   )}
                 >
-                  <pre className='whitespace-pre-wrap wrap-break-word'>
-                    {expandableContent.content}
-                  </pre>
+                  {expandableContent.type === 'output' ? (
+                    <JsonOutputViewer content={expandableContent.content} />
+                  ) : (
+                    <pre className='whitespace-pre-wrap wrap-break-word font-mono'>
+                      {expandableContent.content}
+                    </pre>
+                  )}
                 </div>
               </CollapsibleContent>
             </Collapsible>

@@ -1,6 +1,68 @@
 import { TActionID } from '@shared/constants'
 import type { ServerWebSocket } from 'bun'
 
+const WS_MAX_EVENT_BYTES = parsePositiveInt(
+  process.env.WS_MAX_EVENT_BYTES,
+  512 * 1024
+)
+
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  if (!value) return fallback
+  const parsed = Number.parseInt(value, 10)
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback
+  return parsed
+}
+
+function formatBytes(bytes: number): string {
+  const kb = bytes / 1024
+  if (kb < 1024) {
+    return `${kb.toFixed(kb >= 100 ? 0 : 1)} KB`
+  }
+  const mb = kb / 1024
+  return `${mb.toFixed(mb >= 10 ? 0 : 1)} MB`
+}
+
+function buildMessage(event: ExecutionEvent): string {
+  let message = JSON.stringify(event)
+
+  if (message.length <= WS_MAX_EVENT_BYTES) {
+    return message
+  }
+
+  // If node output is too large for real-time transport, downgrade to an explicit node:error event.
+  if (event.type === 'node:complete') {
+    const oversizedEvent: ExecutionEvent = {
+      type: 'node:error',
+      workflowId: event.workflowId,
+      executionId: event.executionId,
+      timestamp: new Date().toISOString(),
+      data: {
+        nodeId: event.data?.nodeId,
+        nodeName: event.data?.nodeName,
+        actionId: event.data?.actionId,
+        error: `Node output exceeded realtime payload limit (${formatBytes(WS_MAX_EVENT_BYTES)}). Reduce data size or disable include content for bulk files.`,
+        status: 'failed',
+        progress: event.data?.progress
+      }
+    }
+
+    return JSON.stringify(oversizedEvent)
+  }
+
+  const fallbackEvent: ExecutionEvent = {
+    type: 'workflow:error',
+    workflowId: event.workflowId,
+    executionId: event.executionId,
+    timestamp: new Date().toISOString(),
+    data: {
+      error: `Workflow event payload exceeded realtime limit (${formatBytes(WS_MAX_EVENT_BYTES)}).`,
+      status: 'failed'
+    }
+  }
+
+  return JSON.stringify(fallbackEvent)
+}
+
 // Store active WebSocket connections by workflowId
 const connections = new Map<
   string,
@@ -79,7 +141,7 @@ export function broadcastExecutionEvent(event: ExecutionEvent) {
     return
   }
 
-  const message = JSON.stringify(event)
+  const message = buildMessage(event)
 
   workflowConnections.forEach((ws) => {
     try {

@@ -2,6 +2,136 @@ import { API_ROUTES } from '../constants'
 import { getValidGoogleDriveAccessTokenByCredentialId } from '../lib/credentials'
 import { TNodeExecutionResult } from '../types/workflow.types'
 
+const DRIVE_LIST_HARD_MAX_RESULTS = parsePositiveInt(
+  process.env.DRIVE_LIST_HARD_MAX_RESULTS,
+  100
+)
+const DRIVE_INCLUDE_CONTENT_MAX_RESULTS = parsePositiveInt(
+  process.env.DRIVE_INCLUDE_CONTENT_MAX_RESULTS,
+  10
+)
+const DRIVE_MAX_TOTAL_CONTENT_BYTES = parsePositiveInt(
+  process.env.DRIVE_MAX_TOTAL_CONTENT_BYTES,
+  30 * 1024 * 1024
+)
+const DRIVE_MAX_SINGLE_FILE_BYTES = parsePositiveInt(
+  process.env.DRIVE_MAX_SINGLE_FILE_BYTES,
+  5 * 1024 * 1024
+)
+const DRIVE_OUTBOUND_TIMEOUT_MS = parsePositiveInt(
+  process.env.DRIVE_OUTBOUND_TIMEOUT_MS,
+  15000
+)
+
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  if (!value) return fallback
+  const parsed = Number.parseInt(value, 10)
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback
+  return parsed
+}
+
+function formatBytes(bytes: number): string {
+  const mb = bytes / (1024 * 1024)
+  return `${mb.toFixed(mb >= 10 ? 0 : 1)} MB`
+}
+
+function stripGuardPrefix(message: string): string {
+  if (message.startsWith('SIZE_LIMIT:')) {
+    return message.replace(/^SIZE_LIMIT:\s*/, '')
+  }
+  if (message.startsWith('TIMEOUT:')) {
+    return message.replace(/^TIMEOUT:\s*/, '')
+  }
+  return message
+}
+
+function isFatalGuardError(message: string): boolean {
+  return message.startsWith('SIZE_LIMIT:') || message.startsWith('TIMEOUT:')
+}
+
+async function fetchWithTimeout(
+  url: string,
+  token: string,
+  timeoutMs: number = DRIVE_OUTBOUND_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal
+    })
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error(
+        'TIMEOUT: Google Drive request timed out. Narrow your selection and try again.'
+      )
+    }
+    throw error
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+async function readResponseWithByteLimit(
+  response: Response,
+  maxBytes: number
+): Promise<Buffer> {
+  const contentLengthHeader = response.headers.get('content-length')
+  if (contentLengthHeader) {
+    const contentLength = Number.parseInt(contentLengthHeader, 10)
+    if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+      throw new Error(
+        `SIZE_LIMIT: File exceeds max per-file size (${formatBytes(contentLength)} > ${formatBytes(maxBytes)}).`
+      )
+    }
+  }
+
+  if (!response.body) {
+    const arrayBuffer = await response.arrayBuffer()
+    if (arrayBuffer.byteLength > maxBytes) {
+      throw new Error(
+        `SIZE_LIMIT: File exceeds max per-file size (${formatBytes(arrayBuffer.byteLength)} > ${formatBytes(maxBytes)}).`
+      )
+    }
+    return Buffer.from(arrayBuffer)
+  }
+
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let totalBytes = 0
+
+  while (true) {
+    const { done, value } = await reader.read()
+
+    if (done) {
+      break
+    }
+
+    if (!value) {
+      continue
+    }
+
+    totalBytes += value.byteLength
+    if (totalBytes > maxBytes) {
+      try {
+        await reader.cancel()
+      } catch {
+        // Ignore reader cancellation errors.
+      }
+
+      throw new Error(
+        `SIZE_LIMIT: File exceeds max per-file size (${formatBytes(totalBytes)} > ${formatBytes(maxBytes)}).`
+      )
+    }
+
+    chunks.push(value)
+  }
+
+  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)))
+}
+
 /**
  * Create a folder in Google Drive
  */
@@ -377,8 +507,27 @@ export const executeListFiles = async (
       credentialId
     } = config
 
+    const requestedMaxResults = Number.parseInt(String(maxResults), 10)
+    const safeMaxResults = Number.isFinite(requestedMaxResults)
+      ? Math.max(1, requestedMaxResults)
+      : 50
+
     if (!credentialId) {
       return { success: false, error: 'Missing credential ID' }
+    }
+
+    if (safeMaxResults > DRIVE_LIST_HARD_MAX_RESULTS) {
+      return {
+        success: false,
+        error: `Max results cannot exceed ${DRIVE_LIST_HARD_MAX_RESULTS}.`
+      }
+    }
+
+    if (includeContent && safeMaxResults > DRIVE_INCLUDE_CONTENT_MAX_RESULTS) {
+      return {
+        success: false,
+        error: `Include content supports up to ${DRIVE_INCLUDE_CONTENT_MAX_RESULTS} files per request.`
+      }
     }
 
     // Get valid Google Drive access token
@@ -387,10 +536,10 @@ export const executeListFiles = async (
 
     // Build query parameters
     const params = new URLSearchParams()
-    params.set('pageSize', String(maxResults))
+    params.set('pageSize', String(safeMaxResults))
     params.set(
       'fields',
-      'files(id,name,mimeType,size,createdTime,modifiedTime,webViewLink,iconLink)'
+      'files(id,name,mimeType,size,quotaBytesUsed,createdTime,modifiedTime,webViewLink,iconLink)'
     )
 
     // Build query string for filtering
@@ -427,9 +576,7 @@ export const executeListFiles = async (
     const listUrl = `${API_ROUTES.GOOGLE_DRIVE.LIST_FILES}?${params.toString()}`
 
     // Fetch file list
-    const response = await fetch(listUrl, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    const response = await fetchWithTimeout(listUrl, token)
 
     if (!response.ok) {
       const err = await response.json()
@@ -445,7 +592,11 @@ export const executeListFiles = async (
       id: file.id,
       name: file.name,
       mimeType: file.mimeType,
-      size: file.size ? parseInt(file.size) : null,
+      size: file.size
+        ? parseInt(file.size, 10)
+        : file.quotaBytesUsed
+          ? parseInt(file.quotaBytesUsed, 10)
+          : null,
       createdTime: file.createdTime,
       modifiedTime: file.modifiedTime,
       webViewLink: file.webViewLink,
@@ -454,29 +605,69 @@ export const executeListFiles = async (
 
     // If includeContent is enabled, fetch content for each file
     if (includeContent) {
-      const filesWithContent = await Promise.all(
-        files.map(async (file: any) => {
-          // Skip folders - they don't have content
-          if (file.mimeType === 'application/vnd.google-apps.folder') {
+      const estimatedTotalBytes = files.reduce(
+        (sum: number, file: any) =>
+          sum +
+          (typeof file.size === 'number' && Number.isFinite(file.size)
+            ? Math.max(0, file.size)
+            : 0),
+        0
+      )
+
+      if (
+        estimatedTotalBytes > 0 &&
+        estimatedTotalBytes > DRIVE_MAX_TOTAL_CONTENT_BYTES
+      ) {
+        return {
+          success: false,
+          error: `Requested content is too large (${formatBytes(estimatedTotalBytes)}). Limit is ${formatBytes(DRIVE_MAX_TOTAL_CONTENT_BYTES)}.`
+        }
+      }
+
+      let totalContentBytes = 0
+      const filesWithContent: Array<Record<string, any>> = []
+
+      for (const file of files) {
+        // Skip folders - they don't have content
+        if (file.mimeType === 'application/vnd.google-apps.folder') {
+          filesWithContent.push({
+            ...file,
+            content: null,
+            contentError: 'Folders have no content'
+          })
+          continue
+        }
+
+        try {
+          const content = await fetchFileContent(file.id, file.mimeType, token)
+          totalContentBytes += content.contentBytes
+
+          if (totalContentBytes > DRIVE_MAX_TOTAL_CONTENT_BYTES) {
             return {
-              ...file,
-              content: null,
-              contentError: 'Folders have no content'
+              success: false,
+              error: `Requested content exceeded total size limit (${formatBytes(DRIVE_MAX_TOTAL_CONTENT_BYTES)}).`
             }
           }
 
-          try {
-            const content = await fetchFileContent(
-              file.id,
-              file.mimeType,
-              token
-            )
-            return { ...file, ...content }
-          } catch (error: any) {
-            return { ...file, content: null, contentError: error.message }
+          filesWithContent.push({ ...file, ...content })
+        } catch (error: any) {
+          const message =
+            error?.message || 'Failed to fetch file content from Google Drive'
+
+          if (isFatalGuardError(message)) {
+            return {
+              success: false,
+              error: stripGuardPrefix(message)
+            }
           }
-        })
-      )
+
+          filesWithContent.push({
+            ...file,
+            content: null,
+            contentError: message
+          })
+        }
+      }
 
       return {
         success: true,
@@ -485,7 +676,8 @@ export const executeListFiles = async (
           count: filesWithContent.length,
           folderId: folderId || 'root',
           fileType,
-          includeContent: true
+          includeContent: true,
+          totalContentBytes
         }
       }
     }
@@ -500,7 +692,10 @@ export const executeListFiles = async (
       }
     }
   } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to list files' }
+    return {
+      success: false,
+      error: stripGuardPrefix(error.message || 'Failed to list files')
+    }
   }
 }
 
@@ -512,25 +707,41 @@ async function fetchFileContent(
   fileId: string,
   mimeType: string,
   token: string
-): Promise<{ content: string; contentType: 'text' | 'base64' }> {
+): Promise<{
+  content: string
+  contentType: 'text' | 'base64'
+  contentBytes: number
+}> {
   // Google Docs - export as plain text
   if (mimeType === 'application/vnd.google-apps.document') {
     const exportUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(fileId, 'text/plain')
-    const response = await fetch(exportUrl, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    const response = await fetchWithTimeout(exportUrl, token)
     if (!response.ok) throw new Error('Failed to export Google Doc')
-    return { content: await response.text(), contentType: 'text' }
+    const buffer = await readResponseWithByteLimit(
+      response,
+      DRIVE_MAX_SINGLE_FILE_BYTES
+    )
+    return {
+      content: buffer.toString('utf-8'),
+      contentType: 'text',
+      contentBytes: buffer.byteLength
+    }
   }
 
   // Google Sheets - export as CSV
   if (mimeType === 'application/vnd.google-apps.spreadsheet') {
     const exportUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(fileId, 'text/csv')
-    const response = await fetch(exportUrl, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    const response = await fetchWithTimeout(exportUrl, token)
     if (!response.ok) throw new Error('Failed to export Google Sheet')
-    return { content: await response.text(), contentType: 'text' }
+    const buffer = await readResponseWithByteLimit(
+      response,
+      DRIVE_MAX_SINGLE_FILE_BYTES
+    )
+    return {
+      content: buffer.toString('utf-8'),
+      contentType: 'text',
+      contentBytes: buffer.byteLength
+    }
   }
 
   // Google Slides/Presentations - export as PDF and return base64
@@ -539,14 +750,16 @@ async function fetchFileContent(
       fileId,
       'application/pdf'
     )
-    const response = await fetch(exportUrl, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    const response = await fetchWithTimeout(exportUrl, token)
     if (!response.ok) throw new Error('Failed to export Google Slides')
-    const buffer = Buffer.from(await response.arrayBuffer())
+    const buffer = await readResponseWithByteLimit(
+      response,
+      DRIVE_MAX_SINGLE_FILE_BYTES
+    )
     return {
       content: `data:application/pdf;base64,${buffer.toString('base64')}`,
-      contentType: 'base64'
+      contentType: 'base64',
+      contentBytes: buffer.byteLength
     }
   }
 
@@ -558,23 +771,31 @@ async function fetchFileContent(
     mimeType === 'application/javascript'
   ) {
     const downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
-    const response = await fetch(downloadUrl, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    const response = await fetchWithTimeout(downloadUrl, token)
     if (!response.ok) throw new Error('Failed to download text file')
-    return { content: await response.text(), contentType: 'text' }
+    const buffer = await readResponseWithByteLimit(
+      response,
+      DRIVE_MAX_SINGLE_FILE_BYTES
+    )
+    return {
+      content: buffer.toString('utf-8'),
+      contentType: 'text',
+      contentBytes: buffer.byteLength
+    }
   }
 
   // All other files (PDFs, images, binaries) - return as base64
   const downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
-  const response = await fetch(downloadUrl, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
+  const response = await fetchWithTimeout(downloadUrl, token)
   if (!response.ok) throw new Error('Failed to download file')
-  const buffer = Buffer.from(await response.arrayBuffer())
+  const buffer = await readResponseWithByteLimit(
+    response,
+    DRIVE_MAX_SINGLE_FILE_BYTES
+  )
   return {
     content: `data:${mimeType};base64,${buffer.toString('base64')}`,
-    contentType: 'base64'
+    contentType: 'base64',
+    contentBytes: buffer.byteLength
   }
 }
 

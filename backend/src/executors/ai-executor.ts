@@ -48,7 +48,9 @@ JSON schema to follow:
 Rules:
 - Never output markdown, code fences, or prose before/after JSON.
 - Always include all required top-level keys.
-- Keep answer concise and direct.
+- In answer, follow the user's requested format, tone, and level of detail.
+- Do not summarize or paraphrase unless the user explicitly asks for a summary.
+- If the user asks to draft/write/reply, return the full drafted text in answer.
 - Use explanation for reasoning/context.
 - Use data for rich structured information.
 - Use metadata.question_type to classify the task.`
@@ -204,7 +206,9 @@ const normalizeAIResponse = (
   const explanation =
     typeof value.explanation === 'string' && value.explanation.trim()
       ? value.explanation.trim()
-      : 'No explanation provided'
+      : typeof value.explaination === 'string' && value.explaination.trim()
+        ? value.explaination.trim()
+        : 'No explanation provided'
 
   const data = isRecord(value.data)
     ? (value.data as Record<string, any>)
@@ -307,14 +311,14 @@ export async function executeAskAI(
           systemPrompt,
           userPrompt: resolvedPrompt,
           maxTokens: 1000,
-          temperature: 0.2,
+          temperature: 0.4,
           responseMimeType: 'application/json'
         })
       : await generateWithHuggingFace({
           systemPrompt,
           userPrompt: resolvedPrompt,
           maxTokens: 1000,
-          temperature: 0.2
+          temperature: 0.4
         })
 
     let aiResponse: AIResponse

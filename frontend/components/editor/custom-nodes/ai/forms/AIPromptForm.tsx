@@ -84,14 +84,17 @@ export function AIPromptForm() {
 
         <div className='space-y-2'>
           {fields.map((item, index) => (
-            <div key={item.id} className='flex gap-2'>
+            <div
+              key={item.id}
+              className='grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2rem] items-start gap-2'
+            >
               <Controller
                 name={`customFields.${index}.key`}
                 control={control}
                 render={({ field, fieldState }) => (
                   <PlaceholderInput
                     placeholder='field_name'
-                    className='h-8 text-xs flex-1'
+                    className='h-8 text-xs w-full min-w-0'
                     {...field}
                     value={field.value ?? ''}
                     aria-invalid={fieldState.invalid}
@@ -103,9 +106,10 @@ export function AIPromptForm() {
                 name={`customFields.${index}.value`}
                 control={control}
                 render={({ field }) => (
-                  <PlaceholderInput
+                  <PlaceholderTextarea
                     placeholder='value'
-                    className='h-8 text-xs flex-1'
+                    className='min-h-8 max-h-24 text-xs leading-4 w-full min-w-0 whitespace-pre-wrap wrap-break-word'
+                    rows={1}
                     {...field}
                     value={field.value ?? ''}
                   />

@@ -1,11 +1,7 @@
 'use client'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput
-} from '@/components/ui/input-group'
+import { InputGroup, InputGroupInput } from '@/components/ui/input-group'
 import { Switch } from '@/components/ui/switch'
 import { DatePicker } from '@/components/ui/date-picker'
 import {
@@ -16,7 +12,6 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Controller, useFormContext } from 'react-hook-form'
-import { Clock } from 'lucide-react'
 import { useMemo } from 'react'
 
 export function ScheduleTriggerForm() {
@@ -44,7 +39,8 @@ export function ScheduleTriggerForm() {
     ]
 
     const base =
-      typeof Intl !== 'undefined' && typeof Intl.supportedValuesOf === 'function'
+      typeof Intl !== 'undefined' &&
+      typeof Intl.supportedValuesOf === 'function'
         ? Array.from(Intl.supportedValuesOf('timeZone'))
         : fallback
 
@@ -79,9 +75,6 @@ export function ScheduleTriggerForm() {
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel className='text-xs font-medium'>Run time</FieldLabel>
             <InputGroup>
-              <InputGroupAddon align='inline-start'>
-                <Clock className='h-4 w-4' />
-              </InputGroupAddon>
               <InputGroupInput
                 type='time'
                 step={60}
@@ -106,7 +99,10 @@ export function ScheduleTriggerForm() {
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel className='text-xs font-medium'>Time zone</FieldLabel>
-            <Select value={field.value || localTimeZone} onValueChange={field.onChange}>
+            <Select
+              value={field.value || localTimeZone}
+              onValueChange={field.onChange}
+            >
               <SelectTrigger
                 className='h-9 text-sm w-full'
                 aria-invalid={fieldState.invalid}

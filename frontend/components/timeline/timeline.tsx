@@ -15,6 +15,40 @@ import {
 const JSON_KEY_LINE_RE = /^(\s*)"([^"]+)"\s*:\s*(.*?)(,?)$/
 const JSON_NUMBER_RE = /^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/
 
+const renderJsonStringValue = (valueText: string) => {
+  const leadingWhitespace = valueText.match(/^\s*/)?.[0] ?? ''
+  const trimmed = valueText.trim()
+  const hasTrailingComma = trimmed.endsWith(',')
+  const jsonStringLiteral = hasTrailingComma ? trimmed.slice(0, -1) : trimmed
+
+  if (!(jsonStringLiteral.startsWith('"') && jsonStringLiteral.endsWith('"'))) {
+    return null
+  }
+
+  try {
+    const decoded = JSON.parse(jsonStringLiteral)
+    if (typeof decoded !== 'string') {
+      return null
+    }
+
+    return (
+      <>
+        <span className='text-muted-foreground/70'>{leadingWhitespace}</span>
+        <span className='text-emerald-600 dark:text-emerald-400'>&quot;</span>
+        <span className='text-emerald-600 dark:text-emerald-400 whitespace-pre-wrap wrap-break-word'>
+          {decoded}
+        </span>
+        <span className='text-emerald-600 dark:text-emerald-400'>&quot;</span>
+        {hasTrailingComma ? (
+          <span className='text-muted-foreground'>,</span>
+        ) : null}
+      </>
+    )
+  } catch {
+    return null
+  }
+}
+
 const tryFormatJson = (content: string): string | null => {
   const trimmed = content.trim()
   if (!trimmed || (!trimmed.startsWith('{') && !trimmed.startsWith('['))) {
@@ -44,12 +78,9 @@ const renderJsonValue = (valueText: string) => {
     return <span className='text-muted-foreground'>{valueText}</span>
   }
 
-  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
-    return (
-      <span className='text-emerald-600 dark:text-emerald-400'>
-        {valueText}
-      </span>
-    )
+  const renderedString = renderJsonStringValue(valueText)
+  if (renderedString) {
+    return renderedString
   }
 
   if (trimmed === 'true' || trimmed === 'false') {

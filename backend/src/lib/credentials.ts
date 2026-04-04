@@ -7,53 +7,59 @@ async function refreshGoogleAccessToken(
   refreshToken: string,
   provider: string
 ) {
-  try {
-    let client_id, client_secret
+  let client_id: string | undefined
+  let client_secret: string | undefined
 
-    if (provider == 'gmail') {
-      client_id = process.env.GMAIL_CLIENT_ID as string
-      client_secret = process.env.GMAIL_CLIENT_SECRET as string
-    } else {
-      client_id = process.env.GOOGLE_DRIVE_CLIENT_SECRET as string
-      client_secret = process.env.GOOGLE_DRIVE_CLIENT_ID as string
-    }
-
-    const response = await fetch(API_ROUTES.OAUTH.REFRESH_TOKEN, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        client_id,
-        client_secret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token'
-      }).toString()
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to refresh token')
-    }
-
-    const data = await response.json()
-
-    // Update the credential in database with new access token and expiry
-    const encryptedAccessToken = encryptToken(data.access_token)
-    const expiresInSeconds = data.expires_in || 3600 // Default 1 hour
-    const newExpiryDate = new Date(Date.now() + expiresInSeconds * 1000)
-
-    const updatedCredential = await prisma.oAuthCredential.update({
-      where: { id: credentialId },
-      data: {
-        accessToken: encryptedAccessToken,
-        accessTokenExpiresAt: newExpiryDate
-      }
-    })
-
-    return updatedCredential
-  } catch (error) {
-    throw error
+  if (provider === 'gmail') {
+    client_id = process.env.GMAIL_CLIENT_ID
+    client_secret = process.env.GMAIL_CLIENT_SECRET
+  } else {
+    client_id = process.env.GOOGLE_DRIVE_CLIENT_ID
+    client_secret = process.env.GOOGLE_DRIVE_CLIENT_SECRET
   }
+
+  if (!client_id || !client_secret) {
+    throw new Error(
+      `Missing OAuth client configuration for provider: ${provider}`
+    )
+  }
+
+  const response = await fetch(API_ROUTES.OAUTH.REFRESH_TOKEN, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
+      client_id,
+      client_secret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token'
+    }).toString()
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(
+      `Failed to refresh token (${response.status}): ${errorBody || 'empty response body'}`
+    )
+  }
+
+  const data = await response.json()
+
+  // Update the credential in database with new access token and expiry
+  const encryptedAccessToken = encryptToken(data.access_token)
+  const expiresInSeconds = data.expires_in || 3600 // Default 1 hour
+  const newExpiryDate = new Date(Date.now() + expiresInSeconds * 1000)
+
+  const updatedCredential = await prisma.oAuthCredential.update({
+    where: { id: credentialId },
+    data: {
+      accessToken: encryptedAccessToken,
+      accessTokenExpiresAt: newExpiryDate
+    }
+  })
+
+  return updatedCredential
 }
 
 // for google services

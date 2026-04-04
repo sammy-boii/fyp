@@ -104,7 +104,7 @@ export function AIPromptForm() {
                 control={control}
                 render={({ field }) => (
                   <PlaceholderInput
-                    placeholder='Short instruction or sample value'
+                    placeholder='value'
                     className='h-8 text-xs flex-1'
                     {...field}
                     value={field.value ?? ''}

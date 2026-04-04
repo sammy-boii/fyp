@@ -1,0 +1,686 @@
+' FYP Subsystem Diagram Pack
+' 10 diagrams total: ERD + Class per subsystem
+' Format: PlantUML (draw.io friendly)
+
+' ============================================================
+' 1) Identity & Access Management - ERD
+' ============================================================
+@startuml IAM_ERD
+hide circle
+skinparam linetype ortho
+title Identity & Access Management - ERD
+
+entity "User" as IAM_User {
+  *id : String <<PK>>
+  --
+  name : String
+  email : String <<UNIQUE>>
+  password : String
+  avatar : String?
+  otp : String?
+  otpExpiresAt : DateTime?
+  createdAt : DateTime
+  updatedAt : DateTime
+}
+
+entity "Workflow" as IAM_Workflow {
+  *id : String <<PK>>
+  --
+  authorId : String <<FK:User.id>>
+  name : String
+  isActive : Boolean
+}
+
+entity "OAuthCredential" as IAM_OAuthCredential {
+  *id : String <<PK>>
+  --
+  userId : String <<FK:User.id>>
+  provider : String
+  service : String?
+  accessToken : Text
+  createdAt : DateTime
+}
+
+IAM_User ||--o{ IAM_Workflow : dashboard_count
+IAM_User ||--o{ IAM_OAuthCredential : dashboard_count
+@enduml
+
+
+' ============================================================
+' 2) Identity & Access Management - Class Diagram
+' ============================================================
+@startuml IAM_CLASS
+hide empty members
+skinparam linetype ortho
+left to right direction
+skinparam ranksep 55
+skinparam nodesep 35
+title Identity & Access Management - Class Diagram
+
+class AuthService <<module>> {
+  +signUp(data)
+  +login(data)
+  +logout()
+}
+
+class UserProfileService <<module>> {
+  +getProfile()
+  +updateProfile(data)
+  +changePassword(data)
+  +resetPassword(data)
+}
+
+class PasswordResetService <<module>> {
+  +sendResetOTP(email)
+  +verifyResetOTP(email, otp)
+}
+
+class IdentityContextDAL <<module>> {
+  +getCurrentUser()
+}
+
+class AuthMiddleware <<module>> {
+  +authMiddleware(context, next)
+}
+
+class RouteGuardMiddleware <<module>> {
+  +middleware(request)
+}
+
+class UserRepository <<prisma>>
+class JwtProvider <<library>>
+class PasswordHasher <<library>>
+
+AuthService -[hidden]down-> UserProfileService
+UserProfileService -[hidden]down-> PasswordResetService
+IdentityContextDAL -[hidden]down-> AuthMiddleware
+AuthMiddleware -[hidden]down-> RouteGuardMiddleware
+UserRepository -[hidden]down-> PasswordHasher
+PasswordHasher -[hidden]down-> JwtProvider
+
+AuthService -right-> UserRepository
+AuthService -right-> PasswordHasher
+AuthService -right-> JwtProvider
+
+UserProfileService -right-> IdentityContextDAL
+UserProfileService -right-> UserRepository
+UserProfileService -right-> PasswordHasher
+
+PasswordResetService -right-> UserRepository
+PasswordResetService -right-> JwtProvider
+
+AuthMiddleware -right-> JwtProvider
+AuthMiddleware -right-> UserRepository
+RouteGuardMiddleware -right-> IdentityContextDAL : token presence gate
+@enduml
+
+
+' ============================================================
+' 3) Workflow Management System - ERD
+' ============================================================
+@startuml WORKFLOW_MGMT_ERD
+hide circle
+skinparam linetype ortho
+title Workflow Management System - ERD
+
+entity "User" as WM_User {
+  *id : String <<PK>>
+  --
+  email : String <<UNIQUE>>
+  name : String
+}
+
+entity "Workflow" as WM_Workflow {
+  *id : String <<PK>>
+  --
+  authorId : String <<FK:User.id>>
+  name : String
+  description : String?
+  nodes : Json
+  edges : Json
+  isActive : Boolean
+  schedule : String?
+  lastExecutedAt : DateTime?
+  createdAt : DateTime
+  updatedAt : DateTime
+}
+
+entity "WorkflowExecution" as WM_WorkflowExecution {
+  *id : String <<PK>>
+  --
+  workflowId : String <<FK:Workflow.id>>
+  status : WorkflowExecutionStatus
+  createdAt : DateTime
+}
+
+WM_User ||--o{ WM_Workflow : authors
+WM_Workflow ||--o{ WM_WorkflowExecution : execution_count_source
+@enduml
+
+
+' ============================================================
+' 4) Workflow Management System - Class Diagram
+' ============================================================
+@startuml WORKFLOW_MGMT_CLASS
+hide empty members
+skinparam linetype ortho
+left to right direction
+skinparam ranksep 55
+skinparam nodesep 35
+title Workflow Management System - Class Diagram
+
+class WorkflowActionsService <<module>> {
+  +getWorkflows()
+  +getWorkflow(id)
+  +createWorkflow(data)
+  +updateWorkflow(id, data)
+  +deleteWorkflow(id)
+}
+
+class WorkflowSchemaValidator <<module>> {
+  +createWorkflowSchema
+  +updateWorkflowSchema
+}
+
+class ScheduleBuilder <<module>> {
+  +buildScheduleValue(nodes)
+}
+
+class WorkflowApiClient <<module>> {
+  +patchUpdateCache(id, isActive)
+  +patchRefreshCache(id)
+  +deleteCache(id)
+}
+
+class WorkflowRoutes <<module>> {
+  +GET /workflow/run/:id
+  +GET /workflow/execute/:workflowId/:nodeId
+  +PATCH /workflow/:id/update-cache
+  +PATCH /workflow/:id/refresh-cache
+  +DELETE /workflow/:id/cache
+}
+
+class WorkflowCacheController <<module>> {
+  +updateWorkflowCache()
+  +refreshWorkflowCache()
+  +removeWorkflowCache()
+}
+
+class TriggerCacheService <<module>> {
+  +refreshWorkflow(workflowId)
+  +removeWorkflow(workflowId)
+  +hasWorkflow(workflowId)
+}
+
+class WorkflowScheduler <<module>> {
+  +refreshWorkflow(workflowId)
+  +removeWorkflow(workflowId)
+}
+
+class WorkflowRepository <<prisma>>
+class AuthMiddleware <<module>>
+
+WorkflowSchemaValidator -[hidden]down-> ScheduleBuilder
+ScheduleBuilder -[hidden]down-> WorkflowApiClient
+WorkflowRoutes -[hidden]down-> WorkflowCacheController
+AuthMiddleware -[hidden]down-> WorkflowRepository
+WorkflowRepository -[hidden]down-> TriggerCacheService
+TriggerCacheService -[hidden]down-> WorkflowScheduler
+
+WorkflowActionsService -right-> WorkflowSchemaValidator
+WorkflowActionsService -right-> ScheduleBuilder
+WorkflowActionsService -right-> WorkflowRepository
+WorkflowActionsService -right-> WorkflowApiClient
+
+WorkflowApiClient -right-> WorkflowRoutes
+WorkflowRoutes -right-> AuthMiddleware
+WorkflowRoutes -right-> WorkflowCacheController
+WorkflowCacheController -right-> WorkflowRepository
+WorkflowCacheController -right-> TriggerCacheService
+WorkflowCacheController -right-> WorkflowScheduler
+@enduml
+
+
+' ============================================================
+' 5) Workflow Execution System - ERD
+' ============================================================
+@startuml WORKFLOW_EXEC_ERD
+hide circle
+skinparam linetype ortho
+title Workflow Execution System - ERD
+
+entity "Workflow" as WE_Workflow {
+  *id : String <<PK>>
+  --
+  nodes : Json
+  edges : Json
+  isActive : Boolean
+}
+
+entity "WorkflowExecution" as WE_WorkflowExecution {
+  *id : String <<PK>>
+  --
+  workflowId : String <<FK:Workflow.id>>
+  status : WorkflowExecutionStatus
+  triggerType : TriggerType
+  error : String?
+  duration : Int?
+  completedAt : DateTime?
+  createdAt : DateTime
+}
+
+entity "NodeExecution" as WE_NodeExecution {
+  *id : String <<PK>>
+  --
+  executionId : String <<FK:WorkflowExecution.id>>
+  nodeId : String
+  nodeType : String
+  actionId : String
+  config : Json
+  outputData : Json?
+  error : String?
+  status : NodeExecutionStatus
+  startedAt : DateTime?
+  completedAt : DateTime?
+  createdAt : DateTime
+}
+
+WE_Workflow ||--o{ WE_WorkflowExecution : spawns
+WE_WorkflowExecution ||--o{ WE_NodeExecution : records
+@enduml
+
+
+' ============================================================
+' 6) Workflow Execution System - Class Diagram
+' ============================================================
+@startuml WORKFLOW_EXEC_CLASS
+hide empty members
+skinparam linetype ortho
+left to right direction
+skinparam ranksep 55
+skinparam nodesep 35
+title Workflow Execution System - Class Diagram
+
+class WorkflowController <<module>> {
+  +runWorkflow(context)
+}
+
+class SingleNodeController <<module>> {
+  +executeSingleNode(context)
+}
+
+class WorkflowExecutor <<module>> {
+  +executeWorkflowById(workflowId, triggerData, triggerType)
+  -buildExecutionOrder(nodes, edges)
+  -executeNode(node, executionId, nodeOutputs)
+  -markDescendantsAsSkipped(nodeId, edges, skippedNodes)
+}
+
+class NodeExecutor <<module>> {
+  +executeNodeLogic(node, config, triggerData, nodeOutputs)
+}
+
+class TriggerExecutor <<module>> {
+  +executeTriggerNode(node, config, eventData)
+  +isTriggerNode(actionId)
+  +isManualTrigger(actionId)
+  +isScheduledTrigger(actionId)
+}
+
+class ConditionExecutor <<module>> {
+  +executeCondition(config, nodeOutputs)
+}
+
+class PlaceholderResolver <<module>> {
+  +replacePlaceholdersInConfig(config, nodeOutputs)
+  +buildNodeOutputsMap(nodeId, nodes, edges)
+  +findPredecessorNodes(nodeId, edges)
+}
+
+class GmailExecutor <<module>>
+class GoogleDriveExecutor <<module>>
+class DiscordExecutor <<module>>
+class AIExecutor <<module>>
+class HTTPExecutor <<module>>
+class ExecutionRepository <<prisma>>
+class WebSocketEventBus <<module>>
+
+WorkflowController -[hidden]down-> SingleNodeController
+WorkflowExecutor -[hidden]down-> NodeExecutor
+NodeExecutor -[hidden]down-> PlaceholderResolver
+TriggerExecutor -[hidden]down-> ConditionExecutor
+ConditionExecutor -[hidden]down-> GmailExecutor
+GmailExecutor -[hidden]down-> GoogleDriveExecutor
+GoogleDriveExecutor -[hidden]down-> DiscordExecutor
+DiscordExecutor -[hidden]down-> AIExecutor
+AIExecutor -[hidden]down-> HTTPExecutor
+ExecutionRepository -[hidden]down-> WebSocketEventBus
+
+WorkflowController -right-> WorkflowExecutor
+SingleNodeController -right-> NodeExecutor
+SingleNodeController -right-> PlaceholderResolver
+SingleNodeController -right-> ExecutionRepository
+
+WorkflowExecutor -right-> ExecutionRepository
+WorkflowExecutor -right-> NodeExecutor
+WorkflowExecutor -right-> PlaceholderResolver
+WorkflowExecutor -right-> TriggerExecutor
+WorkflowExecutor -right-> WebSocketEventBus : emits events
+
+NodeExecutor -right-> TriggerExecutor
+NodeExecutor -right-> ConditionExecutor
+NodeExecutor -right-> GmailExecutor
+NodeExecutor -right-> GoogleDriveExecutor
+NodeExecutor -right-> DiscordExecutor
+NodeExecutor -right-> AIExecutor
+NodeExecutor -right-> HTTPExecutor
+@enduml
+
+
+' ============================================================
+' 7) Monitoring & Feedback System - ERD
+' ============================================================
+@startuml MONITORING_ERD
+hide circle
+skinparam linetype ortho
+title Monitoring & Feedback System - ERD
+
+entity "User" as MF_User {
+  *id : String <<PK>>
+  --
+  email : String
+}
+
+entity "Workflow" as MF_Workflow {
+  *id : String <<PK>>
+  --
+  authorId : String <<FK:User.id>>
+  name : String
+}
+
+entity "WorkflowExecution" as MF_WorkflowExecution {
+  *id : String <<PK>>
+  --
+  workflowId : String <<FK:Workflow.id>>
+  status : WorkflowExecutionStatus
+  triggerType : TriggerType
+  error : String?
+  duration : Int?
+  completedAt : DateTime?
+  createdAt : DateTime
+}
+
+entity "NodeExecution" as MF_NodeExecution {
+  *id : String <<PK>>
+  --
+  executionId : String <<FK:WorkflowExecution.id>>
+  nodeId : String
+  actionId : String
+  status : NodeExecutionStatus
+  outputData : Json?
+  error : String?
+  startedAt : DateTime?
+  completedAt : DateTime?
+  createdAt : DateTime
+}
+
+MF_User ||--o{ MF_Workflow : owns
+MF_Workflow ||--o{ MF_WorkflowExecution : activity_feed
+MF_WorkflowExecution ||--o{ MF_NodeExecution : timeline_entries
+@enduml
+
+
+' ============================================================
+' 8) Monitoring & Feedback System - Class Diagram
+' ============================================================
+@startuml MONITORING_CLASS
+hide empty members
+skinparam linetype ortho
+left to right direction
+skinparam ranksep 55
+skinparam nodesep 35
+title Monitoring & Feedback System - Class Diagram
+
+class WebSocketGateway <<module>> {
+  +open(ws)
+  +close(ws)
+  +message(ws, message)
+  +broadcastExecutionEvent(event)
+  +emitWorkflowStart(...)
+  +emitNodeStart(...)
+  +emitNodeComplete(...)
+  +emitNodeError(...)
+  +emitWorkflowComplete(...)
+  +emitWorkflowError(...)
+}
+
+class ActivityService <<module>> {
+  +getUserExecutionActivity()
+  +getExecutionDetails(executionId)
+  +clearUserExecutionActivity()
+  +getDashboardStats()
+}
+
+class WorkflowExecutor <<module>> {
+  +executeWorkflowById(...)
+}
+
+class DiscordBotListener <<module>> {
+  +onMessageCreate(message)
+}
+
+class GmailWebhookHandler <<module>> {
+  +POST /webhook/gmail
+}
+
+class WorkflowScheduler <<module>> {
+  +tick()
+  +runJob(job)
+}
+
+class ExecutionRepository <<prisma>>
+class TriggerCacheService <<module>>
+
+DiscordBotListener -[hidden]down-> GmailWebhookHandler
+GmailWebhookHandler -[hidden]down-> WorkflowScheduler
+WorkflowScheduler -[hidden]down-> ActivityService
+WorkflowExecutor -[hidden]down-> ExecutionRepository
+ExecutionRepository -[hidden]down-> WebSocketGateway
+
+DiscordBotListener -right-> TriggerCacheService
+DiscordBotListener -right-> WorkflowExecutor
+GmailWebhookHandler -right-> WorkflowExecutor
+WorkflowScheduler -right-> WorkflowExecutor
+
+WorkflowExecutor -right-> ExecutionRepository
+WorkflowExecutor -right-> WebSocketGateway
+
+ActivityService -right-> ExecutionRepository
+@enduml
+
+
+' ============================================================
+' 9) Credential & OAuth Manager - ERD
+' ============================================================
+@startuml CREDENTIAL_ERD
+hide circle
+skinparam linetype ortho
+title Credential & OAuth Manager - ERD
+
+entity "User" as CO_User {
+  *id : String <<PK>>
+  --
+  email : String <<UNIQUE>>
+  name : String
+}
+
+entity "OAuthCredential" as CO_OAuthCredential {
+  *id : String <<PK>>
+  --
+  userId : String <<FK:User.id>>
+  provider : String
+  service : String?
+  notes : String?
+  accessToken : Text
+  refreshToken : Text?
+  accessTokenExpiresAt : DateTime?
+  refreshTokenExpiresAt : DateTime?
+  scopes : String[]
+  providerEmail : String?
+  gmailHistoryId : String?
+  gmailWatchExpiration : DateTime?
+  createdAt : DateTime
+  updatedAt : DateTime
+  --
+  UNIQUE(provider, service, userId)
+}
+
+entity "DiscordGuild" as CO_DiscordGuild {
+  *id : String <<PK>>
+  --
+  credentialId : String <<FK:OAuthCredential.id>>
+  guildId : String
+  guildName : String?
+  createdAt : DateTime
+  updatedAt : DateTime
+  --
+  UNIQUE(credentialId, guildId)
+}
+
+CO_User ||--o{ CO_OAuthCredential : owns
+CO_OAuthCredential ||--o{ CO_DiscordGuild : authorizes
+@enduml
+
+
+' ============================================================
+' 10) Credential & OAuth Manager - Class Diagram
+' ============================================================
+@startuml CREDENTIAL_CLASS
+hide empty members
+skinparam linetype ortho
+left to right direction
+skinparam ranksep 55
+skinparam nodesep 35
+title Credential & OAuth Manager - Class Diagram
+
+class GmailOAuthRoutes <<module>> {
+  +GET /gmail/oauth
+  +GET /gmail/oauth/callback
+}
+
+class GoogleDriveOAuthRoutes <<module>> {
+  +GET /google-drive/oauth
+  +GET /google-drive/oauth/callback
+}
+
+class DiscordOAuthRoutes <<module>> {
+  +GET /discord/oauth
+}
+
+class AuthMiddleware <<module>> {
+  +authMiddleware(context, next)
+}
+
+class GmailCredentialController <<module>> {
+  +addOrUpdateCredential(context)
+}
+
+class GoogleDriveCredentialController <<module>> {
+  +addOrUpdateCredential(context)
+}
+
+class DiscordCredentialController <<module>> {
+  +addOrUpdateCredential(context)
+}
+
+class DiscordDataController <<module>> {
+  +listGuilds(context)
+  +listChannels(context)
+  +listGuildMembers(context)
+}
+
+class GoogleDriveFilesController <<module>> {
+  +listDriveItems(context)
+}
+
+class CredentialCryptoService <<module>> {
+  +encryptToken(token)
+  +decryptToken(encrypted)
+  +decryptGmailToken(encrypted)
+}
+
+class CredentialTokenService <<module>> {
+  +getValidGmailAccessTokenByCredentialId(id)
+  +getValidGoogleDriveAccessTokenByCredentialId(id)
+  +getDiscordBotToken(id)
+  -validateAndRefreshToken(credential, provider)
+  -refreshGoogleAccessToken(credentialId, refreshToken, provider)
+}
+
+class GmailWatchService <<module>> {
+  +setupGmailWatch(accessToken, credentialId, providerEmail)
+}
+
+class OAuthCredentialRepository <<prisma>>
+class DiscordGuildRepository <<prisma>>
+class OAuthConfig <<module>> {
+  +SCOPES
+  +REDIRECT_URL
+}
+
+class GoogleOAuthMiddleware <<library>>
+class DiscordAPI <<external>>
+class GoogleDriveAPI <<external>>
+class GoogleTokenEndpoint <<external>>
+
+GmailOAuthRoutes -[hidden]down-> GoogleDriveOAuthRoutes
+GoogleDriveOAuthRoutes -[hidden]down-> DiscordOAuthRoutes
+GmailCredentialController -[hidden]down-> GoogleDriveCredentialController
+GoogleDriveCredentialController -[hidden]down-> DiscordCredentialController
+DiscordCredentialController -[hidden]down-> DiscordDataController
+DiscordDataController -[hidden]down-> GoogleDriveFilesController
+CredentialCryptoService -[hidden]down-> CredentialTokenService
+CredentialTokenService -[hidden]down-> OAuthCredentialRepository
+OAuthCredentialRepository -[hidden]down-> DiscordGuildRepository
+DiscordGuildRepository -[hidden]down-> GmailWatchService
+GoogleOAuthMiddleware -[hidden]down-> GoogleTokenEndpoint
+GoogleTokenEndpoint -[hidden]down-> GoogleDriveAPI
+GoogleDriveAPI -[hidden]down-> DiscordAPI
+
+GmailOAuthRoutes -right-> GoogleOAuthMiddleware
+GmailOAuthRoutes -right-> AuthMiddleware
+GmailOAuthRoutes -right-> GmailCredentialController
+
+GoogleDriveOAuthRoutes -right-> GoogleOAuthMiddleware
+GoogleDriveOAuthRoutes -right-> AuthMiddleware
+GoogleDriveOAuthRoutes -right-> GoogleDriveCredentialController
+
+DiscordOAuthRoutes -right-> AuthMiddleware
+DiscordOAuthRoutes -right-> DiscordCredentialController
+
+GmailCredentialController -right-> CredentialCryptoService
+GmailCredentialController -right-> OAuthCredentialRepository
+GmailCredentialController -right-> GmailWatchService
+
+GoogleDriveCredentialController -right-> CredentialCryptoService
+GoogleDriveCredentialController -right-> OAuthCredentialRepository
+
+DiscordCredentialController -right-> OAuthCredentialRepository
+DiscordCredentialController -right-> DiscordGuildRepository
+DiscordCredentialController -right-> DiscordAPI
+
+CredentialTokenService -right-> CredentialCryptoService
+CredentialTokenService -right-> OAuthCredentialRepository
+CredentialTokenService -right-> GoogleTokenEndpoint
+
+DiscordDataController -right-> CredentialTokenService
+DiscordDataController -right-> OAuthCredentialRepository
+DiscordDataController -right-> DiscordAPI
+
+GoogleDriveFilesController -right-> CredentialTokenService
+GoogleDriveFilesController -right-> OAuthCredentialRepository
+GoogleDriveFilesController -right-> GoogleDriveAPI
+
+GmailOAuthRoutes -right-> OAuthConfig
+GoogleDriveOAuthRoutes -right-> OAuthConfig
+@enduml

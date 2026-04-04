@@ -126,6 +126,7 @@ function WorkflowViewPageInner() {
     edgesHash: string
     name: string
     description: string
+    isActive: boolean
   } | null>(null)
 
   // Track selected nodes
@@ -241,7 +242,8 @@ function WorkflowViewPageInner() {
       nodesToCheck: Node[],
       edgesToCheck: Edge[],
       nameToCheck: string,
-      descriptionToCheck: string
+      descriptionToCheck: string,
+      isActiveToCheck: boolean
     ) => {
       const currentNodesHash = getNodesHash(nodesToCheck)
       const currentEdgesHash = getEdgesHash(edgesToCheck)
@@ -251,7 +253,8 @@ function WorkflowViewPageInner() {
         currentNodesHash !== initialStateRef.current.nodesHash ||
         currentEdgesHash !== initialStateRef.current.edgesHash ||
         nameToCheck !== initialStateRef.current.name ||
-        descriptionToCheck !== initialStateRef.current.description
+        descriptionToCheck !== initialStateRef.current.description ||
+        isActiveToCheck !== initialStateRef.current.isActive
       )
     },
     [getNodesHash, getEdgesHash]
@@ -261,7 +264,8 @@ function WorkflowViewPageInner() {
     nodes,
     edges,
     workflowName,
-    workflowDescription
+    workflowDescription,
+    isActive
   )
 
   const clearExecutionNodeState = useCallback(() => {
@@ -523,34 +527,6 @@ function WorkflowViewPageInner() {
     }
   }, [currentExecution?.id, activeTab])
 
-  // Prevent backspace from deleting nodes
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Backspace' || e.key === 'Delete') {
-        const target = e.target as HTMLElement
-        // Allow deletion in input fields, textareas, and contenteditable elements
-        const isInputField =
-          target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable ||
-          target.closest('[contenteditable="true"]') ||
-          target.closest('input') ||
-          target.closest('textarea')
-
-        // If not in an input field, prevent default to stop node deletion
-        if (!isInputField && reactFlowWrapper.current?.contains(target)) {
-          e.preventDefault()
-          e.stopPropagation()
-        }
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown, true)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [])
-
   // Load workflow data when it's fetched (only initialize once)
   useEffect(() => {
     if (data?.data && !hasInitialized.current) {
@@ -576,7 +552,8 @@ function WorkflowViewPageInner() {
         nodesHash: getNodesHash(sanitizedNodes),
         edgesHash: getEdgesHash(formattedEdges),
         name: workflow.name || '',
-        description: workflow.description || ''
+        description: workflow.description || '',
+        isActive: workflow.isActive || false
       }
     }
   }, [data, stripTransientNodeState, getNodesHash, getEdgesHash])
@@ -774,7 +751,8 @@ function WorkflowViewPageInner() {
         currentNodesHash !== initialStateRef.current.nodesHash ||
         currentEdgesHash !== initialStateRef.current.edgesHash ||
         workflowName !== initialStateRef.current.name ||
-        workflowDescription !== initialStateRef.current.description
+        workflowDescription !== initialStateRef.current.description ||
+        isActive !== initialStateRef.current.isActive
 
       if (hasChanges) {
         // Auto-save workflow before executing
@@ -784,7 +762,8 @@ function WorkflowViewPageInner() {
             name: workflowName,
             description: workflowDescription,
             nodes: sanitized as unknown as any[],
-            edges: edges as unknown as any[]
+            edges: edges as unknown as any[],
+            isActive
           }
         })
         // Update initial state after save
@@ -792,7 +771,8 @@ function WorkflowViewPageInner() {
           nodesHash: currentNodesHash,
           edgesHash: currentEdgesHash,
           name: workflowName,
-          description: workflowDescription
+          description: workflowDescription,
+          isActive
         }
       }
 
@@ -810,6 +790,7 @@ function WorkflowViewPageInner() {
     edges,
     isExecuting,
     isExecutingNode,
+    isActive,
     getNodesHash,
     getEdgesHash,
     clearExecutionNodeState,
@@ -852,7 +833,8 @@ function WorkflowViewPageInner() {
         nodesHash: currentNodesHash,
         edgesHash: currentEdgesHash,
         name: workflowName,
-        description: workflowDescription
+        description: workflowDescription,
+        isActive
       }
 
       toast.success('Workflow saved')
@@ -1035,6 +1017,7 @@ function WorkflowViewPageInner() {
       initialStateRef={initialStateRef}
       getNodesHash={getNodesHash}
       getEdgesHash={getEdgesHash}
+      isActive={isActive}
       isExecutingWorkflow={executeWorkflow.isPending || isExecuting}
       isExecutingNode={isExecutingNode}
       setIsExecutingNode={setIsExecutingNode}
@@ -1149,6 +1132,7 @@ function WorkflowViewPageInner() {
                 className='bg-background'
                 connectionLineType={ConnectionLineType.Bezier}
                 defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
+                deleteKeyCode={null}
                 fitView
                 nodesDraggable={true}
                 nodesConnectable={true}

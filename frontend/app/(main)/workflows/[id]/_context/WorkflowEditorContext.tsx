@@ -47,9 +47,11 @@ type WorkflowEditorProviderProps = {
     edgesHash: string
     name: string
     description: string
+    isActive: boolean
   } | null>
   getNodesHash: (nodes: Node[]) => string
   getEdgesHash: (edges: Edge[]) => string
+  isActive: boolean
   isExecutingWorkflow: boolean
   isExecutingNode: boolean
   setIsExecutingNode: (value: boolean) => void
@@ -66,6 +68,7 @@ export function WorkflowEditorProvider({
   initialStateRef,
   getNodesHash,
   getEdgesHash,
+  isActive,
   isExecutingWorkflow,
   isExecutingNode,
   setIsExecutingNode,
@@ -124,7 +127,8 @@ export function WorkflowEditorProvider({
       currentNodesHash !== initialStateRef.current.nodesHash ||
       currentEdgesHash !== initialStateRef.current.edgesHash ||
       workflowName !== initialStateRef.current.name ||
-      workflowDescription !== initialStateRef.current.description
+      workflowDescription !== initialStateRef.current.description ||
+      isActive !== initialStateRef.current.isActive
 
     if (hasChanges) {
       isSavingRef.current = true
@@ -135,7 +139,8 @@ export function WorkflowEditorProvider({
             name: workflowName,
             description: workflowDescription,
             nodes: sanitized as unknown as any[],
-            edges: edges as unknown as any[]
+            edges: edges as unknown as any[],
+            isActive
           }
         })
         // Update initial state after save
@@ -143,7 +148,8 @@ export function WorkflowEditorProvider({
           nodesHash: currentNodesHash,
           edgesHash: currentEdgesHash,
           name: workflowName,
-          description: workflowDescription
+          description: workflowDescription,
+          isActive
         }
       } finally {
         isSavingRef.current = false
@@ -157,6 +163,7 @@ export function WorkflowEditorProvider({
     getEdges,
     getNodesHash,
     getEdgesHash,
+    isActive,
     initialStateRef,
     updateWorkflow,
     isExecutingWorkflow,

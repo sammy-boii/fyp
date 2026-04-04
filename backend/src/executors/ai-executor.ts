@@ -48,12 +48,50 @@ JSON schema to follow:
 Rules:
 - Never output markdown, code fences, or prose before/after JSON.
 - Always include all required top-level keys.
-- In answer, follow the user's requested format, tone, and level of detail.
+- The answer field MUST be the direct final output for the user's prompt.
+- If the user asks a question, answer must directly answer that question.
+- If the user asks to write/draft/reply, answer must be the full drafted text to send.
+- Do not describe what you did in answer; just provide the requested result.
 - Do not summarize or paraphrase unless the user explicitly asks for a summary.
-- If the user asks to draft/write/reply, return the full drafted text in answer.
-- Use explanation for reasoning/context.
+- explanation must be a longer expanded version of answer with more detail.
+- explanation must preserve the same meaning as answer and must not contradict it.
 - Use data for rich structured information.
 - Use metadata.question_type to classify the task.`
+
+const normalizeSpace = (value: string): string =>
+  value.replace(/\s+/g, ' ').trim()
+
+const ensureExpandedExplanation = (
+  answer: string,
+  explanation: string
+): string => {
+  const cleanAnswer = answer.trim()
+  const cleanExplanation = explanation.trim()
+
+  if (!cleanAnswer) {
+    return cleanExplanation || 'No explanation provided'
+  }
+
+  if (!cleanExplanation) {
+    return `${cleanAnswer}\n\nExpanded explanation: This provides a more detailed version of the same answer while preserving the same intent and meaning.`
+  }
+
+  const normalizedAnswer = normalizeSpace(cleanAnswer).toLowerCase()
+  const normalizedExplanation = normalizeSpace(cleanExplanation).toLowerCase()
+  const isSameText = normalizedAnswer === normalizedExplanation
+
+  if (!isSameText && cleanExplanation.length > cleanAnswer.length) {
+    return cleanExplanation
+  }
+
+  const suffixed = `${cleanExplanation} Expanded explanation: This is the same response in a more detailed form for clarity and downstream use.`
+
+  if (suffixed.length > cleanAnswer.length) {
+    return suffixed
+  }
+
+  return `${cleanExplanation}\n\nExpanded explanation detail: ${cleanAnswer}`
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -210,6 +248,8 @@ const normalizeAIResponse = (
         ? value.explaination.trim()
         : 'No explanation provided'
 
+  const expandedExplanation = ensureExpandedExplanation(answer, explanation)
+
   const data = isRecord(value.data)
     ? (value.data as Record<string, any>)
     : ({} as Record<string, any>)
@@ -245,7 +285,7 @@ const normalizeAIResponse = (
 
   return {
     answer,
-    explanation,
+    explanation: expandedExplanation,
     confidence: normalizeConfidence(value.confidence),
     data,
     custom_fields: normalizedCustomFields,

@@ -1,6 +1,5 @@
 'use client'
 
-import type { FormEvent } from 'react'
 import { useFieldArray, useFormContext, Controller } from 'react-hook-form'
 import { Field, FieldLabel } from '@/components/ui/field'
 import {
@@ -95,14 +94,9 @@ export function AIPromptForm() {
                 render={({ field, fieldState }) => (
                   <PlaceholderTextarea
                     placeholder='field_name'
-                    className='min-h-9 h-9 max-h-40 w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word text-xs leading-4'
+                    className='min-h-9 max-h-40 w-full min-w-0 resize-none overflow-auto whitespace-pre-wrap wrap-break-word text-xs leading-4'
                     {...field}
                     value={field.value ?? ''}
-                    onInput={(e: FormEvent<HTMLDivElement>) => {
-                      const target = e.currentTarget
-                      target.style.height = '2.25rem'
-                      target.style.height = `${target.scrollHeight}px`
-                    }}
                     aria-invalid={fieldState.invalid}
                   />
                 )}
@@ -114,14 +108,9 @@ export function AIPromptForm() {
                 render={({ field }) => (
                   <PlaceholderTextarea
                     placeholder='value'
-                    className='min-h-9 h-9 max-h-40 w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word text-xs leading-4'
+                    className='min-h-9 max-h-40 w-full min-w-0 resize-none overflow-auto whitespace-pre-wrap wrap-break-word text-xs leading-4'
                     {...field}
                     value={field.value ?? ''}
-                    onInput={(e: FormEvent<HTMLDivElement>) => {
-                      const target = e.currentTarget
-                      target.style.height = '2.25rem'
-                      target.style.height = `${target.scrollHeight}px`
-                    }}
                   />
                 )}
               />

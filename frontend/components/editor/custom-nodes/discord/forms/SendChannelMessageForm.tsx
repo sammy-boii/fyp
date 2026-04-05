@@ -161,7 +161,7 @@ export function SendChannelMessageForm() {
                 </FieldLabel>
                 <PlaceholderInput
                   type='text'
-                  placeholder='e.g. image.png'
+                  placeholder='Enter filename'
                   className='h-9 text-sm'
                   {...field}
                   aria-invalid={fieldState.invalid}

@@ -29,9 +29,7 @@ const FILE_TYPES = [
     icon: File,
     category: 'text'
   },
-  { value: 'image/png', label: 'PNG Image', icon: Image, category: 'image' },
-  { value: 'image/jpeg', label: 'JPEG Image', icon: Image, category: 'image' },
-  { value: 'image/webp', label: 'WebP Image', icon: Image, category: 'image' },
+  { value: 'image/png', label: 'Image File', icon: Image, category: 'image' },
   {
     value: 'text/csv',
     label: 'CSV File',

@@ -41,6 +41,11 @@ import { useGetWorkflows } from '@/hooks/use-workflows'
 import { useActivityWebSocket } from '@/hooks/use-activity-websocket'
 import type { ExecutionEvent } from '@/hooks/use-workflow-websocket'
 import { cn } from '@/lib/utils'
+import {
+  NODE_DEFINITIONS,
+  TRIGGER_NODE_DEFINITIONS
+} from '@/constants/registry'
+import type { NodeAction } from '@/types/node.types'
 import { TRIGGER_ACTION_ID } from '@shared/constants'
 
 import { DataTable } from './data-table'
@@ -74,6 +79,69 @@ const resolveTriggerType = (workflow?: {
   }
 }
 
+const normalizeNodeReference = (value: string) => {
+  return value
+    .trim()
+    .replace(/^['"`[{(<\s]+/, '')
+    .replace(/[\s\]})>,'"`]+$/, '')
+}
+
+const formatErrorWithActionLabel = (
+  error: string | null | undefined,
+  resolveActionLabel: (nodeId: string) => string | null,
+  options?: {
+    fallbackNodeId?: string
+    fallbackActionLabel?: string
+  }
+) => {
+  if (!error) return null
+
+  const message = error.trim()
+  if (!message) return null
+
+  const buildFailureMessage = (label: string, detail?: string) => {
+    const suffix = detail?.trim() ? `: ${detail.trim()}` : ''
+    return `Failed At: ${label}${suffix}`
+  }
+
+  const failedPatterns = [
+    /^workflow execution failed at node\s+(.+?)\s*:\s*(.+)$/i,
+    /^node\s+(.+?)\s+failed\s*:\s*(.+)$/i,
+    /^failed\s+at\s*:?\s*(.+?)(?:\s*:\s*(.+))?$/i
+  ]
+
+  for (const pattern of failedPatterns) {
+    const match = message.match(pattern)
+    if (!match) continue
+
+    const rawNodeId = normalizeNodeReference(match[1])
+    const detail = match[2]?.trim()
+    const actionLabel = resolveActionLabel(rawNodeId)
+
+    if (actionLabel) {
+      return buildFailureMessage(actionLabel, detail)
+    }
+  }
+
+  if (/failed\s+at/i.test(message)) {
+    const fallbackLabel =
+      options?.fallbackActionLabel ||
+      (options?.fallbackNodeId
+        ? resolveActionLabel(normalizeNodeReference(options.fallbackNodeId))
+        : null)
+
+    if (fallbackLabel) {
+      const detailMatch = message.match(
+        /failed\s+at\s*:?\s*.+?(?:\s*:\s*(.+))?$/i
+      )
+      const detail = detailMatch?.[1]?.trim()
+      return buildFailureMessage(fallbackLabel, detail)
+    }
+  }
+
+  return message
+}
+
 const ActivityPage = () => {
   const activityQuery = useGetUserExecutionActivity()
   const workflowsQuery = useGetWorkflows()
@@ -82,19 +150,68 @@ const ActivityPage = () => {
   const [rows, setRows] = useState<ActivityExecutionRow[]>([])
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
 
+  const actionLabelMap = useMemo(() => {
+    const map = new Map<string, string>()
+
+    const addActions = (actions?: NodeAction[]) => {
+      if (!actions) return
+      actions.forEach((action) => {
+        if (action?.id && action.label) {
+          map.set(action.id, action.label)
+        }
+      })
+    }
+
+    Object.values(NODE_DEFINITIONS).forEach((definition) =>
+      addActions(definition.actions)
+    )
+    Object.values(TRIGGER_NODE_DEFINITIONS).forEach((definition) =>
+      addActions(definition.actions)
+    )
+
+    return map
+  }, [])
+
   const workflowMetaMap = useMemo(() => {
     const map = new Map<
       string,
-      { name: string; triggerType: ActivityTriggerType }
+      {
+        name: string
+        triggerType: ActivityTriggerType
+        nodeActionLabelById: Record<string, string>
+      }
     >()
     workflowsQuery.data?.data?.forEach((workflow) => {
+      const nodeActionLabelById: Record<string, string> = {}
+
+      if (Array.isArray((workflow as any).nodes)) {
+        ;(workflow as any).nodes.forEach((node: any) => {
+          const nodeId =
+            typeof node?.id === 'string' && node.id.trim()
+              ? node.id.trim()
+              : null
+          const actionId =
+            typeof node?.data?.actionId === 'string' && node.data.actionId
+              ? node.data.actionId
+              : null
+
+          if (!nodeId || !actionId) return
+
+          const actionLabel = actionLabelMap.get(actionId)
+          if (actionLabel) {
+            nodeActionLabelById[nodeId] = actionLabel
+          }
+        })
+      }
+
       map.set(workflow.id, {
         name: workflow.name,
-        triggerType: resolveTriggerType(workflow)
+        triggerType: resolveTriggerType(workflow),
+        nodeActionLabelById
       })
     })
     return map
-  }, [workflowsQuery.data?.data])
+  }, [workflowsQuery.data?.data, actionLabelMap])
 
   const workflowIds = useMemo(
     () => workflowsQuery.data?.data?.map((workflow) => workflow.id) ?? [],
@@ -111,21 +228,56 @@ const ActivityPage = () => {
   useEffect(() => {
     if (!activityQuery.data?.data) return
 
-    setRows((prev) => mergeActivityRows(activityQuery.data?.data ?? [], prev))
-  }, [activityQuery.data?.data])
+    const incomingRows = (activityQuery.data?.data ?? []).map((row) => {
+      const nodeActionLabelById = workflowMetaMap.get(
+        row.workflowId
+      )?.nodeActionLabelById
+
+      return {
+        ...row,
+        error: formatErrorWithActionLabel(
+          row.error,
+          (nodeId) => nodeActionLabelById?.[nodeId] ?? null
+        )
+      }
+    })
+
+    setRows((prev) => mergeActivityRows(incomingRows, prev))
+  }, [activityQuery.data?.data, workflowMetaMap])
 
   useEffect(() => {
     if (workflowMetaMap.size === 0) return
 
     setRows((prev) =>
       prev.map((row) => {
-        if (row.triggerType !== 'UNKNOWN') return row
         const meta = workflowMetaMap.get(row.workflowId)
-        if (!meta || meta.triggerType === 'UNKNOWN') return row
+        if (!meta) return row
+
+        const triggerType =
+          row.triggerType !== 'UNKNOWN' || meta.triggerType === 'UNKNOWN'
+            ? row.triggerType
+            : meta.triggerType
+
+        const formattedError = formatErrorWithActionLabel(
+          row.error,
+          (nodeId) => meta.nodeActionLabelById[nodeId] ?? null
+        )
+
+        const workflowName = meta.name || row.workflowName
+
+        if (
+          workflowName === row.workflowName &&
+          triggerType === row.triggerType &&
+          formattedError === row.error
+        ) {
+          return row
+        }
+
         return {
           ...row,
-          workflowName: meta.name || row.workflowName,
-          triggerType: meta.triggerType
+          workflowName,
+          triggerType,
+          error: formattedError
         }
       })
     )
@@ -401,7 +553,11 @@ const applyEventToRows = (
   event: ExecutionEvent,
   workflowMetaMap: Map<
     string,
-    { name: string; triggerType: ActivityTriggerType }
+    {
+      name: string
+      triggerType: ActivityTriggerType
+      nodeActionLabelById: Record<string, string>
+    }
   >
 ) => {
   const index = rows.findIndex((row) => row.executionId === event.executionId)
@@ -413,6 +569,12 @@ const applyEventToRows = (
     existing?.triggerType && existing.triggerType !== 'UNKNOWN'
       ? existing.triggerType
       : (workflowMeta?.triggerType ?? 'UNKNOWN')
+
+  const resolveNodeActionLabel = (nodeId: string) => {
+    return workflowMeta?.nodeActionLabelById?.[normalizeNodeReference(nodeId)]
+      ? workflowMeta.nodeActionLabelById[normalizeNodeReference(nodeId)]
+      : null
+  }
 
   const base: ActivityExecutionRow =
     existing ??
@@ -464,7 +626,11 @@ const applyEventToRows = (
       break
     case 'node:error':
       next.status = 'FAILED'
-      next.error = event.data?.error ?? base.error
+      next.error = formatErrorWithActionLabel(
+        event.data?.error ?? base.error,
+        resolveNodeActionLabel,
+        { fallbackNodeId: event.data?.nodeId }
+      )
       break
     case 'workflow:complete':
       next.status = 'COMPLETED'
@@ -476,7 +642,11 @@ const applyEventToRows = (
       next.status = 'FAILED'
       next.durationMs = event.data?.duration ?? base.durationMs
       next.completedAt = event.timestamp
-      next.error = event.data?.error ?? base.error
+      next.error = formatErrorWithActionLabel(
+        event.data?.error ?? base.error,
+        resolveNodeActionLabel,
+        { fallbackNodeId: event.data?.nodeId }
+      )
       break
   }
 

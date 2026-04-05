@@ -84,6 +84,69 @@ const formatNodeName = (nodeId?: string, nodeName?: string) => {
     .join(' ')
 }
 
+const normalizeNodeReference = (value: string) => {
+  return value
+    .trim()
+    .replace(/^['"`[{(<\s]+/, '')
+    .replace(/[\s\]})>,'"`]+$/, '')
+}
+
+const formatErrorWithActionLabel = (
+  error: string | undefined,
+  resolveActionLabel: (nodeId: string) => string | null,
+  options?: {
+    fallbackNodeId?: string
+    fallbackActionLabel?: string
+  }
+) => {
+  if (!error) return error
+
+  const message = error.trim()
+  if (!message) return error
+
+  const buildFailureMessage = (label: string, detail?: string) => {
+    const suffix = detail?.trim() ? `: ${detail.trim()}` : ''
+    return `Failed At: ${label}${suffix}`
+  }
+
+  const failedPatterns = [
+    /^workflow execution failed at node\s+(.+?)\s*:\s*(.+)$/i,
+    /^node\s+(.+?)\s+failed\s*:\s*(.+)$/i,
+    /^failed\s+at\s*:?\s*(.+?)(?:\s*:\s*(.+))?$/i
+  ]
+
+  for (const pattern of failedPatterns) {
+    const match = message.match(pattern)
+    if (!match) continue
+
+    const rawNodeId = normalizeNodeReference(match[1])
+    const detail = match[2]?.trim()
+    const actionLabel = resolveActionLabel(rawNodeId)
+
+    if (actionLabel) {
+      return buildFailureMessage(actionLabel, detail)
+    }
+  }
+
+  if (/failed\s+at/i.test(message)) {
+    const fallbackLabel =
+      options?.fallbackActionLabel ||
+      (options?.fallbackNodeId
+        ? resolveActionLabel(normalizeNodeReference(options.fallbackNodeId))
+        : null)
+
+    if (fallbackLabel) {
+      const detailMatch = message.match(
+        /failed\s+at\s*:?\s*.+?(?:\s*:\s*(.+))?$/i
+      )
+      const detail = detailMatch?.[1]?.trim()
+      return buildFailureMessage(fallbackLabel, detail)
+    }
+  }
+
+  return message
+}
+
 // Helper to format timestamp
 const formatTime = (timestamp: string) => {
   const date = new Date(timestamp)
@@ -179,6 +242,13 @@ const WorkflowExecutionTab = ({
   const getActionLabel = (actionId?: string) => {
     if (!actionId) return null
     return actionLabelMap.get(actionId) ?? null
+  }
+
+  const resolveActionLabelByNodeId = (nodeId?: string) => {
+    if (!nodeId) return null
+    const actionId = nodeActionIdById?.[nodeId]
+    if (!actionId) return null
+    return getActionLabel(actionId)
   }
 
   const getActiveNodeId = (logs: ExecutionLog[]) => {
@@ -346,9 +416,19 @@ const WorkflowExecutionTab = ({
         | TimelineElement['expandableContent']
         | undefined => {
         if (hasError && log.data?.error) {
+          const formattedError = formatErrorWithActionLabel(
+            log.data.error,
+            (nodeId) =>
+              resolveActionLabelByNodeId(nodeId) || formatNodeName(nodeId),
+            {
+              fallbackNodeId: log.data?.nodeId,
+              fallbackActionLabel: resolvedActionLabel
+            }
+          )
+
           return {
             type: 'error',
-            content: log.data.error
+            content: formattedError || log.data.error
           }
         }
         if (hasOutput && log.data?.output) {

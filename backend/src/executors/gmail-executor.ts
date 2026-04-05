@@ -45,6 +45,61 @@ type AttachmentSource = {
   value: string
   mimeType?: string
   filename?: string
+  type?: 'url' | 'base64' | 'data' | 'dataurl' | 'text'
+}
+
+function normalizeMimeTypeCandidate(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+
+  const lowered = trimmed.toLowerCase()
+  if (lowered === 'text') return 'text/plain'
+  if (lowered === 'base64' || lowered === 'binary' || lowered === 'url') {
+    return undefined
+  }
+
+  return trimmed
+}
+
+function normalizeAttachmentTypeCandidate(
+  value: unknown
+): AttachmentSource['type'] | undefined {
+  if (typeof value !== 'string') return undefined
+  const lowered = value.trim().toLowerCase()
+
+  if (lowered === 'binary') return 'base64'
+
+  if (
+    lowered === 'url' ||
+    lowered === 'base64' ||
+    lowered === 'data' ||
+    lowered === 'dataurl' ||
+    lowered === 'text'
+  ) {
+    return lowered
+  }
+
+  return undefined
+}
+
+function isLikelyBase64Payload(value: string): boolean {
+  const cleaned = value.replace(/\s/g, '')
+  if (!cleaned) return false
+
+  // Avoid treating short plain-text values (e.g. "test") as base64.
+  if (cleaned.length < 32) return false
+  if (cleaned.length % 4 !== 0) return false
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(cleaned)) return false
+
+  try {
+    const decoded = Buffer.from(cleaned, 'base64')
+    if (!decoded.length) return false
+    const reEncoded = decoded.toString('base64').replace(/=+$/g, '')
+    return reEncoded === cleaned.replace(/=+$/g, '')
+  } catch {
+    return false
+  }
 }
 
 function toAttachmentSource(item: unknown): AttachmentSource | null {
@@ -70,24 +125,57 @@ function toAttachmentSource(item: unknown): AttachmentSource | null {
   }
 
   const mimeType =
-    typeof record.mimeType === 'string' && record.mimeType.trim()
-      ? record.mimeType.trim()
-      : typeof record.contentType === 'string' && record.contentType.trim()
-        ? record.contentType.trim()
-        : undefined
+    normalizeMimeTypeCandidate(record.mimeType) ||
+    normalizeMimeTypeCandidate(record.contentType) ||
+    normalizeMimeTypeCandidate(record.content_type) ||
+    normalizeMimeTypeCandidate(record.mimetype)
 
   const filename =
     typeof record.filename === 'string' && record.filename.trim()
       ? record.filename.trim()
       : typeof record.name === 'string' && record.name.trim()
         ? record.name.trim()
-        : undefined
+        : typeof record.fileName === 'string' && record.fileName.trim()
+          ? record.fileName.trim()
+          : undefined
+
+  const type =
+    normalizeAttachmentTypeCandidate(record.type) ||
+    normalizeAttachmentTypeCandidate(record.contentType)
 
   return {
     value: valueCandidate.trim(),
     mimeType,
-    filename
+    filename,
+    type
   }
+}
+
+function getSourcesFromRecord(
+  record: Record<string, unknown>
+): AttachmentSource[] {
+  const direct = toAttachmentSource(record)
+  if (direct) return [direct]
+
+  const collectionKeys = ['attachments', 'files', 'items'] as const
+
+  for (const key of collectionKeys) {
+    const candidate = record[key]
+    if (Array.isArray(candidate)) {
+      return candidate
+        .map((item) => toAttachmentSource(item))
+        .filter(Boolean) as AttachmentSource[]
+    }
+  }
+
+  if (record.data && typeof record.data === 'object') {
+    const nestedSources = getSourcesFromRecord(
+      record.data as Record<string, unknown>
+    )
+    if (nestedSources.length > 0) return nestedSources
+  }
+
+  return []
 }
 
 function parseAttachmentSources(
@@ -107,13 +195,7 @@ function parseAttachmentSources(
     if (direct) return [direct]
 
     const record = attachments as Record<string, unknown>
-    if (Array.isArray(record.attachments)) {
-      return record.attachments
-        .map((item) => toAttachmentSource(item))
-        .filter(Boolean) as AttachmentSource[]
-    }
-
-    return []
+    return getSourcesFromRecord(record)
   }
 
   if (typeof attachments !== 'string') return []
@@ -121,62 +203,57 @@ function parseAttachmentSources(
   const raw = attachments.trim()
   if (!raw) return []
 
-  if (attachmentType === 'base64') {
-    // Allow JSON payloads (single object or array) from previous node outputs.
-    if (
-      (raw.startsWith('[') && raw.endsWith(']')) ||
-      (raw.startsWith('{') && raw.endsWith('}'))
-    ) {
-      try {
-        const parsed = JSON.parse(raw)
+  // Allow JSON payloads (single object or array) from previous node outputs.
+  if (
+    (raw.startsWith('[') && raw.endsWith(']')) ||
+    (raw.startsWith('{') && raw.endsWith('}'))
+  ) {
+    try {
+      const parsed = JSON.parse(raw)
 
-        if (Array.isArray(parsed)) {
-          return parsed
-            .map((item) => toAttachmentSource(item))
-            .filter(Boolean) as AttachmentSource[]
-        }
-
-        if (parsed && typeof parsed === 'object') {
-          const direct = toAttachmentSource(parsed)
-          if (direct) return [direct]
-
-          const parsedRecord = parsed as Record<string, unknown>
-          if (Array.isArray(parsedRecord.attachments)) {
-            return parsedRecord.attachments
-              .map((item) => toAttachmentSource(item))
-              .filter(Boolean) as AttachmentSource[]
-          }
-        }
-
-        if (Array.isArray(parsed)) {
-          return parsed
-            .map((item) => toAttachmentSource(item))
-            .filter(Boolean) as AttachmentSource[]
-        }
-      } catch {
-        // Ignore JSON parse errors and fallback below.
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((item) => toAttachmentSource(item))
+          .filter(Boolean) as AttachmentSource[]
       }
-    }
 
-    // Preserve data URLs (single or multiple) without splitting at the base64 comma.
-    const dataUrlMatches = Array.from(raw.matchAll(/data:[^;,\s]+;base64,/g))
-    if (dataUrlMatches.length > 0) {
-      return dataUrlMatches
-        .map((match, index) => {
-          const start = match.index ?? 0
-          const end =
-            index + 1 < dataUrlMatches.length
-              ? (dataUrlMatches[index + 1].index ?? raw.length)
-              : raw.length
+      if (parsed && typeof parsed === 'object') {
+        const direct = toAttachmentSource(parsed)
+        if (direct) return [direct]
 
-          return raw
-            .slice(start, end)
-            .trim()
-            .replace(/^[,\s]+|[,\s]+$/g, '')
-        })
-        .filter(Boolean)
-        .map((value) => ({ value }))
+        const parsedRecord = parsed as Record<string, unknown>
+        const extracted = getSourcesFromRecord(parsedRecord)
+        if (extracted.length > 0) return extracted
+      }
+    } catch {
+      // Ignore JSON parse errors and fallback below.
     }
+  }
+
+  // Preserve data URLs (single or multiple) without splitting at the base64 comma.
+  const dataUrlMatches = Array.from(raw.matchAll(/data:[^;,\s]+;base64,/g))
+  if (dataUrlMatches.length > 0) {
+    return dataUrlMatches
+      .map((match, index) => {
+        const start = match.index ?? 0
+        const end =
+          index + 1 < dataUrlMatches.length
+            ? (dataUrlMatches[index + 1].index ?? raw.length)
+            : raw.length
+
+        return raw
+          .slice(start, end)
+          .trim()
+          .replace(/^[,\s]+|[,\s]+$/g, '')
+      })
+      .filter(Boolean)
+      .map((value) => ({ value, type: 'base64' as const }))
+  }
+
+  if (attachmentType === 'base64') {
+    // In base64 mode, preserve raw payload as a single source.
+    // This avoids corrupting text payloads (e.g. CSV) by splitting on commas.
+    return [{ value: raw, type: 'base64' }]
   }
 
   return raw
@@ -427,17 +504,43 @@ export const executeSendEmail = async (
 
       if (attachmentType === 'base64') {
         for (const source of attachmentSources) {
-          const parsed = parseDataUrl(source.value)
-          const mimeType =
-            source.mimeType ||
-            parsed?.mimeType ||
-            detectMimeTypeFromBase64(source.value) ||
-            'application/octet-stream'
+          const rawValue = source.value.trim()
+          const parsed = parseDataUrl(rawValue)
+
+          let data: string
+          let mimeType: string
+
+          if (parsed) {
+            data = parsed.data
+            mimeType =
+              source.mimeType ||
+              parsed.mimeType ||
+              detectMimeTypeFromBase64(parsed.data) ||
+              'application/octet-stream'
+          } else if (source.type === 'text') {
+            data = Buffer.from(rawValue, 'utf-8').toString('base64')
+            mimeType = source.mimeType || 'text/plain'
+          } else {
+            const looksLikeBase64 =
+              source.type === 'base64' || isLikelyBase64Payload(rawValue)
+
+            if (looksLikeBase64) {
+              data = rawValue.replace(/\s/g, '')
+              mimeType =
+                source.mimeType ||
+                detectMimeTypeFromBase64(data) ||
+                'application/octet-stream'
+            } else {
+              data = Buffer.from(rawValue, 'utf-8').toString('base64')
+              mimeType = source.mimeType || 'text/plain'
+            }
+          }
+
           const filename = ensureFilenameExtension(
             source.filename || attachmentFilename || 'attachment',
             mimeType
           )
-          const data = parsed?.data || source.value
+
           fetchedAttachments.push({
             data,
             filename,
@@ -446,8 +549,60 @@ export const executeSendEmail = async (
         }
       } else {
         for (const source of attachmentSources) {
-          if (!isUrl(source.value)) continue
-          const att = await fetchAttachmentContent(source.value)
+          const rawValue = source.value.trim()
+          const parsed = parseDataUrl(rawValue)
+          const treatAsInlineData =
+            !!parsed ||
+            source.type === 'base64' ||
+            source.type === 'data' ||
+            source.type === 'dataurl' ||
+            source.type === 'text'
+
+          if (treatAsInlineData) {
+            let data: string
+            let mimeType: string
+
+            if (parsed) {
+              data = parsed.data
+              mimeType =
+                source.mimeType ||
+                parsed.mimeType ||
+                detectMimeTypeFromBase64(parsed.data) ||
+                'application/octet-stream'
+            } else if (source.type === 'text') {
+              data = Buffer.from(rawValue, 'utf-8').toString('base64')
+              mimeType = source.mimeType || 'text/plain'
+            } else {
+              const looksLikeBase64 =
+                source.type === 'base64' || isLikelyBase64Payload(rawValue)
+
+              if (looksLikeBase64) {
+                data = rawValue.replace(/\s/g, '')
+                mimeType =
+                  source.mimeType ||
+                  detectMimeTypeFromBase64(data) ||
+                  'application/octet-stream'
+              } else {
+                data = Buffer.from(rawValue, 'utf-8').toString('base64')
+                mimeType = source.mimeType || 'text/plain'
+              }
+            }
+
+            const filename = ensureFilenameExtension(
+              source.filename || attachmentFilename || 'attachment',
+              mimeType
+            )
+
+            fetchedAttachments.push({
+              data,
+              filename,
+              mimeType
+            })
+            continue
+          }
+
+          if (!isUrl(rawValue)) continue
+          const att = await fetchAttachmentContent(rawValue)
           if (att) fetchedAttachments.push(att)
         }
       }

@@ -34,10 +34,59 @@ async function fetchAttachmentContent(
 function parseDataUrl(
   value: string
 ): { mimeType: string; data: string } | null {
-  if (!value.startsWith('data:')) return null
-  const match = value.match(/^data:([^;]+);base64,(.+)$/)
+  const normalized = value.trim()
+  if (!normalized.startsWith('data:')) return null
+  const match = normalized.match(/^data:([^;]+);base64,([\s\S]+)$/i)
   if (!match) return null
-  return { mimeType: match[1], data: match[2] }
+  return { mimeType: match[1], data: match[2].replace(/\s/g, '') }
+}
+
+function parseAttachmentSources(
+  attachments: string | undefined,
+  attachmentType?: string
+): string[] {
+  if (!attachments) return []
+
+  const raw = attachments.trim()
+  if (!raw) return []
+
+  if (attachmentType === 'base64') {
+    // Allow explicit JSON array payloads for multiple attachments.
+    if (raw.startsWith('[') && raw.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => String(item).trim()).filter(Boolean)
+        }
+      } catch {
+        // Ignore JSON parse errors and fallback below.
+      }
+    }
+
+    // Preserve data URLs (single or multiple) without splitting at the base64 comma.
+    const dataUrlMatches = Array.from(raw.matchAll(/data:[^;,\s]+;base64,/g))
+    if (dataUrlMatches.length > 0) {
+      return dataUrlMatches
+        .map((match, index) => {
+          const start = match.index ?? 0
+          const end =
+            index + 1 < dataUrlMatches.length
+              ? (dataUrlMatches[index + 1].index ?? raw.length)
+              : raw.length
+
+          return raw
+            .slice(start, end)
+            .trim()
+            .replace(/^[,\s]+|[,\s]+$/g, '')
+        })
+        .filter(Boolean)
+    }
+  }
+
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
 }
 
 function ensureFilenameExtension(filename: string, mimeType: string): string {
@@ -264,12 +313,10 @@ export const executeSendEmail = async (
     let rawEmail: string
 
     // Parse attachments if provided
-    const attachmentSources = attachments
-      ? attachments
-          .split(',')
-          .map((s: string) => s.trim())
-          .filter(Boolean)
-      : []
+    const attachmentSources = parseAttachmentSources(
+      attachments,
+      attachmentType
+    )
 
     if (attachmentSources.length > 0) {
       const fetchedAttachments: {

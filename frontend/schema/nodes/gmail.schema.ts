@@ -7,7 +7,7 @@ export const sendEmailFormSchema = z.object({
   bcc: z.string().optional(),
   subject: z.string().optional(),
   body: z.string().optional(),
-  attachments: z.string().optional(), // URL or base64 data, comma-separated
+  attachments: z.string().optional(), // URL list or base64/data URL payload
   attachmentFilename: z.string().optional()
 })
 

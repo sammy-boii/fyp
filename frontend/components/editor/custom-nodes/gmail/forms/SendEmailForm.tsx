@@ -180,7 +180,7 @@ export function SendEmailForm() {
             <p className='text-xs text-muted-foreground mt-1'>
               {attachmentType === 'url'
                 ? 'Public URL only. Separate multiple with commas.'
-                : 'Use base64 data or attachment output from previous nodes.'}
+                : 'Use base64 data or Drive/Gmail data URL output from previous nodes.'}
             </p>
             <FieldError errors={[fieldState.error]} />
           </Field>

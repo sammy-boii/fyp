@@ -8,11 +8,11 @@ const DRIVE_LIST_HARD_MAX_RESULTS = parsePositiveInt(
 )
 const DRIVE_MAX_TOTAL_CONTENT_BYTES = parsePositiveInt(
   process.env.DRIVE_MAX_TOTAL_CONTENT_BYTES,
-  30 * 1024 * 1024
+  40 * 1024 * 1024
 )
 const DRIVE_MAX_SINGLE_FILE_BYTES = parsePositiveInt(
   process.env.DRIVE_MAX_SINGLE_FILE_BYTES,
-  5 * 1024 * 1024
+  8 * 1024 * 1024
 )
 const DRIVE_OUTBOUND_TIMEOUT_MS = parsePositiveInt(
   process.env.DRIVE_OUTBOUND_TIMEOUT_MS,

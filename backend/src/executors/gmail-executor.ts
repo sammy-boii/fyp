@@ -41,22 +41,117 @@ function parseDataUrl(
   return { mimeType: match[1], data: match[2].replace(/\s/g, '') }
 }
 
+type AttachmentSource = {
+  value: string
+  mimeType?: string
+  filename?: string
+}
+
+function toAttachmentSource(item: unknown): AttachmentSource | null {
+  if (typeof item === 'string') {
+    const value = item.trim()
+    return value ? { value } : null
+  }
+
+  if (!item || typeof item !== 'object') {
+    return null
+  }
+
+  const record = item as Record<string, unknown>
+  const valueCandidate = [
+    record.data,
+    record.content,
+    record.value,
+    record.url
+  ].find((candidate) => typeof candidate === 'string' && candidate.trim())
+
+  if (typeof valueCandidate !== 'string') {
+    return null
+  }
+
+  const mimeType =
+    typeof record.mimeType === 'string' && record.mimeType.trim()
+      ? record.mimeType.trim()
+      : typeof record.contentType === 'string' && record.contentType.trim()
+        ? record.contentType.trim()
+        : undefined
+
+  const filename =
+    typeof record.filename === 'string' && record.filename.trim()
+      ? record.filename.trim()
+      : typeof record.name === 'string' && record.name.trim()
+        ? record.name.trim()
+        : undefined
+
+  return {
+    value: valueCandidate.trim(),
+    mimeType,
+    filename
+  }
+}
+
 function parseAttachmentSources(
-  attachments: string | undefined,
+  attachments: unknown,
   attachmentType?: string
-): string[] {
+): AttachmentSource[] {
   if (!attachments) return []
+
+  if (Array.isArray(attachments)) {
+    return attachments
+      .map((item) => toAttachmentSource(item))
+      .filter(Boolean) as AttachmentSource[]
+  }
+
+  if (typeof attachments === 'object') {
+    const direct = toAttachmentSource(attachments)
+    if (direct) return [direct]
+
+    const record = attachments as Record<string, unknown>
+    if (Array.isArray(record.attachments)) {
+      return record.attachments
+        .map((item) => toAttachmentSource(item))
+        .filter(Boolean) as AttachmentSource[]
+    }
+
+    return []
+  }
+
+  if (typeof attachments !== 'string') return []
 
   const raw = attachments.trim()
   if (!raw) return []
 
   if (attachmentType === 'base64') {
-    // Allow explicit JSON array payloads for multiple attachments.
-    if (raw.startsWith('[') && raw.endsWith(']')) {
+    // Allow JSON payloads (single object or array) from previous node outputs.
+    if (
+      (raw.startsWith('[') && raw.endsWith(']')) ||
+      (raw.startsWith('{') && raw.endsWith('}'))
+    ) {
       try {
         const parsed = JSON.parse(raw)
+
         if (Array.isArray(parsed)) {
-          return parsed.map((item) => String(item).trim()).filter(Boolean)
+          return parsed
+            .map((item) => toAttachmentSource(item))
+            .filter(Boolean) as AttachmentSource[]
+        }
+
+        if (parsed && typeof parsed === 'object') {
+          const direct = toAttachmentSource(parsed)
+          if (direct) return [direct]
+
+          const parsedRecord = parsed as Record<string, unknown>
+          if (Array.isArray(parsedRecord.attachments)) {
+            return parsedRecord.attachments
+              .map((item) => toAttachmentSource(item))
+              .filter(Boolean) as AttachmentSource[]
+          }
+        }
+
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((item) => toAttachmentSource(item))
+            .filter(Boolean) as AttachmentSource[]
         }
       } catch {
         // Ignore JSON parse errors and fallback below.
@@ -80,6 +175,7 @@ function parseAttachmentSources(
             .replace(/^[,\s]+|[,\s]+$/g, '')
         })
         .filter(Boolean)
+        .map((value) => ({ value }))
     }
   }
 
@@ -87,6 +183,7 @@ function parseAttachmentSources(
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
+    .map((value) => ({ value }))
 }
 
 function ensureFilenameExtension(filename: string, mimeType: string): string {
@@ -330,16 +427,17 @@ export const executeSendEmail = async (
 
       if (attachmentType === 'base64') {
         for (const source of attachmentSources) {
-          const parsed = parseDataUrl(source)
+          const parsed = parseDataUrl(source.value)
           const mimeType =
+            source.mimeType ||
             parsed?.mimeType ||
-            detectMimeTypeFromBase64(source) ||
+            detectMimeTypeFromBase64(source.value) ||
             'application/octet-stream'
           const filename = ensureFilenameExtension(
-            attachmentFilename || 'attachment',
+            source.filename || attachmentFilename || 'attachment',
             mimeType
           )
-          const data = parsed?.data || source
+          const data = parsed?.data || source.value
           fetchedAttachments.push({
             data,
             filename,
@@ -348,8 +446,8 @@ export const executeSendEmail = async (
         }
       } else {
         for (const source of attachmentSources) {
-          if (!isUrl(source)) continue
-          const att = await fetchAttachmentContent(source)
+          if (!isUrl(source.value)) continue
+          const att = await fetchAttachmentContent(source.value)
           if (att) fetchedAttachments.push(att)
         }
       }

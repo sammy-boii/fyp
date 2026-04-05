@@ -38,6 +38,38 @@ interface WorkflowExecutionTabProps {
   nodeActionIdById?: Record<string, string>
 }
 
+const TIMELINE_MAX_VALUE_LENGTH = 300
+
+const truncateLongValue = (value: string): string => {
+  if (value.length <= TIMELINE_MAX_VALUE_LENGTH) {
+    return value
+  }
+
+  return `${value.slice(0, TIMELINE_MAX_VALUE_LENGTH)}...`
+}
+
+const truncateOutputValues = (value: unknown): unknown => {
+  if (typeof value === 'string') {
+    return truncateLongValue(value)
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => truncateOutputValues(item))
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>).reduce(
+      (acc, [key, nestedValue]) => {
+        acc[key] = truncateOutputValues(nestedValue)
+        return acc
+      },
+      {} as Record<string, unknown>
+    )
+  }
+
+  return value
+}
+
 const formatNodeName = (nodeId?: string, nodeName?: string) => {
   const raw = nodeName || nodeId
   if (!raw) return 'Unknown Node'
@@ -320,9 +352,10 @@ const WorkflowExecutionTab = ({
           }
         }
         if (hasOutput && log.data?.output) {
+          const truncatedOutput = truncateOutputValues(log.data.output)
           return {
             type: 'output',
-            content: JSON.stringify(log.data.output, null, 2)
+            content: JSON.stringify(truncatedOutput, null, 2)
           }
         }
         return undefined
@@ -447,7 +480,7 @@ const WorkflowExecutionTab = ({
 
       {/* Execution Groups */}
       <div className='flex-1 relative'>
-        <ScrollArea className='h-full'>
+        <ScrollArea className='h-full [scrollbar-gutter:stable]'>
           {executionGroups.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-20 text-muted-foreground'>
               <Clock className='h-10 w-10 mb-3 opacity-20' />

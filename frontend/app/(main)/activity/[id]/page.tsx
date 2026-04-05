@@ -106,6 +106,38 @@ const formatDurationSeconds = (durationMs?: number | null) => {
   return `${seconds.toFixed(2).replace(/\.00$/, '')}s`
 }
 
+const TIMELINE_MAX_VALUE_LENGTH = 300
+
+const truncateLongValue = (value: string): string => {
+  if (value.length <= TIMELINE_MAX_VALUE_LENGTH) {
+    return value
+  }
+
+  return `${value.slice(0, TIMELINE_MAX_VALUE_LENGTH)}...`
+}
+
+const truncateOutputValues = (value: unknown): unknown => {
+  if (typeof value === 'string') {
+    return truncateLongValue(value)
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => truncateOutputValues(item))
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>).reduce(
+      (acc, [key, nestedValue]) => {
+        acc[key] = truncateOutputValues(nestedValue)
+        return acc
+      },
+      {} as Record<string, unknown>
+    )
+  }
+
+  return value
+}
+
 const buildStoredLogs = (
   execution?: ExecutionDetail | null
 ): ExecutionLog[] => {
@@ -524,7 +556,11 @@ export default function ActivityExecutionPage() {
         if (hasOutput && log.data?.output) {
           return {
             type: 'output' as const,
-            content: JSON.stringify(log.data.output, null, 2)
+            content: JSON.stringify(
+              truncateOutputValues(log.data.output),
+              null,
+              2
+            )
           }
         }
         return undefined

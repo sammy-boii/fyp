@@ -125,13 +125,17 @@ function JsonOutputViewer({ content }: { content: string }) {
   const formattedJson = React.useMemo(() => tryFormatJson(content), [content])
 
   if (!formattedJson) {
-    return <pre className='whitespace-pre-wrap wrap-break-word'>{content}</pre>
+    return (
+      <pre className='whitespace-pre-wrap wrap-break-word break-all'>
+        {content}
+      </pre>
+    )
   }
 
   const lines = formattedJson.split('\n')
 
   return (
-    <div className='max-h-80 overflow-auto rounded-md border border-border/70'>
+    <div className='max-h-80 overflow-y-auto overflow-x-hidden rounded-md border border-border/70'>
       <div className='p-3 font-mono text-[11px] leading-5'>
         {lines.map((line, index) => (
           <div
@@ -141,7 +145,7 @@ function JsonOutputViewer({ content }: { content: string }) {
             <span className='select-none text-right text-muted-foreground/60'>
               {index + 1}
             </span>
-            <span className='whitespace-pre'>
+            <span className='whitespace-pre-wrap break-all'>
               {line ? renderJsonLine(line) : ' '}
             </span>
           </div>
@@ -366,7 +370,7 @@ const TimelineItem = React.forwardRef<HTMLLIElement, TimelineItemProps>(
 
     const content = (
       <div
-        className='grid grid-cols-[1fr_auto_1fr] gap-4 items-start'
+        className='grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-4 items-start'
         {...(status === 'in-progress' ? { 'aria-current': 'step' } : {})}
       >
         {/* Date */}
@@ -432,7 +436,7 @@ const TimelineItem = React.forwardRef<HTMLLIElement, TimelineItemProps>(
               <CollapsibleContent>
                 <div
                   className={cn(
-                    'mt-2 p-3 rounded-lg text-xs overflow-x-auto max-w-xl',
+                    'mt-2 w-xl max-w-full p-3 rounded-lg text-xs overflow-x-hidden',
                     expandableContent.type === 'error'
                       ? 'bg-destructive/5 text-destructive border border-destructive/20'
                       : ''
@@ -441,7 +445,7 @@ const TimelineItem = React.forwardRef<HTMLLIElement, TimelineItemProps>(
                   {expandableContent.type === 'output' ? (
                     <JsonOutputViewer content={expandableContent.content} />
                   ) : (
-                    <pre className='whitespace-pre-wrap wrap-break-word font-mono'>
+                    <pre className='whitespace-pre-wrap wrap-break-word break-all font-mono'>
                       {expandableContent.content}
                     </pre>
                   )}

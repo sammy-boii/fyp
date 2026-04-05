@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import {
   PlaceholderInput,
@@ -32,6 +33,12 @@ const FILE_TYPES = [
   { value: 'image/jpeg', label: 'JPEG Image', icon: Image, category: 'image' },
   { value: 'image/webp', label: 'WebP Image', icon: Image, category: 'image' },
   {
+    value: 'text/csv',
+    label: 'CSV File',
+    icon: FileSpreadsheet,
+    category: 'text'
+  },
+  {
     value: 'application/pdf',
     label: 'PDF Document',
     icon: FileType,
@@ -52,13 +59,39 @@ const FILE_TYPES = [
   }
 ]
 
+const CUSTOM_MIME_VALUE = '__custom_mime_type__'
+
+const getMimeCategory = (mimeType: string | undefined) => {
+  if (!mimeType) return 'text'
+  if (mimeType.startsWith('image/')) return 'image'
+  if (mimeType === 'application/pdf') return 'pdf'
+
+  const isOfficeDoc =
+    mimeType ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    mimeType === 'application/msword' ||
+    mimeType ===
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    mimeType === 'application/vnd.ms-excel'
+
+  if (isOfficeDoc) return 'document'
+  return 'text'
+}
+
 export function CreateFileForm() {
   const { control, watch } = useFormContext()
   const mimeType = watch('mimeType')
+  const [isCustomMime, setIsCustomMime] = useState(
+    !FILE_TYPES.some((type) => type.value === mimeType)
+  )
+
+  useEffect(() => {
+    setIsCustomMime(!FILE_TYPES.some((type) => type.value === mimeType))
+  }, [mimeType])
 
   // Determine what type of content input to show
   const selectedType = FILE_TYPES.find((t) => t.value === mimeType)
-  const category = selectedType?.category || 'text'
+  const category = selectedType?.category || getMimeCategory(mimeType)
 
   return (
     <div className='space-y-4'>
@@ -92,7 +125,20 @@ export function CreateFileForm() {
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel className='text-xs font-medium'>File Type</FieldLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select
+              value={isCustomMime ? CUSTOM_MIME_VALUE : field.value}
+              onValueChange={(value) => {
+                if (value === CUSTOM_MIME_VALUE) {
+                  setIsCustomMime(true)
+                  if (FILE_TYPES.some((type) => type.value === field.value)) {
+                    field.onChange('')
+                  }
+                  return
+                }
+                setIsCustomMime(false)
+                field.onChange(value)
+              }}
+            >
               <SelectTrigger className='h-9 text-sm'>
                 <SelectValue placeholder='Select file type' />
               </SelectTrigger>
@@ -108,8 +154,29 @@ export function CreateFileForm() {
                     </SelectItem>
                   )
                 })}
+                <SelectItem value={CUSTOM_MIME_VALUE}>
+                  <div className='flex items-center gap-2'>
+                    <FileType className='h-4 w-4 text-muted-foreground' />
+                    Custom MIME Type
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
+
+            {isCustomMime && (
+              <div className='mt-2 space-y-1'>
+                <PlaceholderInput
+                  type='text'
+                  placeholder='application/pdf'
+                  className='h-9 text-sm'
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                />
+                <p className='text-xs text-muted-foreground'>
+                  Supports images, PDF, docx and xlsx
+                </p>
+              </div>
+            )}
             <FieldError errors={[fieldState.error]} />
           </Field>
         )}

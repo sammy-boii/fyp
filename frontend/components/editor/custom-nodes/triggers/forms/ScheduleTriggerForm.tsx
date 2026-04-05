@@ -5,18 +5,20 @@ import { InputGroup, InputGroupInput } from '@/components/ui/input-group'
 import { Switch } from '@/components/ui/switch'
 import { DatePicker } from '@/components/ui/date-picker'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList
+} from '@/components/ui/combobox'
 import { Controller, useFormContext } from 'react-hook-form'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 export function ScheduleTriggerForm() {
   const { control, watch } = useFormContext()
   const loop = watch('loop')
+  const selectedTimezone = watch('timezone')
   const localTimeZone =
     typeof Intl !== 'undefined'
       ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kathmandu'
@@ -46,6 +48,20 @@ export function ScheduleTriggerForm() {
 
     return [localTimeZone, ...base.filter((zone) => zone !== localTimeZone)]
   }, [localTimeZone])
+
+  const [timezoneSearch, setTimezoneSearch] = useState(
+    selectedTimezone || localTimeZone
+  )
+
+  useEffect(() => {
+    setTimezoneSearch(selectedTimezone || localTimeZone)
+  }, [selectedTimezone, localTimeZone])
+
+  const filteredTimeZones = useMemo(() => {
+    const query = timezoneSearch.trim().toLowerCase()
+    if (!query) return timeZones
+    return timeZones.filter((zone) => zone.toLowerCase().includes(query))
+  }, [timeZones, timezoneSearch])
 
   return (
     <div className='space-y-4'>
@@ -99,24 +115,39 @@ export function ScheduleTriggerForm() {
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel className='text-xs font-medium'>Time zone</FieldLabel>
-            <Select
+            <Combobox
               value={field.value || localTimeZone}
-              onValueChange={field.onChange}
+              onValueChange={(value) => {
+                if (!value) return
+                field.onChange(value)
+                setTimezoneSearch(value)
+              }}
             >
-              <SelectTrigger
+              <ComboboxInput
+                placeholder='Search time zone...'
                 className='h-9 text-sm w-full'
+                value={timezoneSearch}
+                onChange={(e) => setTimezoneSearch(e.target.value)}
                 aria-invalid={fieldState.invalid}
-              >
-                <SelectValue placeholder='Select time zone' />
-              </SelectTrigger>
-              <SelectContent className='max-h-[280px]'>
-                {timeZones.map((zone) => (
-                  <SelectItem key={zone} value={zone}>
-                    {zone}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              />
+              <ComboboxContent>
+                <ComboboxList>
+                  {filteredTimeZones.length === 0 ? (
+                    <ComboboxEmpty>No time zones found</ComboboxEmpty>
+                  ) : (
+                    filteredTimeZones.map((zone) => (
+                      <ComboboxItem
+                        key={zone}
+                        value={zone}
+                        className='cursor-pointer py-2.5 px-3'
+                      >
+                        {zone}
+                      </ComboboxItem>
+                    ))
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
             <FieldError errors={[fieldState.error]} />
           </Field>
         )}

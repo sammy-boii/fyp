@@ -8,17 +8,7 @@ export const createFolderFormSchema = z.object({
 export const createFileFormSchema = z.object({
   name: z.string().min(1, 'File name is required'),
   content: z.string().optional(),
-  mimeType: z
-    .enum([
-      'text/plain',
-      'image/png',
-      'image/jpeg',
-      'image/webp',
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ])
-    .default('text/plain'),
+  mimeType: z.string().min(1, 'MIME type is required').default('text/plain'),
   parentFolderId: z.string().optional()
 })
 

@@ -38,8 +38,8 @@ export function ListGuildsForm() {
       <div className='rounded-md bg-muted/50 p-3 text-xs text-muted-foreground'>
         <p className='font-medium text-foreground mb-1'>Note:</p>
         <p>
-          This action returns all servers (guilds) that your Discord bot has
-          been added to. Make sure your bot has the necessary permissions.
+          This action only returns servers (guilds) you authorized when adding
+          the bot, not every server the bot is currently in.
         </p>
       </div>
     </div>

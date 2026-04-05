@@ -1,6 +1,7 @@
 import { TNodeExecutionResult } from '../types/workflow.types'
 import { getDiscordBotToken } from '../lib/credentials'
 import { API_ROUTES } from '../constants'
+import { prisma } from '@shared/db/prisma'
 
 // Channel type mapping
 const CHANNEL_TYPES = {
@@ -740,6 +741,35 @@ export async function executeListGuilds(
       return { success: false, error: 'Discord credential is required' }
     }
 
+    const credential = await prisma.oAuthCredential.findUnique({
+      where: { id: credentialId },
+      include: {
+        discordGuilds: {
+          select: {
+            guildId: true
+          }
+        }
+      }
+    })
+
+    if (!credential || credential.provider !== 'discord') {
+      return { success: false, error: 'Discord credential not found' }
+    }
+
+    const authorizedGuildIds = new Set(
+      credential.discordGuilds.map((guild) => guild.guildId)
+    )
+
+    if (authorizedGuildIds.size === 0) {
+      return {
+        success: true,
+        data: {
+          guilds: [],
+          count: 0
+        }
+      }
+    }
+
     const botToken = await getDiscordBotToken(credentialId)
 
     const guilds = await discordRequest(
@@ -747,10 +777,14 @@ export async function executeListGuilds(
       botToken
     )
 
+    const filteredGuilds = guilds.filter((guild: any) =>
+      authorizedGuildIds.has(guild.id)
+    )
+
     return {
       success: true,
       data: {
-        guilds: guilds.map((guild: any) => ({
+        guilds: filteredGuilds.map((guild: any) => ({
           id: guild.id,
           name: guild.name,
           icon: guild.icon
@@ -759,7 +793,7 @@ export async function executeListGuilds(
           owner: guild.owner,
           permissions: guild.permissions
         })),
-        count: guilds.length
+        count: filteredGuilds.length
       }
     }
   } catch (error: any) {

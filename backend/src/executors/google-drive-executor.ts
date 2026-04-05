@@ -10,10 +10,6 @@ const DRIVE_MAX_TOTAL_CONTENT_BYTES = parsePositiveInt(
   process.env.DRIVE_MAX_TOTAL_CONTENT_BYTES,
   40 * 1024 * 1024
 )
-const DRIVE_MAX_SINGLE_FILE_BYTES = parsePositiveInt(
-  process.env.DRIVE_MAX_SINGLE_FILE_BYTES,
-  8 * 1024 * 1024
-)
 const DRIVE_OUTBOUND_TIMEOUT_MS = parsePositiveInt(
   process.env.DRIVE_OUTBOUND_TIMEOUT_MS,
   15000
@@ -28,7 +24,7 @@ function parsePositiveInt(value: string | undefined, fallback: number): number {
 
 function formatBytes(bytes: number): string {
   const mb = bytes / (1024 * 1024)
-  return `${mb.toFixed(mb >= 10 ? 0 : 1)} MB`
+  return `${mb.toFixed(2)} MB (${bytes.toLocaleString()} bytes)`
 }
 
 function stripGuardPrefix(message: string): string {
@@ -74,12 +70,16 @@ async function readResponseWithByteLimit(
   response: Response,
   maxBytes: number
 ): Promise<Buffer> {
+  if (maxBytes <= 0) {
+    throw new Error('SIZE_LIMIT: Requested content exceeded total size limit.')
+  }
+
   const contentLengthHeader = response.headers.get('content-length')
   if (contentLengthHeader) {
     const contentLength = Number.parseInt(contentLengthHeader, 10)
     if (Number.isFinite(contentLength) && contentLength > maxBytes) {
       throw new Error(
-        `SIZE_LIMIT: File exceeds max per-file size (${formatBytes(contentLength)} > ${formatBytes(maxBytes)}).`
+        `SIZE_LIMIT: Requested content exceeded total size limit while downloading a file (${formatBytes(contentLength)} > ${formatBytes(maxBytes)}).`
       )
     }
   }
@@ -88,7 +88,7 @@ async function readResponseWithByteLimit(
     const arrayBuffer = await response.arrayBuffer()
     if (arrayBuffer.byteLength > maxBytes) {
       throw new Error(
-        `SIZE_LIMIT: File exceeds max per-file size (${formatBytes(arrayBuffer.byteLength)} > ${formatBytes(maxBytes)}).`
+        `SIZE_LIMIT: Requested content exceeded total size limit while downloading a file (${formatBytes(arrayBuffer.byteLength)} > ${formatBytes(maxBytes)}).`
       )
     }
     return Buffer.from(arrayBuffer)
@@ -118,7 +118,7 @@ async function readResponseWithByteLimit(
       }
 
       throw new Error(
-        `SIZE_LIMIT: File exceeds max per-file size (${formatBytes(totalBytes)} > ${formatBytes(maxBytes)}).`
+        `SIZE_LIMIT: Requested content exceeded total size limit while downloading a file (${formatBytes(totalBytes)} > ${formatBytes(maxBytes)}).`
       )
     }
 
@@ -628,7 +628,15 @@ export const executeListFiles = async (
         }
 
         try {
-          const content = await fetchFileContent(file.id, file.mimeType, token)
+          const remainingBudget =
+            DRIVE_MAX_TOTAL_CONTENT_BYTES - totalContentBytes
+
+          const content = await fetchFileContent(
+            file.id,
+            file.mimeType,
+            token,
+            remainingBudget
+          )
           totalContentBytes += content.contentBytes
 
           if (totalContentBytes > DRIVE_MAX_TOTAL_CONTENT_BYTES) {
@@ -695,7 +703,8 @@ export const executeListFiles = async (
 async function fetchFileContent(
   fileId: string,
   mimeType: string,
-  token: string
+  token: string,
+  maxBytes: number
 ): Promise<{
   content: string
   contentType: 'text' | 'base64'
@@ -706,10 +715,7 @@ async function fetchFileContent(
     const exportUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(fileId, 'text/plain')
     const response = await fetchWithTimeout(exportUrl, token)
     if (!response.ok) throw new Error('Failed to export Google Doc')
-    const buffer = await readResponseWithByteLimit(
-      response,
-      DRIVE_MAX_SINGLE_FILE_BYTES
-    )
+    const buffer = await readResponseWithByteLimit(response, maxBytes)
     return {
       content: buffer.toString('utf-8'),
       contentType: 'text',
@@ -722,10 +728,7 @@ async function fetchFileContent(
     const exportUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(fileId, 'text/csv')
     const response = await fetchWithTimeout(exportUrl, token)
     if (!response.ok) throw new Error('Failed to export Google Sheet')
-    const buffer = await readResponseWithByteLimit(
-      response,
-      DRIVE_MAX_SINGLE_FILE_BYTES
-    )
+    const buffer = await readResponseWithByteLimit(response, maxBytes)
     return {
       content: buffer.toString('utf-8'),
       contentType: 'text',
@@ -741,10 +744,7 @@ async function fetchFileContent(
     )
     const response = await fetchWithTimeout(exportUrl, token)
     if (!response.ok) throw new Error('Failed to export Google Slides')
-    const buffer = await readResponseWithByteLimit(
-      response,
-      DRIVE_MAX_SINGLE_FILE_BYTES
-    )
+    const buffer = await readResponseWithByteLimit(response, maxBytes)
     return {
       content: `data:application/pdf;base64,${buffer.toString('base64')}`,
       contentType: 'base64',
@@ -762,10 +762,7 @@ async function fetchFileContent(
     const downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
     const response = await fetchWithTimeout(downloadUrl, token)
     if (!response.ok) throw new Error('Failed to download text file')
-    const buffer = await readResponseWithByteLimit(
-      response,
-      DRIVE_MAX_SINGLE_FILE_BYTES
-    )
+    const buffer = await readResponseWithByteLimit(response, maxBytes)
     return {
       content: buffer.toString('utf-8'),
       contentType: 'text',
@@ -777,10 +774,7 @@ async function fetchFileContent(
   const downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
   const response = await fetchWithTimeout(downloadUrl, token)
   if (!response.ok) throw new Error('Failed to download file')
-  const buffer = await readResponseWithByteLimit(
-    response,
-    DRIVE_MAX_SINGLE_FILE_BYTES
-  )
+  const buffer = await readResponseWithByteLimit(response, maxBytes)
   return {
     content: `data:${mimeType};base64,${buffer.toString('base64')}`,
     contentType: 'base64',

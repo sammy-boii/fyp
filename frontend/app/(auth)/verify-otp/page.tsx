@@ -118,6 +118,15 @@ const VerifyOtpForm = () => {
 
   const router = useRouter()
 
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back()
+      return
+    }
+
+    router.push('/forgot-password')
+  }
+
   return (
     <div className='flex max-w-md w-full flex-col gap-6'>
       <Card>
@@ -185,13 +194,16 @@ const VerifyOtpForm = () => {
                 )}
               </Button>
 
-              <div
-                className='flex cursor-pointer items-end gap-1 text-sm justify-center text-muted-foreground hover:text-foreground'
-                onClick={window.history.back}
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                className='h-auto gap-1 p-0 text-sm text-muted-foreground hover:text-foreground'
+                onClick={handleBack}
               >
                 <ChevronsLeft className='size-4' />
                 Back
-              </div>
+              </Button>
             </div>
           </form>
         </CardContent>

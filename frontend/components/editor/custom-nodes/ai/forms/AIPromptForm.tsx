@@ -1,5 +1,6 @@
 'use client'
 
+import type { FormEvent } from 'react'
 import { useFieldArray, useFormContext, Controller } from 'react-hook-form'
 import { Field, FieldLabel } from '@/components/ui/field'
 import {
@@ -82,11 +83,11 @@ export function AIPromptForm() {
           </div>
         )}
 
-        <div className='space-y-2'>
+        <div className='space-y-3'>
           {fields.map((item, index) => (
             <div
               key={item.id}
-              className='grid grid-cols-[220px_220px_2rem] items-start gap-2'
+              className='grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2rem] items-start gap-2'
             >
               <Controller
                 name={`customFields.${index}.key`}
@@ -94,13 +95,12 @@ export function AIPromptForm() {
                 render={({ field, fieldState }) => (
                   <PlaceholderTextarea
                     placeholder='field_name'
-                    className='min-h-8 h-8 max-h-40 resize-none overflow-hidden text-xs leading-4 w-full'
-                    rows={1}
+                    className='min-h-9 h-9 max-h-40 w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word text-xs leading-4'
                     {...field}
                     value={field.value ?? ''}
-                    onInput={(e) => {
+                    onInput={(e: FormEvent<HTMLDivElement>) => {
                       const target = e.currentTarget
-                      target.style.height = '2rem'
+                      target.style.height = '2.25rem'
                       target.style.height = `${target.scrollHeight}px`
                     }}
                     aria-invalid={fieldState.invalid}
@@ -114,13 +114,12 @@ export function AIPromptForm() {
                 render={({ field }) => (
                   <PlaceholderTextarea
                     placeholder='value'
-                    className='min-h-8 h-8 max-h-40 resize-none overflow-hidden text-xs leading-4 w-full'
-                    rows={1}
+                    className='min-h-9 h-9 max-h-40 w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word text-xs leading-4'
                     {...field}
                     value={field.value ?? ''}
-                    onInput={(e) => {
+                    onInput={(e: FormEvent<HTMLDivElement>) => {
                       const target = e.currentTarget
-                      target.style.height = '2rem'
+                      target.style.height = '2.25rem'
                       target.style.height = `${target.scrollHeight}px`
                     }}
                   />
@@ -131,7 +130,7 @@ export function AIPromptForm() {
                 type='button'
                 variant='ghost'
                 size='icon'
-                className='h-8 w-8 shrink-0'
+                className='h-9 w-9 shrink-0'
                 onClick={() => remove(index)}
               >
                 <Trash2 className='h-3 w-3 text-muted-foreground' />
@@ -144,7 +143,7 @@ export function AIPromptForm() {
           type='button'
           variant='outline'
           size='sm'
-          className='w-full h-7 text-xs'
+          className='w-full h-7 text-xs mt-2'
           onClick={() => append({ key: '', value: '' })}
         >
           <Plus className='h-3 w-3 mr-1' />

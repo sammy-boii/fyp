@@ -10,10 +10,6 @@ const DRIVE_MAX_TOTAL_CONTENT_BYTES = parsePositiveInt(
   process.env.DRIVE_MAX_TOTAL_CONTENT_BYTES,
   40 * 1024 * 1024
 )
-const DRIVE_OUTBOUND_TIMEOUT_MS = parsePositiveInt(
-  process.env.DRIVE_OUTBOUND_TIMEOUT_MS,
-  15000
-)
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
   if (!value) return fallback
@@ -31,39 +27,17 @@ function stripGuardPrefix(message: string): string {
   if (message.startsWith('SIZE_LIMIT:')) {
     return message.replace(/^SIZE_LIMIT:\s*/, '')
   }
-  if (message.startsWith('TIMEOUT:')) {
-    return message.replace(/^TIMEOUT:\s*/, '')
-  }
   return message
 }
 
 function isFatalGuardError(message: string): boolean {
-  return message.startsWith('SIZE_LIMIT:') || message.startsWith('TIMEOUT:')
+  return message.startsWith('SIZE_LIMIT:')
 }
 
-async function fetchWithTimeout(
-  url: string,
-  token: string,
-  timeoutMs: number = DRIVE_OUTBOUND_TIMEOUT_MS
-): Promise<Response> {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-
-  try {
-    return await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: controller.signal
-    })
-  } catch (error: any) {
-    if (error?.name === 'AbortError') {
-      throw new Error(
-        'TIMEOUT: Google Drive request timed out. Narrow your selection and try again.'
-      )
-    }
-    throw error
-  } finally {
-    clearTimeout(timeoutId)
-  }
+async function fetchFromDrive(url: string, token: string): Promise<Response> {
+  return fetch(url, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
 }
 
 async function readResponseWithByteLimit(
@@ -565,7 +539,7 @@ export const executeListFiles = async (
     const listUrl = `${API_ROUTES.GOOGLE_DRIVE.LIST_FILES}?${params.toString()}`
 
     // Fetch file list
-    const response = await fetchWithTimeout(listUrl, token)
+    const response = await fetchFromDrive(listUrl, token)
 
     if (!response.ok) {
       const err = await response.json()
@@ -713,7 +687,7 @@ async function fetchFileContent(
   // Google Docs - export as plain text
   if (mimeType === 'application/vnd.google-apps.document') {
     const exportUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(fileId, 'text/plain')
-    const response = await fetchWithTimeout(exportUrl, token)
+    const response = await fetchFromDrive(exportUrl, token)
     if (!response.ok) throw new Error('Failed to export Google Doc')
     const buffer = await readResponseWithByteLimit(response, maxBytes)
     return {
@@ -726,7 +700,7 @@ async function fetchFileContent(
   // Google Sheets - export as CSV
   if (mimeType === 'application/vnd.google-apps.spreadsheet') {
     const exportUrl = API_ROUTES.GOOGLE_DRIVE.EXPORT_FILE(fileId, 'text/csv')
-    const response = await fetchWithTimeout(exportUrl, token)
+    const response = await fetchFromDrive(exportUrl, token)
     if (!response.ok) throw new Error('Failed to export Google Sheet')
     const buffer = await readResponseWithByteLimit(response, maxBytes)
     return {
@@ -742,7 +716,7 @@ async function fetchFileContent(
       fileId,
       'application/pdf'
     )
-    const response = await fetchWithTimeout(exportUrl, token)
+    const response = await fetchFromDrive(exportUrl, token)
     if (!response.ok) throw new Error('Failed to export Google Slides')
     const buffer = await readResponseWithByteLimit(response, maxBytes)
     return {
@@ -760,7 +734,7 @@ async function fetchFileContent(
     mimeType === 'application/javascript'
   ) {
     const downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
-    const response = await fetchWithTimeout(downloadUrl, token)
+    const response = await fetchFromDrive(downloadUrl, token)
     if (!response.ok) throw new Error('Failed to download text file')
     const buffer = await readResponseWithByteLimit(response, maxBytes)
     return {
@@ -772,7 +746,7 @@ async function fetchFileContent(
 
   // All other files (PDFs, images, binaries) - return as base64
   const downloadUrl = API_ROUTES.GOOGLE_DRIVE.GET_FILE_CONTENT(fileId)
-  const response = await fetchWithTimeout(downloadUrl, token)
+  const response = await fetchFromDrive(downloadUrl, token)
   if (!response.ok) throw new Error('Failed to download file')
   const buffer = await readResponseWithByteLimit(response, maxBytes)
   return {

@@ -49,7 +49,9 @@ const renderJsonPrimitive = (value: JsonPrimitive) => {
   return <span className='text-zinc-500 dark:text-zinc-400'>null</span>
 }
 
-const getContainerMeta = (value: JsonValue) => {
+const getContainerMeta = (
+  value: JsonValue[] | { [key: string]: JsonValue }
+) => {
   if (Array.isArray(value)) {
     return {
       open: '[',

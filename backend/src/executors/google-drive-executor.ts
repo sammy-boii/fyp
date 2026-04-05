@@ -6,10 +6,6 @@ const DRIVE_LIST_HARD_MAX_RESULTS = parsePositiveInt(
   process.env.DRIVE_LIST_HARD_MAX_RESULTS,
   100
 )
-const DRIVE_INCLUDE_CONTENT_MAX_RESULTS = parsePositiveInt(
-  process.env.DRIVE_INCLUDE_CONTENT_MAX_RESULTS,
-  10
-)
 const DRIVE_MAX_TOTAL_CONTENT_BYTES = parsePositiveInt(
   process.env.DRIVE_MAX_TOTAL_CONTENT_BYTES,
   30 * 1024 * 1024
@@ -520,13 +516,6 @@ export const executeListFiles = async (
       return {
         success: false,
         error: `Max results cannot exceed ${DRIVE_LIST_HARD_MAX_RESULTS}.`
-      }
-    }
-
-    if (includeContent && safeMaxResults > DRIVE_INCLUDE_CONTENT_MAX_RESULTS) {
-      return {
-        success: false,
-        error: `Include content supports up to ${DRIVE_INCLUDE_CONTENT_MAX_RESULTS} files per request.`
       }
     }
 

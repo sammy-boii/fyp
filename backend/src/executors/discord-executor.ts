@@ -881,7 +881,7 @@ export async function executeCreateChannel(
       type: CHANNEL_TYPES[type as keyof typeof CHANNEL_TYPES] || 0
     }
 
-    if (topic) body.topic = topic
+    if (topic && type !== 'voice') body.topic = topic
     if (parentId) body.parent_id = parentId
 
     const channel = await discordRequest(

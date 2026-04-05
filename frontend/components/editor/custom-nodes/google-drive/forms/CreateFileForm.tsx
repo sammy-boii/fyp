@@ -72,7 +72,7 @@ export function CreateFileForm() {
               type='text'
               placeholder={
                 category === 'image'
-                  ? 'image.png'
+                  ? 'Enter file name'
                   : category === 'pdf'
                     ? 'document.pdf'
                     : 'Enter file name'
@@ -193,13 +193,44 @@ export function CreateFileForm() {
                 </Tooltip>
               </FieldLabel>
               <PlaceholderTextarea
-                placeholder='{{node_id.base64}} or enter plain text...'
+                placeholder='Enter base64 data or plain text...'
                 rows={5}
                 className='resize-none text-sm'
                 {...field}
                 aria-invalid={fieldState.invalid}
               />
 
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+      )}
+
+      {/* Office documents (DOCX/XLSX) require base64 file content */}
+      {category === 'document' && (
+        <Controller
+          name='content'
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel className='text-xs font-medium flex items-center gap-1'>
+                Document Data
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className='h-3.5 w-3.5 text-muted-foreground cursor-help' />
+                  </TooltipTrigger>
+                  <TooltipContent side='top' className='max-w-[250px]'>
+                    <p>Paste base64 DOCX/XLSX data.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </FieldLabel>
+              <PlaceholderTextarea
+                placeholder='Enter base64 data...'
+                rows={5}
+                className='resize-none text-sm'
+                {...field}
+                aria-invalid={fieldState.invalid}
+              />
               <FieldError errors={[fieldState.error]} />
             </Field>
           )}

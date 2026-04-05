@@ -213,6 +213,14 @@ export const executeCreateFile = async (
 
     let multipartBody: string
 
+    const isLikelyBase64 = (value: string): boolean => {
+      const compact = value.replace(/\s/g, '')
+      if (!compact || compact.length < 50 || compact.length % 4 !== 0) {
+        return false
+      }
+      return /^[A-Za-z0-9+/=]+$/.test(compact)
+    }
+
     // Handle different file types
     if (mimeType.startsWith('image/')) {
       // Image files - content is base64 data
@@ -222,8 +230,8 @@ export const executeCreateFile = async (
 
       // Handle both raw base64 and data URL format
       let base64Data = content
-      if (content.includes(',')) {
-        base64Data = content.split(',')[1]
+      if (content.startsWith('data:') && content.includes('base64,')) {
+        base64Data = content.split('base64,')[1]
       }
 
       const metadataPart =
@@ -311,10 +319,31 @@ export const executeCreateFile = async (
         }
       }
 
-      // Handle both raw base64 and data URL format
-      let base64Data = content
-      if (content.includes(',')) {
-        base64Data = content.split(',')[1]
+      // Handle data URL, raw base64, and CSV fallback for spreadsheet uploads.
+      let base64Data = ''
+      let uploadContentType = mimeType
+      let csvFallbackText: string | null = null
+
+      if (content.startsWith('data:') && content.includes('base64,')) {
+        base64Data = content.split('base64,')[1]
+      } else if (isLikelyBase64(content)) {
+        base64Data = content.replace(/\s/g, '')
+      } else if (
+        mimeType ===
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        mimeType === 'application/vnd.ms-excel'
+      ) {
+        // List spreadsheets can return CSV text; upload it directly as CSV.
+        csvFallbackText = content
+        uploadContentType = 'text/csv'
+        // Import CSV into a spreadsheet to avoid malformed Office binary uploads.
+        fileMetadata.mimeType = 'application/vnd.google-apps.spreadsheet'
+      } else {
+        return {
+          success: false,
+          error:
+            'Document content must be valid base64 (data URL or raw base64 string).'
+        }
       }
 
       const metadataPart =
@@ -323,12 +352,16 @@ export const executeCreateFile = async (
         JSON.stringify(fileMetadata)
 
       const mediaPart =
-        delimiter +
-        'Content-Type: ' +
-        mimeType +
-        '\r\n' +
-        'Content-Transfer-Encoding: base64\r\n\r\n' +
-        base64Data
+        csvFallbackText !== null
+          ? delimiter +
+            'Content-Type: text/csv; charset=UTF-8\r\n\r\n' +
+            csvFallbackText
+          : delimiter +
+            'Content-Type: ' +
+            uploadContentType +
+            '\r\n' +
+            'Content-Transfer-Encoding: base64\r\n\r\n' +
+            base64Data
 
       multipartBody = metadataPart + mediaPart + closeDelimiter
     } else {
@@ -384,10 +417,21 @@ export const executeCreateFile = async (
     })
 
     if (!createResponse.ok) {
-      const err = await createResponse.json()
+      const errText = await createResponse.text()
+      let err: any = null
+
+      try {
+        err = JSON.parse(errText)
+      } catch {
+        err = null
+      }
+
       return {
         success: false,
-        error: err?.error?.message || 'Failed to create file'
+        error:
+          err?.error?.message ||
+          errText ||
+          `Failed to create file (HTTP ${createResponse.status})`
       }
     }
 

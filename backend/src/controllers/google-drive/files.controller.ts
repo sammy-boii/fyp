@@ -39,7 +39,7 @@ export const listDriveItems = tryCatch(async (c) => {
   const params = new URLSearchParams()
   params.set('pageSize', '100')
   params.set('fields', 'files(id,name,mimeType,iconLink)')
-  params.set('orderBy', 'folder,name')
+  params.set('orderBy', 'modifiedTime desc,createdTime desc')
 
   // Build query string for filtering
   const queryParts: string[] = []

@@ -86,17 +86,23 @@ export function AIPromptForm() {
           {fields.map((item, index) => (
             <div
               key={item.id}
-              className='grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2rem] items-start gap-2'
+              className='grid grid-cols-[220px_220px_2rem] items-start gap-2'
             >
               <Controller
                 name={`customFields.${index}.key`}
                 control={control}
                 render={({ field, fieldState }) => (
-                  <PlaceholderInput
+                  <PlaceholderTextarea
                     placeholder='field_name'
-                    className='h-8 text-xs w-full min-w-0'
+                    className='min-h-8 h-8 max-h-40 resize-none overflow-hidden text-xs leading-4 w-full'
+                    rows={1}
                     {...field}
                     value={field.value ?? ''}
+                    onInput={(e) => {
+                      const target = e.currentTarget
+                      target.style.height = '2rem'
+                      target.style.height = `${target.scrollHeight}px`
+                    }}
                     aria-invalid={fieldState.invalid}
                   />
                 )}
@@ -108,10 +114,15 @@ export function AIPromptForm() {
                 render={({ field }) => (
                   <PlaceholderTextarea
                     placeholder='value'
-                    className='min-h-8 max-h-24 text-xs leading-4 w-full min-w-0 whitespace-pre-wrap wrap-break-word'
+                    className='min-h-8 h-8 max-h-40 resize-none overflow-hidden text-xs leading-4 w-full'
                     rows={1}
                     {...field}
                     value={field.value ?? ''}
+                    onInput={(e) => {
+                      const target = e.currentTarget
+                      target.style.height = '2rem'
+                      target.style.height = `${target.scrollHeight}px`
+                    }}
                   />
                 )}
               />

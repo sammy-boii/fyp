@@ -12,119 +12,144 @@ import {
   CollapsibleTrigger
 } from '@/components/ui/collapsible'
 
-const JSON_KEY_LINE_RE = /^(\s*)"([^"]+)"\s*:\s*(.*?)(,?)$/
-const JSON_NUMBER_RE = /^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/
+type JsonPrimitive = string | number | boolean | null
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
 
-const renderJsonStringValue = (valueText: string) => {
-  const leadingWhitespace = valueText.match(/^\s*/)?.[0] ?? ''
-  const trimmed = valueText.trim()
-  const hasTrailingComma = trimmed.endsWith(',')
-  const jsonStringLiteral = hasTrailingComma ? trimmed.slice(0, -1) : trimmed
+const isJsonObject = (
+  value: JsonValue
+): value is { [key: string]: JsonValue } => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
 
-  if (!(jsonStringLiteral.startsWith('"') && jsonStringLiteral.endsWith('"'))) {
-    return null
+const renderJsonPrimitive = (value: JsonPrimitive) => {
+  if (typeof value === 'string') {
+    return (
+      <>
+        <span className='text-emerald-600 dark:text-emerald-400'>&quot;</span>
+        <span className='text-emerald-600 dark:text-emerald-400 whitespace-pre-wrap break-all'>
+          {value}
+        </span>
+        <span className='text-emerald-600 dark:text-emerald-400'>&quot;</span>
+      </>
+    )
   }
 
-  try {
-    const decoded = JSON.parse(jsonStringLiteral)
-    if (typeof decoded !== 'string') {
-      return null
+  if (typeof value === 'number') {
+    return <span className='text-cyan-600 dark:text-cyan-400'>{value}</span>
+  }
+
+  if (typeof value === 'boolean') {
+    return (
+      <span className='text-amber-600 dark:text-amber-400'>
+        {String(value)}
+      </span>
+    )
+  }
+
+  return <span className='text-zinc-500 dark:text-zinc-400'>null</span>
+}
+
+const getContainerMeta = (value: JsonValue) => {
+  if (Array.isArray(value)) {
+    return {
+      open: '[',
+      close: ']',
+      count: value.length,
+      noun: value.length === 1 ? 'item' : 'items'
     }
+  }
 
-    return (
-      <>
-        <span className='text-muted-foreground/70'>{leadingWhitespace}</span>
-        <span className='text-emerald-600 dark:text-emerald-400'>&quot;</span>
-        <span className='text-emerald-600 dark:text-emerald-400 whitespace-pre-wrap wrap-break-word'>
-          {decoded}
-        </span>
-        <span className='text-emerald-600 dark:text-emerald-400'>&quot;</span>
-        {hasTrailingComma ? (
-          <span className='text-muted-foreground'>,</span>
-        ) : null}
-      </>
-    )
-  } catch {
-    return null
+  const count = Object.keys(value).length
+  return {
+    open: '{',
+    close: '}',
+    count,
+    noun: count === 1 ? 'field' : 'fields'
   }
 }
 
-const tryFormatJson = (content: string): string | null => {
-  const trimmed = content.trim()
-  if (!trimmed || (!trimmed.startsWith('{') && !trimmed.startsWith('['))) {
-    return null
-  }
+function JsonTreeNode({
+  value,
+  depth,
+  label
+}: {
+  value: JsonValue
+  depth: number
+  label?: string
+}) {
+  const indent = depth * 14
+  const isContainer = Array.isArray(value) || isJsonObject(value)
 
-  try {
-    return JSON.stringify(JSON.parse(trimmed), null, 2)
-  } catch {
-    return null
-  }
-}
+  const keyLabel = label !== undefined && (
+    <>
+      <span className='text-violet-600 dark:text-violet-400'>
+        &quot;{label}&quot;
+      </span>
+      <span className='text-muted-foreground'>: </span>
+    </>
+  )
 
-const renderJsonValue = (valueText: string) => {
-  const trimmed = valueText.trim()
-
-  if (!trimmed) {
-    return <span className='text-muted-foreground/70'>{valueText}</span>
-  }
-
-  if (
-    trimmed === '{' ||
-    trimmed === '}' ||
-    trimmed === '[' ||
-    trimmed === ']'
-  ) {
-    return <span className='text-muted-foreground'>{valueText}</span>
-  }
-
-  const renderedString = renderJsonStringValue(valueText)
-  if (renderedString) {
-    return renderedString
-  }
-
-  if (trimmed === 'true' || trimmed === 'false') {
+  if (!isContainer) {
     return (
-      <span className='text-amber-600 dark:text-amber-400'>{valueText}</span>
+      <div style={{ paddingLeft: `${indent}px` }} className='leading-5'>
+        {keyLabel}
+        {renderJsonPrimitive(value)}
+      </div>
     )
   }
 
-  if (trimmed === 'null') {
-    return <span className='text-zinc-500 dark:text-zinc-400'>{valueText}</span>
-  }
+  const entries = Array.isArray(value)
+    ? value.map((entryValue, index) => [String(index), entryValue] as const)
+    : Object.entries(value)
 
-  if (JSON_NUMBER_RE.test(trimmed)) {
-    return <span className='text-cyan-600 dark:text-cyan-400'>{valueText}</span>
-  }
+  const containerMeta = getContainerMeta(value)
 
-  return <span className='text-foreground'>{valueText}</span>
-}
-
-const renderJsonLine = (line: string) => {
-  const keyMatch = line.match(JSON_KEY_LINE_RE)
-
-  if (keyMatch) {
-    const [, indent, key, value, comma] = keyMatch
-    return (
-      <>
-        <span className='text-muted-foreground/70'>{indent}</span>
-        <span className='text-violet-600 dark:text-violet-400'>
-          &quot;{key}&quot;
-        </span>
-        <span className='text-muted-foreground'>: </span>
-        {renderJsonValue(value)}
-        {comma ? <span className='text-muted-foreground'>{comma}</span> : null}
-      </>
-    )
-  }
-
-  return renderJsonValue(line)
+  return (
+    <Collapsible defaultOpen={depth <= 1} className='w-full'>
+      <CollapsibleTrigger asChild>
+        <button
+          type='button'
+          style={{ paddingLeft: `${indent}px` }}
+          className='group flex w-full items-center gap-1 rounded-sm px-1 py-0.5 text-left hover:bg-muted/40'
+        >
+          <ChevronDown className='h-3 w-3 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90' />
+          {keyLabel}
+          <span className='text-muted-foreground'>{containerMeta.open}</span>
+          <span className='text-[10px] text-muted-foreground/70'>
+            {containerMeta.count} {containerMeta.noun}
+          </span>
+          <span className='text-muted-foreground'>{containerMeta.close}</span>
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className='space-y-0.5'>
+          {entries.map(([entryLabel, entryValue], index) => (
+            <JsonTreeNode
+              key={`${depth}-${entryLabel}-${index}`}
+              label={entryLabel}
+              value={entryValue as JsonValue}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  )
 }
 
 function JsonOutputViewer({ content }: { content: string }) {
-  const formattedJson = React.useMemo(() => tryFormatJson(content), [content])
+  const parsedJson = React.useMemo(() => {
+    const trimmed = content.trim()
+    if (!trimmed) return null
 
-  if (!formattedJson) {
+    try {
+      return JSON.parse(trimmed) as JsonValue
+    } catch {
+      return null
+    }
+  }, [content])
+
+  if (parsedJson === null) {
     return (
       <pre className='whitespace-pre-wrap wrap-break-word break-all'>
         {content}
@@ -132,24 +157,10 @@ function JsonOutputViewer({ content }: { content: string }) {
     )
   }
 
-  const lines = formattedJson.split('\n')
-
   return (
     <div className='max-h-80 overflow-y-auto overflow-x-hidden rounded-md border border-border/70'>
       <div className='p-3 font-mono text-[11px] leading-5'>
-        {lines.map((line, index) => (
-          <div
-            key={`${index}-${line}`}
-            className='grid grid-cols-[2rem_1fr] gap-3'
-          >
-            <span className='select-none text-right text-muted-foreground/60'>
-              {index + 1}
-            </span>
-            <span className='whitespace-pre-wrap break-all'>
-              {line ? renderJsonLine(line) : ' '}
-            </span>
-          </div>
-        ))}
+        <JsonTreeNode value={parsedJson} depth={0} />
       </div>
     </div>
   )

@@ -35,10 +35,7 @@ interface DataTableProps<TValue> {
   data: ActivityExecutionRow[]
 }
 
-export function DataTable<TValue>({
-  columns,
-  data
-}: DataTableProps<TValue>) {
+export function DataTable<TValue>({ columns, data }: DataTableProps<TValue>) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     executionId: false,
     error: false
@@ -132,7 +129,10 @@ export function DataTable<TValue>({
               })
             ) : (
               <TableRow>
-                <TableCell className='h-32 text-center text-muted-foreground'>
+                <TableCell
+                  colSpan={Math.max(table.getVisibleLeafColumns().length, 1)}
+                  className='h-32 text-center text-muted-foreground'
+                >
                   <div className='flex flex-col items-center gap-2'>
                     <p className='text-sm font-medium'>No results found</p>
                     <p className='text-xs'>

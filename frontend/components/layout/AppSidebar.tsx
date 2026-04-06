@@ -51,6 +51,7 @@ import { Kbd } from '../ui/kbd'
 import { AnimatedThemeToggler } from '../magicui/animated-theme-toggler'
 import { useEffect, useRef, useState } from 'react'
 import { Palette } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 
 const defaultAccent = '#22c55e'
 const ACCENT_STORAGE_KEY = 'app-accent-color'
@@ -221,6 +222,7 @@ function NavUser({
   const { isMobile } = useSidebar()
 
   const router = useRouter()
+  const queryClient = useQueryClient()
   const fallbackInitial = user.name?.charAt(0)?.toUpperCase() || 'U'
   const [accentColor, setAccentColor] = useState(defaultAccent)
   const [isAccentReady, setIsAccentReady] = useState(false)
@@ -307,8 +309,10 @@ function NavUser({
               variant='destructive'
               onClick={async () => {
                 await logout()
+                queryClient.clear()
                 toast.success('Logged out successfully')
                 router.replace('/login')
+                router.refresh()
               }}
             >
               <LogOut />

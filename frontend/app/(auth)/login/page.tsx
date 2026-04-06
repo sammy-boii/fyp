@@ -22,11 +22,13 @@ import { loginSchema } from '@/schema/auth.schema'
 import { TLoginForm } from '@/types/auth.types'
 import { login } from '@/actions/auth.actions'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
 
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const [credentials, setCredentials] = useState<TLoginForm>({
     email: '',
@@ -52,8 +54,10 @@ export default function LoginPage() {
         return
       }
 
+      queryClient.clear()
       toast.success('Logged in successfully')
       router.replace('/dashboard')
+      router.refresh()
     })
   }
 

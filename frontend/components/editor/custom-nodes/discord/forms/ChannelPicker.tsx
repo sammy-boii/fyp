@@ -19,7 +19,8 @@ import {
   Folder,
   Megaphone,
   MessageSquare,
-  RefreshCw
+  RefreshCw,
+  type LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { usePlaceholderResolver } from '@/components/ui/placeholder-input'
@@ -47,7 +48,7 @@ interface ChannelPickerProps {
   'aria-invalid'?: boolean
 }
 
-const CHANNEL_ICONS: Record<string, React.ElementType> = {
+const CHANNEL_ICONS: Record<string, LucideIcon> = {
   text: Hash,
   voice: Volume2,
   category: Folder,
@@ -213,7 +214,7 @@ export function ChannelPicker({
     { categories: [], channelsByCategory: {}, uncategorized: [] }
   )
 
-  const getChannelIcon = (type: string) => {
+  const getChannelIcon = (type: string): LucideIcon => {
     const Icon = CHANNEL_ICONS[type] || Hash
     return Icon
   }

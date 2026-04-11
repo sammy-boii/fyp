@@ -9,19 +9,25 @@ const authPages = [
   '/reset-password'
 ]
 
+const publicPages = ['/demo']
+
+const matchesPath = (pathname: string, page: string) => {
+  return pathname === page || pathname.startsWith(`${page}/`)
+}
+
 export async function middleware(req: NextRequest) {
   const cookiesStore = await cookies()
   const token = cookiesStore.get('token')?.value
   const pathname = req.nextUrl.pathname
 
-  // includes() doesn't account for trailing / and query params
-  const isAuthPage = authPages.some((page) => pathname.startsWith(page))
+  const isAuthPage = authPages.some((page) => matchesPath(pathname, page))
+  const isPublicPage = publicPages.some((page) => matchesPath(pathname, page))
 
   if (isAuthPage && token) {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
-  if (!isAuthPage && !token) {
+  if (!isAuthPage && !isPublicPage && !token) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 }

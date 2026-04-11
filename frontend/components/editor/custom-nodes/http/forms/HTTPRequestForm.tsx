@@ -20,7 +20,8 @@ import {
   FileText,
   Settings2,
   FileCode,
-  FormInput
+  FormInput,
+  type LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -46,7 +47,7 @@ const METHOD_COLORS: Record<HTTPMethod, string> = {
 
 const CONTENT_TYPE_LABELS: Record<
   ContentType,
-  { label: string; icon: React.ElementType }
+  { label: string; icon: LucideIcon }
 > = {
   'application/json': { label: 'JSON', icon: FileJson },
   'application/x-www-form-urlencoded': { label: 'Form', icon: FormInput },

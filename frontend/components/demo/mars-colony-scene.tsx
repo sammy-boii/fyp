@@ -135,6 +135,9 @@ export function MarsColonyScene({
     let startButtonPressed = false
     let startButtonReady = false
     let startButtonClickPulse = 0
+    let startButtonHoverMix = 0
+    let startButtonPressMix = 0
+    let startButtonSheenSweep = 0
 
     // Terrain
     const terrainWidth = 140
@@ -1262,6 +1265,22 @@ export function MarsColonyScene({
       pointerInsideCanvas = true
     }
 
+    const isPointerOnStartButton = () => {
+      if (
+        !billboardHud.startButtonFill ||
+        !startButtonReady ||
+        !pointerInsideCanvas
+      ) {
+        return false
+      }
+
+      raycaster.setFromCamera(pointerNdc, camera)
+      return (
+        raycaster.intersectObject(billboardHud.startButtonFill, false).length >
+        0
+      )
+    }
+
     const clearPointerState = () => {
       pointerInsideCanvas = false
       startButtonHovered = false
@@ -1276,15 +1295,18 @@ export function MarsColonyScene({
 
     const handlePointerDown = (event: PointerEvent) => {
       updatePointerFromEvent(event)
-      if (startButtonReady && startButtonHovered) {
+      startButtonHovered = isPointerOnStartButton()
+      if (startButtonHovered) {
         startButtonPressed = true
       }
     }
 
     const handlePointerUp = (event: PointerEvent) => {
       updatePointerFromEvent(event)
+      const isPointerOnButton = isPointerOnStartButton()
+      startButtonHovered = isPointerOnButton
       const didPressStart =
-        startButtonPressed && startButtonReady && startButtonHovered
+        startButtonPressed && startButtonReady && isPointerOnButton
       startButtonPressed = false
       if (didPressStart) {
         startButtonClickPulse = 1
@@ -1362,12 +1384,7 @@ export function MarsColonyScene({
         startButtonReady &&
         pointerInsideCanvas
       ) {
-        raycaster.setFromCamera(pointerNdc, camera)
-        const buttonHits = raycaster.intersectObject(
-          billboardHud.startButtonFill,
-          false
-        )
-        startButtonHovered = buttonHits.length > 0
+        startButtonHovered = isPointerOnStartButton()
       } else {
         startButtonHovered = false
         startButtonPressed = false
@@ -1375,10 +1392,22 @@ export function MarsColonyScene({
       canvas.style.cursor = startButtonHovered ? 'pointer' : 'default'
       startButtonClickPulse = Math.max(
         0,
-        startButtonClickPulse - (reducedMotion ? 0.08 : 0.055)
+        startButtonClickPulse - (reducedMotion ? 0.05 : 0.028)
       )
-      const startButtonHover = startButtonHovered ? 1 : 0
-      const startButtonPress = startButtonPressed ? 1 : 0
+      const hoverLerpFactor = 1 - Math.exp(-delta * (reducedMotion ? 9 : 7))
+      const pressLerpFactor = 1 - Math.exp(-delta * (reducedMotion ? 13 : 10))
+      startButtonHoverMix = THREE.MathUtils.lerp(
+        startButtonHoverMix,
+        startButtonHovered ? 1 : 0,
+        hoverLerpFactor
+      )
+      startButtonPressMix = THREE.MathUtils.lerp(
+        startButtonPressMix,
+        startButtonPressed ? 1 : 0,
+        pressLerpFactor
+      )
+      const startButtonHover = startButtonHoverMix
+      const startButtonPress = startButtonPressMix
 
       if (billboardHud.spinner) {
         billboardHud.spinner.visible = showLoadingIndicators
@@ -1465,7 +1494,7 @@ export function MarsColonyScene({
               startButtonReveal * 0.18 +
               startButtonHover * 0.18 +
               startButtonClickPulse * 0.16 +
-              Math.sin(elapsed * 3.2) * 0.03
+              Math.sin(elapsed * 1.4) * 0.02
             : 0
         const pulseScale =
           1 +
@@ -1473,7 +1502,7 @@ export function MarsColonyScene({
           startButtonHover * 0.1 +
           startButtonClickPulse * 0.06 -
           startButtonPress * 0.035 +
-          Math.sin(elapsed * 2.4) * 0.016
+          Math.sin(elapsed * 1.1) * 0.01
         billboardHud.startButtonFill.scale.set(pulseScale, pulseScale, 1)
       }
       if (billboardHud.startButtonGlow) {
@@ -1485,7 +1514,7 @@ export function MarsColonyScene({
               startButtonReveal * 0.12 +
               startButtonHover * 0.14 +
               startButtonClickPulse * 0.2 +
-              Math.sin(elapsed * 2.8) * 0.04
+              Math.sin(elapsed * 1.2) * 0.024
             : 0
         const glowScale =
           1 +
@@ -1509,32 +1538,31 @@ export function MarsColonyScene({
         billboardHud.startButtonOutline.scale.set(outlineScale, outlineScale, 1)
       }
       if (billboardHud.startButtonSheen) {
-        if (billboardHud.startButtonSheen) {
-          const material = billboardHud.startButtonSheen
-            .material as THREE.MeshBasicMaterial
+        const material = billboardHud.startButtonSheen
+          .material as THREE.MeshBasicMaterial
 
-          if (startButtonHovered) {
-            // On hover: fast sweep triggered by elapsed, resets each hover entry
-            const sweepSpeed = 1.8
-            const sweep = (elapsed * sweepSpeed) % 1
-            billboardHud.startButtonSheen.position.x =
-              -billboardHud.startButtonWidth * 0.52 +
-              sweep * billboardHud.startButtonWidth * 1.04
+        const hoverSweepSpeed = reducedMotion ? 0.22 : 0.34
+        const idleSweepSpeed = reducedMotion ? 0.08 : 0.14
+        const sweepSpeed = startButtonHovered ? hoverSweepSpeed : idleSweepSpeed
+        startButtonSheenSweep = (startButtonSheenSweep + delta * sweepSpeed) % 1
 
-            // Bright at centre of sweep, fades at edges
-            const sweepFade = Math.sin(sweep * Math.PI)
-            material.opacity =
-              startButtonReveal *
-              (0.1 + sweepFade * 0.32 + startButtonClickPulse * 0.08)
-          } else {
-            // Idle: very slow faint ambient shimmer
-            const idleSweep = (Math.sin(elapsed * 0.55) + 1) / 2
-            billboardHud.startButtonSheen.position.x =
-              -billboardHud.startButtonWidth * 0.34 +
-              idleSweep * billboardHud.startButtonWidth * 0.68
-            material.opacity =
-              startButtonReveal > 0 ? 0.02 + startButtonReveal * 0.04 : 0
-          }
+        if (startButtonHovered) {
+          const sweep = startButtonSheenSweep
+          billboardHud.startButtonSheen.position.x =
+            -billboardHud.startButtonWidth * 0.52 +
+            sweep * billboardHud.startButtonWidth * 1.04
+
+          const sweepFade = Math.sin(sweep * Math.PI)
+          material.opacity =
+            startButtonReveal *
+            (0.08 + sweepFade * 0.24 + startButtonClickPulse * 0.08)
+        } else {
+          const idleSweep = startButtonSheenSweep
+          billboardHud.startButtonSheen.position.x =
+            -billboardHud.startButtonWidth * 0.34 +
+            idleSweep * billboardHud.startButtonWidth * 0.68
+          material.opacity =
+            startButtonReveal > 0 ? 0.015 + startButtonReveal * 0.03 : 0
         }
       }
       if (billboardHud.startButtonLabel) {

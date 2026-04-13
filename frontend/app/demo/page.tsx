@@ -1,6 +1,7 @@
 'use client'
 
 import { AddNodeSheetContent } from '@/app/(main)/workflows/[id]/_components/AddNodeSheet'
+import { EmptyWorkflowPlaceholder } from '@/app/(main)/workflows/[id]/_components/EmptyWorkflowPlaceholder'
 import { WorkflowHeader } from '@/app/(main)/workflows/[id]/_components/WorkflowHeader'
 import { WorkflowEditorProvider } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 import { ALL_NODE_TYPES, TRIGGER_NODE_TYPES } from '@/constants'
@@ -46,7 +47,14 @@ import {
   Workflow,
   type LucideIcon
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import './demo.css'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -58,6 +66,12 @@ interface Capability {
 }
 
 interface WorkflowStep {
+  title: string
+  description: string
+}
+
+interface DemoActionStep {
+  step: string
   title: string
   description: string
 }
@@ -118,6 +132,27 @@ const metrics = [
   {
     value: '<120ms',
     label: 'average signal propagation lag'
+  }
+]
+
+const demoActionSteps: DemoActionStep[] = [
+  {
+    step: '1',
+    title: 'Add Node',
+    description:
+      'Open the node picker with the + button to drop in your first trigger or action.'
+  },
+  {
+    step: '2',
+    title: 'Save',
+    description:
+      'Save preserves the current workflow layout and configuration once your graph looks right.'
+  },
+  {
+    step: '3',
+    title: 'Execute',
+    description:
+      'Execute runs the workflow after a manual trigger is in place so you can preview the flow.'
   }
 ]
 
@@ -205,6 +240,10 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
       isActive !== initialStateRef.current.isActive
     )
   }, [edges, isActive, nodes])
+  const isWorkflowEmpty = nodes.length === 0
+  const isManualTrigger = nodes.some(
+    (node) => node.data?.type === TRIGGER_NODE_TYPES.MANUAL_TRIGGER
+  )
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
     setNodes((currentNodes) => applyNodeChanges(changes, currentNodes))
@@ -325,10 +364,9 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
           isActive={isActive}
           onToggleActive={setIsActive}
           isTogglingActive={isTogglingActive}
-          isWorkflowEmpty={nodes.length === 0}
-          isManualTrigger={nodes.some(
-            (node) => node.data?.type === TRIGGER_NODE_TYPES.MANUAL_TRIGGER
-          )}
+          isWorkflowEmpty={isWorkflowEmpty}
+          isManualTrigger={isManualTrigger}
+          showDemoActionGuide
         />
 
         <Tabs
@@ -338,16 +376,43 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
             setActiveTab(value as 'editor' | 'executions')
           }}
         >
-          <TabsList className='absolute left-1/2 top-8 z-10 -translate-x-1/2'>
-            <TabsTrigger value='editor'>Editor</TabsTrigger>
-            <TabsTrigger value='executions'>Executions</TabsTrigger>
+          <TabsList className='demo-workflow-tabs-floating'>
+            <TabsTrigger
+              value='editor'
+              className='demo-workflow-tab-trigger'
+            >
+              Editor
+            </TabsTrigger>
+            <TabsTrigger
+              value='executions'
+              className='demo-workflow-tab-trigger'
+            >
+              Executions
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value='editor' className='mt-0 w-full flex-1'>
             <div
-              className='relative flex h-[calc(100vh-3.5rem)] w-full flex-col'
+              className='w-full h-[90vh] relative flex flex-col'
               ref={reactFlowWrapper}
             >
+              <div className='demo-workflow-action-guide' aria-hidden='true'>
+                {demoActionSteps.map((step) => (
+                  <article
+                    key={step.step}
+                    className='demo-workflow-action-step'
+                  >
+                    <span className='demo-workflow-action-step-number'>
+                      {step.step}
+                    </span>
+                    <div>
+                      <h3>{step.title}</h3>
+                      <p>{step.description}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
               <div className='absolute right-4 top-6 z-10'>
                 <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                   <SheetTrigger asChild>
@@ -355,6 +420,8 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
                       variant='default'
                       size='lg'
                       className='size-10 rounded-lg'
+                      data-demo-highlight='add-node'
+                      data-demo-step='1'
                     >
                       <Plus className='size-5' />
                     </Button>
@@ -362,11 +429,18 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
                   <AddNodeSheetContent
                     onOpenChange={setSheetOpen}
                     onAddNode={addNode}
-                    showOnlyTriggers={nodes.length === 0}
-                    showOnlyActions={nodes.length > 0}
+                    showOnlyTriggers={isWorkflowEmpty}
+                    showOnlyActions={!isWorkflowEmpty}
                   />
                 </Sheet>
               </div>
+
+              {isWorkflowEmpty && (
+                <EmptyWorkflowPlaceholder
+                  isAIGenerating={false}
+                  onAddNode={addNode}
+                />
+              )}
 
               <ReactFlow
                 onNodesChange={onNodesChange}
@@ -377,16 +451,16 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
                 edges={edges}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
-                className='bg-black'
+                className='bg-background'
                 connectionLineType={ConnectionLineType.Bezier}
                 defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
                 deleteKeyCode={null}
                 fitView
-                nodesDraggable
-                nodesConnectable
-                elementsSelectable
+                nodesDraggable={true}
+                nodesConnectable={true}
+                elementsSelectable={true}
               >
-                <Background gap={40} color='rgba(255,255,255,0.06)' />
+                <Background gap={40} />
               </ReactFlow>
 
               <div className='demo-workflow-welcome-mascot' aria-hidden='true'>
@@ -394,7 +468,16 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
                   Welcome! Let&apos;s build your workflow.
                 </div>
                 <div className='demo-workflow-welcome-avatar'>
-                  <Bot className='size-7' />
+                  <div className='demo-workflow-robot'>
+                    <span className='demo-workflow-robot-antenna' />
+                    <span className='demo-workflow-robot-head'>
+                      <span className='demo-workflow-robot-eye demo-workflow-robot-eye-left' />
+                      <span className='demo-workflow-robot-eye demo-workflow-robot-eye-right' />
+                      <span className='demo-workflow-robot-mouth' />
+                      <span className='demo-workflow-robot-cheek demo-workflow-robot-cheek-left' />
+                      <span className='demo-workflow-robot-cheek demo-workflow-robot-cheek-right' />
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -421,6 +504,9 @@ export default function DemoPage() {
   const [isTvTransitionActive, setIsTvTransitionActive] = useState(false)
 
   const isWorkflowStage = demoStage === 'workflow'
+  const tvTransitionStyle = {
+    '--demo-tv-duration': `${reducedMotion ? 960 : TV_TRANSITION_TOTAL_MS}ms`
+  } as CSSProperties
 
   const setScrollProgress = useCallback((value: number) => {
     const normalized = Math.min(Math.max(value, 0), 1)
@@ -450,7 +536,7 @@ export default function DemoPage() {
     setIsTvTransitionActive(true)
 
     const swapDelay = reducedMotion ? 220 : TV_TRANSITION_SWAP_DELAY_MS
-    const totalDelay = reducedMotion ? 620 : TV_TRANSITION_TOTAL_MS
+    const totalDelay = reducedMotion ? 960 : TV_TRANSITION_TOTAL_MS
 
     const showWorkflowTimer = window.setTimeout(() => {
       setDemoStage('workflow')
@@ -803,7 +889,7 @@ export default function DemoPage() {
     <div
       ref={rootRef}
       className={`demo-page ${isWorkflowStage ? 'demo-page-workflow' : ''}`}
-      style={{ backgroundColor: DEMO_BACKGROUND }}
+      style={isWorkflowStage ? undefined : { backgroundColor: DEMO_BACKGROUND }}
     >
       {!isWorkflowStage ? (
         <>
@@ -959,6 +1045,7 @@ export default function DemoPage() {
       <div
         className={`demo-tv-transition ${isTvTransitionActive ? 'is-active' : ''} ${reducedMotion ? 'is-reduced-motion' : ''}`}
         aria-hidden='true'
+        style={tvTransitionStyle}
       >
         <div className='demo-tv-shutter demo-tv-shutter-top' />
         <div className='demo-tv-shutter demo-tv-shutter-bottom' />

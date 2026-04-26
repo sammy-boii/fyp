@@ -47,6 +47,7 @@ import {
   Workflow,
   type LucideIcon
 } from 'lucide-react'
+import { Joyride, STATUS, type EventData, type Step } from 'react-joyride'
 import {
   type CSSProperties,
   useCallback,
@@ -175,17 +176,27 @@ const createDemoWorkflowSeed = () => {
 
 interface DemoWorkflowShowcaseProps {
   onBack: () => void
+  startWalkthrough: boolean
 }
 
-function DemoWorkflowShowcase({ onBack }: DemoWorkflowShowcaseProps) {
+function DemoWorkflowShowcase({
+  onBack,
+  startWalkthrough
+}: DemoWorkflowShowcaseProps) {
   return (
     <ReactFlowProvider>
-      <DemoWorkflowShowcaseInner onBack={onBack} />
+      <DemoWorkflowShowcaseInner
+        onBack={onBack}
+        startWalkthrough={startWalkthrough}
+      />
     </ReactFlowProvider>
   )
 }
 
-function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
+function DemoWorkflowShowcaseInner({
+  onBack,
+  startWalkthrough
+}: DemoWorkflowShowcaseProps) {
   const reactFlowInstance = useReactFlow()
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const demoSeed = useMemo(() => createDemoWorkflowSeed(), [])
@@ -197,6 +208,8 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
   const [isActive, setIsActive] = useState(true)
   const [isExecutingNode, setIsExecutingNode] = useState(false)
   const [isTogglingActive, setIsTogglingActive] = useState(false)
+  const [isWalkthroughRunning, setIsWalkthroughRunning] = useState(false)
+  const walkthroughStartTimerRef = useRef<number | null>(null)
 
   const initialStateRef = useRef({
     nodesHash: getDemoNodesHash(demoSeed.nodes),
@@ -307,6 +320,73 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
     [edges, nodes, reactFlowInstance]
   )
 
+  const walkthroughSteps = useMemo<Step[]>(
+    () => [
+      {
+        target: '[data-demo-tour-target="save-button"]',
+        title: 'Step 1: Save',
+        content:
+          'Use Save to keep the latest workflow changes once your graph is ready.',
+        placement: 'bottom'
+      },
+      {
+        target: '[data-demo-tour-target="execute-button"]',
+        title: 'Execute runs the flow',
+        content:
+          'Use Execute to launch a manual run after you add and connect the right nodes.',
+        placement: 'bottom'
+      },
+      {
+        target: '[data-demo-tour-target="active-toggle"]',
+        title: 'Active controls availability',
+        content:
+          'This switch marks the workflow as active or inactive when you are ready to expose it.',
+        placement: 'bottom'
+      },
+      {
+        target: '[data-demo-tour-target="add-node-button"]',
+        title: 'Add Node starts the build',
+        content:
+          'Open the node library here to place the first trigger or action in the editor.',
+        placement: 'left'
+      }
+    ],
+    []
+  )
+
+  const handleWalkthroughEvent = useCallback((data: EventData) => {
+    if (
+      data.status === STATUS.FINISHED ||
+      data.status === STATUS.SKIPPED
+    ) {
+      setIsWalkthroughRunning(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (walkthroughStartTimerRef.current !== null) {
+      window.clearTimeout(walkthroughStartTimerRef.current)
+      walkthroughStartTimerRef.current = null
+    }
+
+    if (!startWalkthrough) {
+      setIsWalkthroughRunning(false)
+      return
+    }
+
+    walkthroughStartTimerRef.current = window.setTimeout(() => {
+      setIsWalkthroughRunning(true)
+      walkthroughStartTimerRef.current = null
+    }, 180)
+
+    return () => {
+      if (walkthroughStartTimerRef.current !== null) {
+        window.clearTimeout(walkthroughStartTimerRef.current)
+        walkthroughStartTimerRef.current = null
+      }
+    }
+  }, [startWalkthrough])
+
   return (
     <WorkflowEditorProvider
       workflowId='demo-workflow-preview'
@@ -324,6 +404,34 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
       setIsTogglingActive={setIsTogglingActive}
     >
       <section className='relative flex h-screen w-full flex-col overflow-hidden'>
+        <Joyride
+          run={isWalkthroughRunning}
+          continuous
+          scrollToFirstStep={false}
+          steps={walkthroughSteps}
+          onEvent={handleWalkthroughEvent}
+          options={{
+            buttons: ['back', 'close', 'primary', 'skip'],
+            showProgress: true,
+            skipBeacon: true,
+            spotlightPadding: 12,
+            closeButtonAction: 'skip',
+            overlayClickAction: false,
+            overlayColor: 'rgba(3, 7, 18, 0.72)',
+            backgroundColor: '#ffffff',
+            textColor: '#0f172a',
+            primaryColor: '#0f172a',
+            zIndex: 2200
+          }}
+          locale={{
+            next: 'Next',
+            nextWithProgress: 'Next ({current}/{total})',
+            last: 'Done',
+            skip: 'Skip',
+            close: 'Close'
+          }}
+        />
+
         <WorkflowHeader
           workflowName='Welcome Sequence'
           workflowDescription='Demo workflow preview'
@@ -372,6 +480,7 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
                 <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                   <SheetTrigger asChild>
                     <Button
+                      data-demo-tour-target='add-node-button'
                       variant='default'
                       size='lg'
                       className='size-10 rounded-lg'
@@ -992,7 +1101,10 @@ export default function DemoPage() {
           </main>
         </>
       ) : (
-        <DemoWorkflowShowcase onBack={() => setDemoStage('landing')} />
+        <DemoWorkflowShowcase
+          onBack={() => setDemoStage('landing')}
+          startWalkthrough={!isTvTransitionActive}
+        />
       )}
 
       <div

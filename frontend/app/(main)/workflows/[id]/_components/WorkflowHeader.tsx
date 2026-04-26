@@ -75,7 +75,10 @@ export function WorkflowHeader({
         </div>
       </div>
       <div className='flex items-center gap-3 shrink-0'>
-        <div className='flex items-center mr-4 gap-2'>
+        <div
+          className='flex items-center mr-4 gap-2'
+          data-demo-tour-target='active-toggle'
+        >
           <span className='text-xs font-medium text-muted-foreground'>
             {isActive ? 'Active' : 'Inactive'}
           </span>
@@ -86,6 +89,7 @@ export function WorkflowHeader({
           />
         </div>
         <Button
+          data-demo-tour-target='execute-button'
           variant='outline'
           size='sm'
           className='gap-1.5 px-2 w-24 h-8 text-xs'
@@ -102,6 +106,7 @@ export function WorkflowHeader({
           Execute
         </Button>
         <Button
+          data-demo-tour-target='save-button'
           size='sm'
           className='gap-1.5 w-20 px-2 h-8 text-xs'
           onClick={onSave}

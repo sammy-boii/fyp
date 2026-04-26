@@ -20,7 +20,6 @@ interface WorkflowHeaderProps {
   isTogglingActive: boolean
   isWorkflowEmpty: boolean
   isManualTrigger: boolean
-  showDemoActionGuide?: boolean
 }
 
 export function WorkflowHeader({
@@ -35,8 +34,7 @@ export function WorkflowHeader({
   isActive,
   onToggleActive,
   isWorkflowEmpty,
-  isManualTrigger,
-  showDemoActionGuide = false
+  isManualTrigger
 }: WorkflowHeaderProps) {
   const { isAnyOperationPending, hasUnsavedChanges } = useWorkflowEditor()
 
@@ -93,8 +91,6 @@ export function WorkflowHeader({
           className='gap-1.5 px-2 w-24 h-8 text-xs'
           onClick={onExecute}
           isLoading={isExecuting}
-          data-demo-highlight={showDemoActionGuide ? 'execute' : undefined}
-          data-demo-step={showDemoActionGuide ? '3' : undefined}
           disabled={
             isAnyOperationPending ||
             !workflowId ||
@@ -110,8 +106,6 @@ export function WorkflowHeader({
           className='gap-1.5 w-20 px-2 h-8 text-xs'
           onClick={onSave}
           isLoading={isSaving}
-          data-demo-highlight={showDemoActionGuide ? 'save' : undefined}
-          data-demo-step={showDemoActionGuide ? '2' : undefined}
           disabled={isAnyOperationPending || !workflowId}
         >
           <Save className='h-3.5 w-3.5' />

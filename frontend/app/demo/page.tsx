@@ -70,12 +70,6 @@ interface WorkflowStep {
   description: string
 }
 
-interface DemoActionStep {
-  step: string
-  title: string
-  description: string
-}
-
 const capabilityCards: Capability[] = [
   {
     title: 'Adaptive Workflow Graphs',
@@ -132,27 +126,6 @@ const metrics = [
   {
     value: '<120ms',
     label: 'average signal propagation lag'
-  }
-]
-
-const demoActionSteps: DemoActionStep[] = [
-  {
-    step: '1',
-    title: 'Add Node',
-    description:
-      'Open the node picker with the + button to drop in your first trigger or action.'
-  },
-  {
-    step: '2',
-    title: 'Save',
-    description:
-      'Save preserves the current workflow layout and configuration once your graph looks right.'
-  },
-  {
-    step: '3',
-    title: 'Execute',
-    description:
-      'Execute runs the workflow after a manual trigger is in place so you can preview the flow.'
   }
 ]
 
@@ -366,7 +339,6 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
           isTogglingActive={isTogglingActive}
           isWorkflowEmpty={isWorkflowEmpty}
           isManualTrigger={isManualTrigger}
-          showDemoActionGuide
         />
 
         <Tabs
@@ -396,23 +368,6 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
               className='w-full h-[90vh] relative flex flex-col'
               ref={reactFlowWrapper}
             >
-              <div className='demo-workflow-action-guide' aria-hidden='true'>
-                {demoActionSteps.map((step) => (
-                  <article
-                    key={step.step}
-                    className='demo-workflow-action-step'
-                  >
-                    <span className='demo-workflow-action-step-number'>
-                      {step.step}
-                    </span>
-                    <div>
-                      <h3>{step.title}</h3>
-                      <p>{step.description}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-
               <div className='absolute right-4 top-6 z-10'>
                 <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                   <SheetTrigger asChild>
@@ -420,8 +375,6 @@ function DemoWorkflowShowcaseInner({ onBack }: DemoWorkflowShowcaseProps) {
                       variant='default'
                       size='lg'
                       className='size-10 rounded-lg'
-                      data-demo-highlight='add-node'
-                      data-demo-step='1'
                     >
                       <Plus className='size-5' />
                     </Button>

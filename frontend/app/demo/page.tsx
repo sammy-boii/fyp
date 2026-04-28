@@ -81,65 +81,65 @@ interface WorkflowStep {
 
 const capabilityCards: Capability[] = [
   {
-    title: 'Adaptive Workflow Graphs',
+    title: 'Visual Workflow Builder',
     description:
-      'Build automation maps that rewire themselves in real time as triggers, approvals, and retries evolve.',
+      'Design powerful automations with an intuitive drag-and-drop interface. No coding required.',
     icon: Workflow
   },
   {
-    title: 'Signal-Aware Monitoring',
+    title: 'Real-time Execution Tracking',
     description:
-      'Fuse telemetry streams into one mesh to surface bottlenecks, drift, and execution hotspots before they cascade.',
+      'Watch your workflows execute in real-time with live logs, status updates, and detailed execution history.',
     icon: Radar
   },
   {
-    title: 'Autonomous Safeguards',
+    title: 'Smart Error Recovery',
     description:
-      'Apply policy gates, red-team checks, and rollback plans directly in the delivery pipeline with zero manual handoff.',
+      'Automatically handle errors, retry failed steps, and recover gracefully when things go wrong.',
     icon: ShieldCheck
   }
 ]
 
 const workflowSteps: WorkflowStep[] = [
   {
-    title: 'Map the intent graph',
+    title: 'Design your automation',
     description:
-      'Model dependencies, event contracts, and owner boundaries in one canonical topology.'
+      'Start with a trigger like receiving an email or a webhook. Add actions in sequence to build your workflow.'
   },
   {
-    title: 'Inject live signals',
+    title: 'Connect your apps',
     description:
-      'Bind each node to operational metrics, queue lag, and anomaly confidence scores.'
+      'Integrate with Gmail, Google Drive, Discord, and more. Authenticate once and access all your tools.'
   },
   {
-    title: 'Automate decision paths',
+    title: 'Set up logic & conditions',
     description:
-      'Branch or recover automatically using policy packs, retry budgets, and approval checkpoints.'
+      'Add conditional branches to make decisions. Route tasks to different paths based on your rules.'
   },
   {
-    title: 'Ship with confidence loops',
+    title: 'Deploy & monitor',
     description:
-      'Continuously validate outcomes against SLOs and optimize each run for the next cycle.'
+      'Activate your workflow and let it run automatically. Monitor execution logs and adjust as needed.'
   }
 ]
 
 const metrics = [
   {
-    value: '97.8%',
-    label: 'incident-free execution windows'
+    value: '10x',
+    label: 'faster than manual work'
   },
   {
-    value: '4.2x',
-    label: 'faster workflow reconfiguration'
+    value: '98.89%',
+    label: 'platform uptime across workflow runs'
   },
   {
-    value: '<120ms',
-    label: 'average signal propagation lag'
+    value: '50ms',
+    label: 'average workflow response latency'
   }
 ]
 
 const DEMO_BACKGROUND = 'rgb(4, 10, 23)'
-const HERO_TITLE = '"Complexity is inevitable.\nFriction is\noptional."'
+const HERO_TITLE = '"Automate Everything.\nControl Everything."'
 const TV_TRANSITION_SWAP_DELAY_MS = 1760
 const TV_TRANSITION_TOTAL_MS = 3120
 
@@ -921,8 +921,14 @@ function DemoWorkflowShowcaseInner({
             overlayColor: 'rgba(3, 7, 18, 0.72)',
             backgroundColor: '#ffffff',
             textColor: '#0f172a',
-            primaryColor: '#0f172a',
-            zIndex: 2200
+            primaryColor: '#53f09b',
+            zIndex: 2200,
+            arrowColor: '#ffffff',
+            border: 'none',
+            borderRadius: 8,
+            buttonSkip: {
+              fontSize: 13
+            }
           }}
           locale={{
             next: 'Next',
@@ -1052,8 +1058,6 @@ function DemoWorkflowShowcaseInner({
           >
             <WorkflowExecutionTab
               isConnected
-              className=''
-              timelineClassName='mx-auto max-w-2xl'
               executionLogs={executionLogs}
               currentExecution={currentExecution}
               clearLogs={clearLogs}

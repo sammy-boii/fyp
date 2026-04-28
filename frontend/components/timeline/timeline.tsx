@@ -449,7 +449,7 @@ const TimelineItem = React.forwardRef<HTMLLIElement, TimelineItemProps>(
               <CollapsibleContent>
                 <div
                   className={cn(
-                    'mt-2 w-xl max-w-full p-3 rounded-lg text-xs overflow-x-hidden',
+                    'mt-2 w-full p-3 rounded-lg text-xs overflow-x-hidden',
                     expandableContent.type === 'error'
                       ? 'bg-destructive/5 text-destructive border border-destructive/20'
                       : ''

@@ -1016,14 +1016,14 @@ html.lenis {
 .demo-workflow-welcome-bubble::after {
   content: '';
   position: absolute;
-  right: 0.9rem;
-  bottom: -0.4rem;
-  width: 0.72rem;
-  height: 0.72rem;
-  border-right: 1px solid color-mix(in oklab, var(--demo-line) 34%, transparent);
-  border-bottom: 1px solid color-mix(in oklab, var(--demo-line) 34%, transparent);
-  background: color-mix(in oklab, black 68%, var(--background) 32%);
-  transform: rotate(45deg);
+  right: -0.38rem;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-left: 0.48rem solid color-mix(in oklab, black 68%, var(--background) 32%);
+  border-top: 0.32rem solid transparent;
+  border-bottom: 0.32rem solid transparent;
+  transform: translateY(-50%);
 }
 
 .demo-workflow-welcome-avatar {
@@ -1249,12 +1249,12 @@ html.lenis {
   }
 
   .demo-hero {
-    min-height: 72vh;
-    gap: 1rem;
-  }
-
-  .demo-hero-title {
-    letter-spacing: 0.04em;
+    min-height: 84vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.35rem;
+    max-width: 1020px;
   }
 
   .demo-hero-type {
@@ -1292,4 +1292,75 @@ html.lenis {
     font-size: 0.76rem;
     line-height: 1.35;
   }
+}
+
+/* Joyride tour walkthrough custom styling */
+.react-joyride__tooltip {
+  font-size: 0.9rem !important;
+  border-radius: 0.75rem !important;
+  padding: 0.5rem !important;
+  background-color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+}
+
+.react-joyride__tooltip-content {
+  padding: 1.5rem !important;
+  font-size: 0.9rem !important;
+  color: #000000 !important;
+}
+
+.react-joyride__tooltip__heading {
+  font-size: 1.05rem !important;
+  margin-bottom: 1rem !important;
+  font-weight: 600 !important;
+  color: #000000 !important;
+}
+
+.react-joyride__tooltip__main {
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+  color: #000000 !important;
+}
+
+.react-joyride__tooltip__footer {
+  display: flex;
+  gap: 0.75rem !important;
+  margin-top: 1.2rem !important;
+  padding: 1rem 1.5rem 1.5rem !important;
+  border-top: none !important;
+}
+
+.react-joyride__button {
+  padding: 0.35rem 0.7rem !important;
+  font-size: 0.8rem !important;
+  border-radius: 0.5rem !important;
+  transition: all 0.2s ease !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+}
+
+.react-joyride__button--primary {
+  background-color: var(--primary) !important;
+  color: #0f172a !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0.35rem 0.7rem !important;
+}
+
+.react-joyride__button--primary:hover {
+  background-color: color-mix(in oklab, var(--primary) 85%, white) !important;
+  box-shadow: none !important;
+}
+
+.react-joyride__button--secondary,
+.react-joyride__button--skip {
+  background-color: transparent !important;
+  color: var(--primary) !important;
+  border: none !important;
+}
+
+.react-joyride__button--secondary:hover,
+.react-joyride__button--skip:hover {
+  background-color: color-mix(in oklab, var(--primary) 15%, transparent) !important;
 }

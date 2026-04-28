@@ -980,12 +980,7 @@ export default function ActivityExecutionPage() {
                 </p>
               </div>
             ) : (
-              <TimelineLayout
-                animate
-                items={timelineItems}
-                size='md'
-                className='mx-0 max-w-none'
-              />
+              <TimelineLayout animate items={timelineItems} size='md' />
             )}
           </div>
         </div>

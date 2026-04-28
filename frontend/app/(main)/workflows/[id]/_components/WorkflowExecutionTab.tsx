@@ -534,29 +534,7 @@ const WorkflowExecutionTab = ({
         </Button>
       </div>
 
-      {/* Progress Bar for current execution */}
-      {currentExecution && showProgress && currentExecution.progress && (
-        <div className='rounded-lg border border-primary/20 bg-primary/5 p-4 mb-6'>
-          <div className='flex flex-wrap items-center justify-between gap-3 mb-3'>
-            <div className='flex items-center gap-3'>
-              <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/10'>
-                <Loader2 className='h-4 w-4 text-primary animate-spin' />
-              </div>
-              <div>
-                <p className='text-sm font-medium'>Executing workflow</p>
-                <p className='text-xs text-muted-foreground'>
-                  Streaming live updates
-                </p>
-              </div>
-            </div>
-            <span className='text-sm font-medium tabular-nums'>
-              {currentExecution.progress.current} /{' '}
-              {currentExecution.progress.total}
-            </span>
-          </div>
-          <Progress value={clampedProgress} className='h-1.5' />
-        </div>
-      )}
+      {/* Progress bar removed per user request */}
 
       {/* Execution Groups */}
       <div className={cn('relative flex min-h-0 flex-1')}>
@@ -603,6 +581,7 @@ const WorkflowExecutionTab = ({
                         getActiveNodeId(group.logs)
                       )}
                       size='md'
+                      className='max-w-none'
                     />
                   </div>
                 </div>

@@ -8,6 +8,7 @@ import {
   ZapIcon,
   PanelLeft
 } from 'lucide-react'
+import { MdEmojiObjects } from 'react-icons/md'
 
 import {
   Sidebar,
@@ -61,13 +62,13 @@ function normalizeAccentColor(color: string | null | undefined) {
   if (!color) return defaultAccent
   const value = color.trim()
   return HEX_COLOR_REGEX.test(value) ? value : defaultAccent
-}
-
-function applyAccentColorToRoot(accentColor: string) {
-  const root = document.documentElement
-  root.style.setProperty('--primary', accentColor)
-  root.style.setProperty('--sidebar-primary', accentColor)
-}
+  ,
+  {
+    title: 'Demo',
+    url: '/demo',
+    icon: MdEmojiObjects,
+    description: 'Interactive demo'
+  }
 
 // Menu items.
 const mainItems = [
@@ -94,6 +95,12 @@ const mainItems = [
     url: '/activity',
     icon: Activity,
     description: 'Execution logs'
+  },
+  {
+    title: 'Demo',
+    url: '/demo',
+    icon: PanelLeft,
+    description: 'Interactive demo'
   }
 ]
 

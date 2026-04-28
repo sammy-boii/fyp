@@ -139,7 +139,7 @@ const metrics = [
 ]
 
 const DEMO_BACKGROUND = 'rgb(4, 10, 23)'
-const HERO_TITLE = '"Automate Everything.\nControl Everything."'
+const HERO_TITLE = 'Complexity is inevitable. Friction is optional.'
 const TV_TRANSITION_SWAP_DELAY_MS = 1760
 const TV_TRANSITION_TOTAL_MS = 3120
 

@@ -26,7 +26,8 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: 'Flux | Automation Application',
-  description: 'HEHEHEHEHAW'
+  description:
+    'Flux is a visual workflow automation platform to build, run, and monitor integrations across your apps with real-time execution insights.'
 }
 
 export default function MainLayout({

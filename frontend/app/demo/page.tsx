@@ -923,12 +923,7 @@ function DemoWorkflowShowcaseInner({
             textColor: '#0f172a',
             primaryColor: '#53f09b',
             zIndex: 2200,
-            arrowColor: '#ffffff',
-            border: 'none',
-            borderRadius: 8,
-            buttonSkip: {
-              fontSize: 13
-            }
+            arrowColor: '#ffffff'
           }}
           locale={{
             next: 'Next',

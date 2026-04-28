@@ -2,10 +2,7 @@
 
 import { useFieldArray, useFormContext, Controller } from 'react-hook-form'
 import { Field, FieldLabel } from '@/components/ui/field'
-import {
-  PlaceholderInput,
-  PlaceholderTextarea
-} from '@/components/ui/placeholder-input'
+import { PlaceholderTextarea } from '@/components/ui/placeholder-input'
 import { Sparkles, SlidersHorizontal, Braces, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 

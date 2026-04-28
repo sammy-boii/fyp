@@ -1131,21 +1131,6 @@ export function MarsColonyScene({
     let jellyfish: THREE.Object3D | null = null
     let jellyfishMixer: THREE.AnimationMixer | null = null
     const jellyfishBaseScale = 9
-    const toJellyWireMaterial = () =>
-      new THREE.MeshBasicMaterial({
-        color: PALETTE.wireAccent,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.34,
-        depthWrite: false
-      })
-    const toJellyEdgeMaterial = () =>
-      new THREE.LineBasicMaterial({
-        color: PALETTE.wireAccent,
-        transparent: true,
-        opacity: 0.84,
-        depthWrite: false
-      })
     const jellyfishLoader = new GLTFLoader()
     jellyfishLoader.load(
       '/models/jellyfish.glb',

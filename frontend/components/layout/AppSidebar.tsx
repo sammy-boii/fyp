@@ -62,13 +62,13 @@ function normalizeAccentColor(color: string | null | undefined) {
   if (!color) return defaultAccent
   const value = color.trim()
   return HEX_COLOR_REGEX.test(value) ? value : defaultAccent
-  ,
-  {
-    title: 'Demo',
-    url: '/demo',
-    icon: MdEmojiObjects,
-    description: 'Interactive demo'
-  }
+}
+
+function applyAccentColorToRoot(accentColor: string) {
+  const root = document.documentElement
+  root.style.setProperty('--primary', accentColor)
+  root.style.setProperty('--sidebar-primary', accentColor)
+}
 
 // Menu items.
 const mainItems = [
@@ -99,7 +99,7 @@ const mainItems = [
   {
     title: 'Demo',
     url: '/demo',
-    icon: PanelLeft,
+    icon: MdEmojiObjects,
     description: 'Interactive demo'
   }
 ]

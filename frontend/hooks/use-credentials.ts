@@ -36,10 +36,11 @@ export function useDeleteCredential() {
   })
 }
 
-export function useGetCredentials() {
+export function useGetCredentials(enabled = true) {
   return useQuery({
     queryKey: ['credentials'],
-    queryFn: getCredentials
+    queryFn: getCredentials,
+    enabled
   })
 }
 

@@ -10,6 +10,71 @@ import {
 import { Node, Edge, useReactFlow } from '@xyflow/react'
 import { useUpdateWorkflow } from '@/hooks/use-workflows'
 
+export type DemoCredentialOption = {
+  id: string
+  provider: string
+  service: string
+}
+
+export type DemoGuild = {
+  id: string
+  name: string
+  icon: string | null
+  owner: boolean
+}
+
+export type DemoChannel = {
+  id: string
+  name: string
+  type: string
+  typeId: number
+  position: number
+  parentId: string | null
+  topic: string | null
+}
+
+export type DemoGuildMember = {
+  id: string
+  username: string
+  displayName: string
+  avatar: string | null
+  isBot: boolean
+}
+
+export type DemoDriveItem = {
+  id: string
+  name: string
+  mimeType: string
+  iconLink: string
+  isFolder: boolean
+}
+
+export type DemoWorkflowAdapter = {
+  isDemo: true
+  credentials: DemoCredentialOption[]
+  listGuilds: (credentialId: string) => Promise<DemoGuild[]> | DemoGuild[]
+  listChannels: (
+    credentialId: string,
+    guildId: string,
+    type?: 'all' | 'text' | 'voice' | 'category' | 'announcement' | 'forum'
+  ) => Promise<DemoChannel[]> | DemoChannel[]
+  listGuildMembers: (
+    credentialId: string,
+    guildId: string
+  ) => Promise<DemoGuildMember[]> | DemoGuildMember[]
+  listDriveItems: (
+    credentialId: string,
+    type?: 'all' | 'files' | 'folders',
+    folderId?: string
+  ) => Promise<DemoDriveItem[]> | DemoDriveItem[]
+  executeNode?: (input: {
+    nodeId: string
+    actionId?: string
+    config?: Record<string, any>
+    nodeLabel?: string
+  }) => Promise<Record<string, any> | undefined>
+}
+
 type WorkflowEditorContextValue = {
   saveIfChanged: () => Promise<void>
   hasUnsavedChanges: boolean
@@ -20,6 +85,7 @@ type WorkflowEditorContextValue = {
   isAnyOperationPending: boolean
   setIsExecutingNode: (value: boolean) => void
   setIsTogglingActive: (value: boolean) => void
+  demoAdapter: DemoWorkflowAdapter | null
 }
 
 const WorkflowEditorContext = createContext<WorkflowEditorContextValue | null>(
@@ -57,6 +123,7 @@ type WorkflowEditorProviderProps = {
   setIsExecutingNode: (value: boolean) => void
   isTogglingActive: boolean
   setIsTogglingActive: (value: boolean) => void
+  demoAdapter?: DemoWorkflowAdapter | null
 }
 
 export function WorkflowEditorProvider({
@@ -73,7 +140,8 @@ export function WorkflowEditorProvider({
   isExecutingNode,
   setIsExecutingNode,
   isTogglingActive,
-  setIsTogglingActive
+  setIsTogglingActive,
+  demoAdapter = null
 }: WorkflowEditorProviderProps) {
   const { getNodes, getEdges, setNodes } = useReactFlow()
   const updateWorkflow = useUpdateWorkflow()
@@ -110,6 +178,10 @@ export function WorkflowEditorProvider({
   }, [])
 
   const saveIfChanged = useCallback(async () => {
+    if (demoAdapter) {
+      return
+    }
+
     if (isSavingRef.current || isExecutingWorkflow) return
 
     const nodes = getNodes()
@@ -168,7 +240,8 @@ export function WorkflowEditorProvider({
     updateWorkflow,
     isExecutingWorkflow,
     stripTransientNodeState,
-    setNodes
+    setNodes,
+    demoAdapter
   ])
 
   return (
@@ -182,7 +255,8 @@ export function WorkflowEditorProvider({
         isTogglingActive,
         isAnyOperationPending,
         setIsExecutingNode,
-        setIsTogglingActive
+        setIsTogglingActive,
+        demoAdapter
       }}
     >
       {children}

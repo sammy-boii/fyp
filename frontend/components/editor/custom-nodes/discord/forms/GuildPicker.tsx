@@ -20,6 +20,7 @@ import {
   formatPlaceholderForDisplay,
   extractLeadingCanonicalPlaceholders
 } from '@/lib/placeholder-utils'
+import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 
 interface GuildPickerProps {
   value: string
@@ -38,6 +39,7 @@ export function GuildPicker({
   className,
   'aria-invalid': ariaInvalid
 }: GuildPickerProps) {
+  const { demoAdapter } = useWorkflowEditor()
   const { resolveNodeLabel } = usePlaceholderResolver()
   const { watch } = useFormContext()
   const credentialId = watch('credentialId')
@@ -76,17 +78,22 @@ export function GuildPicker({
 
     startTransition(async () => {
       setError(null)
-      const result = await listGuilds(credentialId)
-
-      if (result.error) {
-        setError(result.error || 'Failed to fetch servers')
-        setGuilds([])
+      if (demoAdapter) {
+        const data = await Promise.resolve(demoAdapter.listGuilds(credentialId))
+        setGuilds(data)
       } else {
-        setGuilds(result.data || [])
+        const result = await listGuilds(credentialId)
+
+        if (result.error) {
+          setError(result.error || 'Failed to fetch servers')
+          setGuilds([])
+        } else {
+          setGuilds(result.data || [])
+        }
       }
       setHasFetched(true)
     })
-  }, [credentialId])
+  }, [credentialId, demoAdapter])
 
   // Only fetch when credential actually CHANGES to a different value (not on mount)
   useEffect(() => {

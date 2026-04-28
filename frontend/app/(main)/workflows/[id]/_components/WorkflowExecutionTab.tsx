@@ -28,6 +28,8 @@ import type { NodeAction } from '@/types/node.types'
 
 interface WorkflowExecutionTabProps {
   isConnected: boolean
+  className?: string
+  timelineClassName?: string
   executionLogs: ExecutionLog[]
   currentExecution: {
     id: string
@@ -215,6 +217,8 @@ const WorkflowExecutionTab = ({
   executionLogs,
   currentExecution,
   clearLogs,
+  className,
+  timelineClassName,
   nodeActionIdById
 }: WorkflowExecutionTabProps) => {
   const actionLabelMap = useMemo(() => {
@@ -496,7 +500,7 @@ const WorkflowExecutionTab = ({
   const showProgress = currentExecution?.status === 'running'
 
   return (
-    <div className='h-[90vh] flex flex-col p-6'>
+    <div className={cn('flex h-full min-h-0 flex-col p-6')}>
       {/* Header */}
       <div className='flex flex-wrap items-center justify-between gap-3 mb-6'>
         <div className='flex items-center gap-4'>
@@ -559,7 +563,7 @@ const WorkflowExecutionTab = ({
       )}
 
       {/* Execution Groups */}
-      <div className='flex-1 relative'>
+      <div className={cn('relative flex min-h-0 flex-1', className)}>
         <ScrollArea className='h-full [scrollbar-gutter:stable]'>
           {executionGroups.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-20 text-muted-foreground'>
@@ -603,7 +607,7 @@ const WorkflowExecutionTab = ({
                         getActiveNodeId(group.logs)
                       )}
                       size='md'
-                      className='mx-0 max-w-none'
+                      className={cn('mx-0 max-w-none', timelineClassName)}
                     />
                   </div>
                 </div>

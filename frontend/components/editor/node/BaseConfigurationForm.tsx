@@ -21,6 +21,7 @@ import { Separator } from '@/components/ui/separator'
 import { CREDENTIALS_OPTIONS } from '@/constants/registry'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 
 function ProviderIcon({ provider }: { provider: string }) {
   const base = provider.toLowerCase()
@@ -68,10 +69,11 @@ export const BaseConfigurationForm = ({
   initialConfig?: any
   nodeColor?: string
 }) => {
+  const { demoAdapter } = useWorkflowEditor()
   const { data: credentialsData, isLoading: isLoadingCredentials } =
-    useGetCredentials()
+    useGetCredentials(!demoAdapter)
 
-  const credentials = credentialsData?.data || []
+  const credentials = demoAdapter?.credentials || credentialsData?.data || []
 
   const localTimeZone =
     typeof Intl !== 'undefined'
@@ -232,13 +234,17 @@ export const BaseConfigurationForm = ({
                                 )
                               })
                             )}
-                            <Separator className='my-1' />
-                            <Link href='/credentials' className='block'>
-                              <div className='flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-sm cursor-pointer transition-colors'>
-                                <Plus className='h-4 w-4' />
-                                <span>Add Credential</span>
-                              </div>
-                            </Link>
+                            {!demoAdapter ? (
+                              <>
+                                <Separator className='my-1' />
+                                <Link href='/credentials' className='block'>
+                                  <div className='flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-sm cursor-pointer transition-colors'>
+                                    <Plus className='h-4 w-4' />
+                                    <span>Add Credential</span>
+                                  </div>
+                                </Link>
+                              </>
+                            ) : null}
                           </SelectContent>
                         </Select>
                         <FieldError errors={[fieldState.error]} />

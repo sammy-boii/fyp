@@ -19,6 +19,7 @@ import {
   formatPlaceholderForDisplay,
   extractLeadingCanonicalPlaceholders
 } from '@/lib/placeholder-utils'
+import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 
 export type DriveItemPickerType = 'all' | 'files' | 'folders'
 
@@ -41,6 +42,7 @@ export function DriveItemPicker({
   className,
   'aria-invalid': ariaInvalid
 }: DriveItemPickerProps) {
+  const { demoAdapter } = useWorkflowEditor()
   const { resolveNodeLabel } = usePlaceholderResolver()
   const { watch } = useFormContext()
   const credentialId = watch('credentialId')
@@ -84,22 +86,29 @@ export function DriveItemPicker({
 
       startTransition(async () => {
         setError(null)
-        const result = await listDriveItems(
-          credentialId,
-          type,
-          folderId || undefined
-        )
-
-        if (result.error) {
-          setError(result.error || 'Failed to fetch items')
-          setItems([])
+        if (demoAdapter) {
+          const data = await Promise.resolve(
+            demoAdapter.listDriveItems(credentialId, type, folderId || undefined)
+          )
+          setItems(data)
         } else {
-          setItems(result.data || [])
+          const result = await listDriveItems(
+            credentialId,
+            type,
+            folderId || undefined
+          )
+
+          if (result.error) {
+            setError(result.error || 'Failed to fetch items')
+            setItems([])
+          } else {
+            setItems(result.data || [])
+          }
         }
         setHasFetched(true)
       })
     },
-    [credentialId, type]
+    [credentialId, type, demoAdapter]
   )
 
   // Only fetch when credential actually CHANGES to a different value (not on mount)

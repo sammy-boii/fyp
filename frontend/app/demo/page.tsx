@@ -2,11 +2,18 @@
 
 import { AddNodeSheetContent } from '@/app/(main)/workflows/[id]/_components/AddNodeSheet'
 import { EmptyWorkflowPlaceholder } from '@/app/(main)/workflows/[id]/_components/EmptyWorkflowPlaceholder'
+import WorkflowExecutionTab from '@/app/(main)/workflows/[id]/_components/WorkflowExecutionTab'
 import { WorkflowHeader } from '@/app/(main)/workflows/[id]/_components/WorkflowHeader'
 import { WorkflowEditorProvider } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 import { ALL_NODE_TYPES, TRIGGER_NODE_TYPES } from '@/constants'
 import { MarsColonyScene } from '@/components/demo/mars-colony-scene'
 import { Button } from '@/components/ui/button'
+import {
+  NODE_DEFINITIONS,
+  TRIGGER_NODE_DEFINITIONS
+} from '@/constants/registry'
+import type { ExecutionLog } from '@/hooks/use-workflow-websocket'
+import { createDemoWorkflowAdapter } from '@/lib/demo-workflow-mocks'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSmoothScroll } from '@/hooks/use-smooth-scroll'
@@ -56,6 +63,7 @@ import {
   useRef,
   useState
 } from 'react'
+import { toast } from 'sonner'
 import './demo.css'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -135,6 +143,26 @@ const HERO_TITLE = '"Complexity is inevitable.\nFriction is\noptional."'
 const TV_TRANSITION_SWAP_DELAY_MS = 1760
 const TV_TRANSITION_TOTAL_MS = 3120
 
+const normalizeDemoValue = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeDemoValue(item))
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.keys(value as Record<string, unknown>)
+      .sort()
+      .reduce(
+        (acc, key) => {
+          acc[key] = normalizeDemoValue((value as Record<string, unknown>)[key])
+          return acc
+        },
+        {} as Record<string, unknown>
+      )
+  }
+
+  return value
+}
+
 const getDemoNodesHash = (nodesToHash: Node[]) => {
   return JSON.stringify(
     nodesToHash
@@ -143,7 +171,8 @@ const getDemoNodesHash = (nodesToHash: Node[]) => {
         type: node.type,
         data: {
           type: node.data?.type,
-          actionId: node.data?.actionId
+          actionId: node.data?.actionId,
+          config: normalizeDemoValue(node.data?.config)
         },
         position: {
           x: Math.round(node.position.x),
@@ -200,16 +229,27 @@ function DemoWorkflowShowcaseInner({
   const reactFlowInstance = useReactFlow()
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const demoSeed = useMemo(() => createDemoWorkflowSeed(), [])
+  const demoAdapter = useMemo(() => createDemoWorkflowAdapter(), [])
 
   const [nodes, setNodes] = useState<Node[]>(demoSeed.nodes)
   const [edges, setEdges] = useState<Edge[]>(demoSeed.edges)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'editor' | 'executions'>('editor')
   const [isActive, setIsActive] = useState(true)
+  const [isSavingWorkflow, setIsSavingWorkflow] = useState(false)
+  const [isExecutingWorkflow, setIsExecutingWorkflow] = useState(false)
   const [isExecutingNode, setIsExecutingNode] = useState(false)
   const [isTogglingActive, setIsTogglingActive] = useState(false)
   const [isWalkthroughRunning, setIsWalkthroughRunning] = useState(false)
+  const [executingNodeId, setExecutingNodeId] = useState<string | null>(null)
+  const [executionLogs, setExecutionLogs] = useState<ExecutionLog[]>([])
+  const [currentExecution, setCurrentExecution] = useState<{
+    id: string
+    status: 'running' | 'completed' | 'failed'
+    progress?: { current: number; total: number }
+  } | null>(null)
   const walkthroughStartTimerRef = useRef<number | null>(null)
+  const executionRunIdRef = useRef(0)
 
   const initialStateRef = useRef({
     nodesHash: getDemoNodesHash(demoSeed.nodes),
@@ -230,6 +270,16 @@ function DemoWorkflowShowcaseInner({
   const isManualTrigger = nodes.some(
     (node) => node.data?.type === TRIGGER_NODE_TYPES.MANUAL_TRIGGER
   )
+  const nodeActionIdById = useMemo(() => {
+    const map: Record<string, string> = {}
+    nodes.forEach((node) => {
+      const actionId = node.data?.actionId
+      if (node.id && typeof actionId === 'string' && actionId) {
+        map[node.id] = actionId
+      }
+    })
+    return map
+  }, [nodes])
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
     setNodes((currentNodes) => applyNodeChanges(changes, currentNodes))
@@ -274,6 +324,216 @@ function DemoWorkflowShowcaseInner({
       return true
     },
     [edges, nodes]
+  )
+
+  const getNodeLabel = useCallback((node: Node) => {
+    const type = node.data?.type as string | undefined
+
+    if (!type) {
+      return node.id
+    }
+
+    if (node.type === 'trigger_node') {
+      return (
+        (TRIGGER_NODE_DEFINITIONS as Record<string, { label?: string }>)[type]
+          ?.label ?? type
+      )
+    }
+
+    return (
+      (NODE_DEFINITIONS as Record<string, { label?: string }>)[type]?.label ??
+      type
+    )
+  }, [])
+
+  const isTriggerNode = useCallback((node: Node) => {
+    const nodeType = node.data?.type as string | undefined
+    return Boolean(
+      node.type === 'trigger_node' ||
+      (nodeType &&
+        (TRIGGER_NODE_DEFINITIONS as Record<string, unknown>)[nodeType])
+    )
+  }, [])
+
+  const validateWorkflowForDemo = useCallback(
+    (nodesToValidate: Node[], edgesToValidate: Edge[]) => {
+      const connectedNodeIds = new Set<string>()
+      edgesToValidate.forEach((edge) => {
+        if (edge.source) connectedNodeIds.add(edge.source)
+        if (edge.target) connectedNodeIds.add(edge.target)
+      })
+
+      const missingActionNodes: string[] = []
+      const standaloneNodes: string[] = []
+
+      nodesToValidate.forEach((node) => {
+        const label = getNodeLabel(node)
+        const actionId = node.data?.actionId as string | undefined
+
+        if (!actionId) {
+          missingActionNodes.push(label)
+        }
+
+        if (!connectedNodeIds.has(node.id)) {
+          standaloneNodes.push(label)
+        }
+      })
+
+      const formatNodeList = (items: string[]) => {
+        const unique = Array.from(new Set(items))
+        if (unique.length <= 3) {
+          return unique.join(', ')
+        }
+
+        return `${unique.slice(0, 3).join(', ')} (+${unique.length - 3} more)`
+      }
+
+      if (missingActionNodes.length > 0) {
+        return {
+          ok: false,
+          message: `Select an action for: ${formatNodeList(missingActionNodes)}`
+        } as const
+      }
+
+      if (nodesToValidate.length === 1) {
+        if (!isTriggerNode(nodesToValidate[0])) {
+          return {
+            ok: false,
+            message: 'A single-node workflow must use a trigger node'
+          } as const
+        }
+
+        return { ok: true } as const
+      }
+
+      if (standaloneNodes.length > 0) {
+        return {
+          ok: false,
+          message: `Connect or delete standalone nodes: ${formatNodeList(standaloneNodes)}`
+        } as const
+      }
+
+      return { ok: true } as const
+    },
+    [getNodeLabel, isTriggerNode]
+  )
+
+  const clearExecutionNodeState = useCallback(() => {
+    setExecutingNodeId(null)
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          isExecuting: false,
+          lastStatus: undefined,
+          lastOutput: undefined,
+          lastExecutedAt: undefined
+        }
+      }))
+    )
+  }, [])
+
+  const displayEdges = useMemo(() => {
+    if (!executingNodeId) {
+      return edges
+    }
+
+    return edges.map((edge) => {
+      const isCurrentEdge = edge.source === executingNodeId
+
+      if (!isCurrentEdge) {
+        return edge
+      }
+
+      return {
+        ...edge,
+        className: edge.className
+          ? `${edge.className} edge-flowing`
+          : 'edge-flowing'
+      }
+    })
+  }, [edges, executingNodeId])
+
+  const appendExecutionLog = useCallback((log: Omit<ExecutionLog, 'id'>) => {
+    const logEntry: ExecutionLog = {
+      ...log,
+      id: `${log.executionId}-${log.timestamp}-${Math.random().toString(36).slice(2, 10)}`
+    }
+    setExecutionLogs((currentLogs) => [...currentLogs, logEntry])
+  }, [])
+
+  const clearLogs = useCallback(() => {
+    setExecutionLogs([])
+    setCurrentExecution(null)
+  }, [])
+
+  const getExecutionOrder = useCallback(
+    (nodesToOrder: Node[], edgesToOrder: Edge[]) => {
+      const nodeMap = new Map(nodesToOrder.map((node) => [node.id, node]))
+      const incomingCounts = new Map<string, number>()
+      const adjacency = new Map<string, string[]>()
+
+      nodesToOrder.forEach((node) => {
+        incomingCounts.set(node.id, 0)
+        adjacency.set(node.id, [])
+      })
+
+      edgesToOrder.forEach((edge) => {
+        if (!edge.source || !edge.target) {
+          return
+        }
+
+        if (!nodeMap.has(edge.source) || !nodeMap.has(edge.target)) {
+          return
+        }
+
+        adjacency.get(edge.source)?.push(edge.target)
+        incomingCounts.set(
+          edge.target,
+          (incomingCounts.get(edge.target) ?? 0) + 1
+        )
+      })
+
+      const queue = nodesToOrder
+        .filter((node) => (incomingCounts.get(node.id) ?? 0) === 0)
+        .sort((left, right) => left.position.x - right.position.x)
+      const ordered: Node[] = []
+
+      while (queue.length > 0) {
+        const nextNode = queue.shift()
+        if (!nextNode) {
+          continue
+        }
+
+        ordered.push(nextNode)
+        const neighbors = adjacency.get(nextNode.id) ?? []
+
+        neighbors.forEach((neighborId) => {
+          const remainingIncoming = (incomingCounts.get(neighborId) ?? 0) - 1
+          incomingCounts.set(neighborId, remainingIncoming)
+
+          if (remainingIncoming === 0) {
+            const neighborNode = nodeMap.get(neighborId)
+            if (neighborNode) {
+              queue.push(neighborNode)
+              queue.sort((left, right) => left.position.x - right.position.x)
+            }
+          }
+        })
+      }
+
+      if (ordered.length === nodesToOrder.length) {
+        return ordered
+      }
+
+      const seenIds = new Set(ordered.map((node) => node.id))
+      return [
+        ...ordered,
+        ...nodesToOrder.filter((node) => !seenIds.has(node.id))
+      ]
+    },
+    []
   )
 
   const onConnect = useCallback((connection: Connection) => {
@@ -355,10 +615,7 @@ function DemoWorkflowShowcaseInner({
   )
 
   const handleWalkthroughEvent = useCallback((data: EventData) => {
-    if (
-      data.status === STATUS.FINISHED ||
-      data.status === STATUS.SKIPPED
-    ) {
+    if (data.status === STATUS.FINISHED || data.status === STATUS.SKIPPED) {
       setIsWalkthroughRunning(false)
     }
   }, [])
@@ -387,6 +644,249 @@ function DemoWorkflowShowcaseInner({
     }
   }, [startWalkthrough])
 
+  useEffect(() => {
+    return () => {
+      executionRunIdRef.current += 1
+    }
+  }, [])
+
+  const handleSaveWorkflow = useCallback(async () => {
+    const validation = validateWorkflowForDemo(nodes, edges)
+    if (!validation.ok) {
+      toast.error(validation.message)
+      return
+    }
+
+    setIsSavingWorkflow(true)
+    try {
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 320)
+      })
+
+      initialStateRef.current = {
+        nodesHash: getDemoNodesHash(nodes),
+        edgesHash: getDemoEdgesHash(edges),
+        name: 'Welcome Sequence',
+        description: 'Demo workflow preview',
+        isActive
+      }
+
+      toast.success('Demo workflow saved locally')
+    } finally {
+      setIsSavingWorkflow(false)
+    }
+  }, [edges, isActive, nodes, validateWorkflowForDemo])
+
+  const handleExecuteWorkflow = useCallback(async () => {
+    if (isExecutingWorkflow || isExecutingNode) {
+      return
+    }
+
+    const validation = validateWorkflowForDemo(nodes, edges)
+    if (!validation.ok) {
+      toast.error(validation.message)
+      return
+    }
+
+    const orderedNodes = getExecutionOrder(nodes, edges)
+    const executionId = `demo-exec-${Date.now()}`
+    const totalNodes = orderedNodes.length
+    const workflowStartTime = Date.now()
+    const runId = executionRunIdRef.current + 1
+    executionRunIdRef.current = runId
+
+    clearExecutionNodeState()
+    setIsExecutingWorkflow(true)
+    setCurrentExecution({
+      id: executionId,
+      status: 'running',
+      progress: {
+        current: 0,
+        total: totalNodes
+      }
+    })
+
+    appendExecutionLog({
+      type: 'workflow:start',
+      workflowId: 'demo-workflow-preview',
+      executionId,
+      timestamp: new Date().toISOString(),
+      data: {
+        status: 'running',
+        progress: {
+          current: 0,
+          total: totalNodes
+        }
+      }
+    })
+
+    try {
+      for (const [index, node] of orderedNodes.entries()) {
+        if (executionRunIdRef.current !== runId) {
+          return
+        }
+
+        const nodeLabel = getNodeLabel(node)
+        const actionId = node.data?.actionId as string | undefined
+
+        setExecutingNodeId(node.id)
+        setNodes((currentNodes) =>
+          currentNodes.map((currentNode) => ({
+            ...currentNode,
+            data: {
+              ...currentNode.data,
+              isExecuting: currentNode.id === node.id,
+              lastStatus:
+                currentNode.id === node.id
+                  ? undefined
+                  : currentNode.data.lastStatus
+            }
+          }))
+        )
+
+        appendExecutionLog({
+          type: 'node:start',
+          workflowId: 'demo-workflow-preview',
+          executionId,
+          timestamp: new Date().toISOString(),
+          data: {
+            nodeId: node.id,
+            nodeName: nodeLabel,
+            actionId,
+            status: 'running',
+            progress: {
+              current: index,
+              total: totalNodes
+            }
+          }
+        })
+
+        setCurrentExecution({
+          id: executionId,
+          status: 'running',
+          progress: {
+            current: index,
+            total: totalNodes
+          }
+        })
+
+        const output = await demoAdapter.executeNode!({
+          nodeId: node.id,
+          actionId,
+          config: (node.data?.config as Record<string, any> | undefined) || {},
+          nodeLabel
+        })
+
+        if (executionRunIdRef.current !== runId) {
+          return
+        }
+
+        appendExecutionLog({
+          type: 'node:complete',
+          workflowId: 'demo-workflow-preview',
+          executionId,
+          timestamp: new Date().toISOString(),
+          data: {
+            nodeId: node.id,
+            nodeName: nodeLabel,
+            actionId,
+            output,
+            duration: 2000,
+            status: 'completed',
+            progress: {
+              current: index + 1,
+              total: totalNodes
+            }
+          }
+        })
+
+        setNodes((currentNodes) =>
+          currentNodes.map((currentNode) => ({
+            ...currentNode,
+            data: {
+              ...currentNode.data,
+              isExecuting: false,
+              lastStatus:
+                currentNode.id === node.id
+                  ? 'completed'
+                  : currentNode.data.lastStatus,
+              ...(currentNode.id === node.id && output !== undefined
+                ? {
+                    lastOutput: output,
+                    lastExecutedAt: new Date().toISOString()
+                  }
+                : {})
+            }
+          }))
+        )
+
+        setCurrentExecution({
+          id: executionId,
+          status: 'running',
+          progress: {
+            current: index + 1,
+            total: totalNodes
+          }
+        })
+      }
+
+      if (executionRunIdRef.current !== runId) {
+        return
+      }
+
+      const duration = Date.now() - workflowStartTime
+
+      setExecutingNodeId(null)
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            isExecuting: false
+          }
+        }))
+      )
+      setCurrentExecution({
+        id: executionId,
+        status: 'completed',
+        progress: {
+          current: totalNodes,
+          total: totalNodes
+        }
+      })
+      appendExecutionLog({
+        type: 'workflow:complete',
+        workflowId: 'demo-workflow-preview',
+        executionId,
+        timestamp: new Date().toISOString(),
+        data: {
+          duration,
+          status: 'completed',
+          progress: {
+            current: totalNodes,
+            total: totalNodes
+          }
+        }
+      })
+      toast.success('Demo workflow executed with mock output')
+    } finally {
+      if (executionRunIdRef.current === runId) {
+        setIsExecutingWorkflow(false)
+      }
+    }
+  }, [
+    appendExecutionLog,
+    clearExecutionNodeState,
+    demoAdapter,
+    edges,
+    getExecutionOrder,
+    getNodeLabel,
+    isExecutingNode,
+    isExecutingWorkflow,
+    nodes,
+    validateWorkflowForDemo
+  ])
+
   return (
     <WorkflowEditorProvider
       workflowId='demo-workflow-preview'
@@ -397,13 +897,14 @@ function DemoWorkflowShowcaseInner({
       getNodesHash={getDemoNodesHash}
       getEdgesHash={getDemoEdgesHash}
       isActive={isActive}
-      isExecutingWorkflow={false}
+      isExecutingWorkflow={isExecutingWorkflow}
       isExecutingNode={isExecutingNode}
       setIsExecutingNode={setIsExecutingNode}
       isTogglingActive={isTogglingActive}
       setIsTogglingActive={setIsTogglingActive}
+      demoAdapter={demoAdapter}
     >
-      <section className='relative flex h-screen w-full flex-col overflow-hidden'>
+      <section className='relative flex h-screen w-full min-h-0 flex-col overflow-hidden'>
         <Joyride
           run={isWalkthroughRunning}
           continuous
@@ -437,11 +938,11 @@ function DemoWorkflowShowcaseInner({
           workflowDescription='Demo workflow preview'
           onBack={onBack}
           onEdit={() => {}}
-          onSave={() => {}}
-          isSaving={false}
-          workflowId={null}
-          onExecute={() => {}}
-          isExecuting={false}
+          onSave={handleSaveWorkflow}
+          isSaving={isSavingWorkflow}
+          workflowId='demo-workflow-preview'
+          onExecute={handleExecuteWorkflow}
+          isExecuting={isExecutingWorkflow}
           isActive={isActive}
           onToggleActive={setIsActive}
           isTogglingActive={isTogglingActive}
@@ -450,17 +951,14 @@ function DemoWorkflowShowcaseInner({
         />
 
         <Tabs
-          className='relative h-full w-full flex-1 gap-0'
+          className='relative h-full w-full min-h-0 flex-1 gap-0'
           value={activeTab}
           onValueChange={(value) => {
             setActiveTab(value as 'editor' | 'executions')
           }}
         >
           <TabsList className='demo-workflow-tabs-floating'>
-            <TabsTrigger
-              value='editor'
-              className='demo-workflow-tab-trigger'
-            >
+            <TabsTrigger value='editor' className='demo-workflow-tab-trigger'>
               Editor
             </TabsTrigger>
             <TabsTrigger
@@ -471,9 +969,12 @@ function DemoWorkflowShowcaseInner({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value='editor' className='mt-0 w-full flex-1'>
+          <TabsContent
+            value='editor'
+            className='mt-0 w-full min-h-0 flex-1 overflow-hidden'
+          >
             <div
-              className='w-full h-[90vh] relative flex flex-col'
+              className='relative flex h-full min-h-0 w-full flex-col'
               ref={reactFlowWrapper}
             >
               <div className='absolute right-4 top-6 z-10'>
@@ -510,7 +1011,7 @@ function DemoWorkflowShowcaseInner({
                 onConnect={onConnect}
                 isValidConnection={isValidConnection}
                 nodes={nodes}
-                edges={edges}
+                edges={displayEdges}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
                 className='bg-background'
@@ -545,10 +1046,19 @@ function DemoWorkflowShowcaseInner({
             </div>
           </TabsContent>
 
-          <TabsContent value='executions' className='mt-0 w-full flex-1'>
-            <div className='flex h-[calc(100vh-3.5rem)] w-full items-center justify-center text-sm text-muted-foreground'>
-              Open the full workflow editor to inspect live executions.
-            </div>
+          <TabsContent
+            value='executions'
+            className='mt-0 w-full min-h-0 flex-1 overflow-hidden'
+          >
+            <WorkflowExecutionTab
+              isConnected
+              className=''
+              timelineClassName='mx-auto max-w-2xl'
+              executionLogs={executionLogs}
+              currentExecution={currentExecution}
+              clearLogs={clearLogs}
+              nodeActionIdById={nodeActionIdById}
+            />
           </TabsContent>
         </Tabs>
       </section>

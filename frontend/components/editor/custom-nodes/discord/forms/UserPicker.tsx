@@ -20,6 +20,7 @@ import {
   formatPlaceholderForDisplay,
   extractLeadingCanonicalPlaceholders
 } from '@/lib/placeholder-utils'
+import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 
 interface UserPickerProps {
   value: string
@@ -40,6 +41,7 @@ export function UserPicker({
   className,
   'aria-invalid': ariaInvalid
 }: UserPickerProps) {
+  const { demoAdapter } = useWorkflowEditor()
   const { resolveNodeLabel } = usePlaceholderResolver()
   const { watch } = useFormContext()
   const credentialId = watch('credentialId')
@@ -79,17 +81,24 @@ export function UserPicker({
 
     startTransition(async () => {
       setError(null)
-      const result = await listGuildMembers(credentialId, watchedGuildId)
-
-      if (result.error) {
-        setError(result.error || 'Failed to fetch members')
-        setMembers([])
+      if (demoAdapter) {
+        const data = await Promise.resolve(
+          demoAdapter.listGuildMembers(credentialId, watchedGuildId)
+        )
+        setMembers(data)
       } else {
-        setMembers(result.data || [])
+        const result = await listGuildMembers(credentialId, watchedGuildId)
+
+        if (result.error) {
+          setError(result.error || 'Failed to fetch members')
+          setMembers([])
+        } else {
+          setMembers(result.data || [])
+        }
       }
       setHasFetched(true)
     })
-  }, [credentialId, watchedGuildId])
+  }, [credentialId, watchedGuildId, demoAdapter])
 
   // Fetch when guildId changes
   useEffect(() => {

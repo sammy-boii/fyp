@@ -28,6 +28,7 @@ import {
   formatPlaceholderForDisplay,
   extractLeadingCanonicalPlaceholders
 } from '@/lib/placeholder-utils'
+import { useWorkflowEditor } from '@/app/(main)/workflows/[id]/_context/WorkflowEditorContext'
 
 export type ChannelTypeFilter =
   | 'all'
@@ -66,6 +67,7 @@ export function ChannelPicker({
   className,
   'aria-invalid': ariaInvalid
 }: ChannelPickerProps) {
+  const { demoAdapter } = useWorkflowEditor()
   const { resolveNodeLabel } = usePlaceholderResolver()
   const { watch } = useFormContext()
   const credentialId = watch('credentialId')
@@ -105,21 +107,28 @@ export function ChannelPicker({
 
     startTransition(async () => {
       setError(null)
-      const result = await listChannels(
-        credentialId,
-        watchedGuildId,
-        channelType
-      )
-
-      if (result.error) {
-        setError(result.error || 'Failed to fetch channels')
-        setChannels([])
+      if (demoAdapter) {
+        const data = await Promise.resolve(
+          demoAdapter.listChannels(credentialId, watchedGuildId, channelType)
+        )
+        setChannels(data)
       } else {
-        setChannels(result.data || [])
+        const result = await listChannels(
+          credentialId,
+          watchedGuildId,
+          channelType
+        )
+
+        if (result.error) {
+          setError(result.error || 'Failed to fetch channels')
+          setChannels([])
+        } else {
+          setChannels(result.data || [])
+        }
       }
       setHasFetched(true)
     })
-  }, [credentialId, watchedGuildId, channelType])
+  }, [credentialId, watchedGuildId, channelType, demoAdapter])
 
   // Fetch when guildId changes
   useEffect(() => {

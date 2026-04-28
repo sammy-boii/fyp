@@ -59,8 +59,12 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
   const params = useParams()
   const workflowId = params?.id ? String(params.id) : null
   const executeNodeMutation = useExecuteNode()
-  const { saveIfChanged, isAnyOperationPending, setIsExecutingNode } =
-    useWorkflowEditor()
+  const {
+    saveIfChanged,
+    isAnyOperationPending,
+    setIsExecutingNode,
+    demoAdapter
+  } = useWorkflowEditor()
 
   const [trueSheetOpen, setTrueSheetOpen] = useState(false)
   const [falseSheetOpen, setFalseSheetOpen] = useState(false)
@@ -222,10 +226,6 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
   }
 
   const handleExecuteNode = useCallback(async () => {
-    if (!workflowId) {
-      return
-    }
-
     if (!data.actionId || !data.config) {
       return
     }
@@ -240,6 +240,52 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
       // Auto-save workflow if there are changes before executing
       await saveIfChanged()
 
+      if (demoAdapter?.executeNode) {
+        setNodes((nds) =>
+          nds.map((n) =>
+            n.id === id
+              ? {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    isExecuting: true,
+                    lastStatus: undefined
+                  }
+                }
+              : n
+          )
+        )
+
+        const output = await demoAdapter.executeNode({
+          nodeId: id,
+          actionId: data.actionId,
+          config: data.config,
+          nodeLabel: node.label
+        })
+
+        setNodes((nds) =>
+          nds.map((n) =>
+            n.id === id
+              ? {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    isExecuting: false,
+                    ...(output !== undefined ? { lastOutput: output } : {}),
+                    lastExecutedAt: new Date().toISOString(),
+                    lastStatus: 'completed'
+                  }
+                }
+              : n
+          )
+        )
+        return
+      }
+
+      if (!workflowId) {
+        return
+      }
+
       const result = await executeNodeMutation.mutateAsync({
         workflowId,
         nodeId: id
@@ -253,11 +299,12 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
             n.id === id
               ? {
                   ...n,
-                  data: {
-                    ...n.data,
-                    lastOutput: output,
-                    lastExecutedAt: new Date().toISOString(),
-                    lastStatus: 'completed'
+                data: {
+                  ...n.data,
+                  isExecuting: false,
+                  lastOutput: output,
+                  lastExecutedAt: new Date().toISOString(),
+                  lastStatus: 'completed'
                   }
                 }
               : n
@@ -269,11 +316,12 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
             n.id === id
               ? {
                   ...n,
-                  data: {
-                    ...n.data,
-                    lastExecutedAt: new Date().toISOString(),
-                    lastStatus: 'completed'
-                  }
+                data: {
+                  ...n.data,
+                  isExecuting: false,
+                  lastExecutedAt: new Date().toISOString(),
+                  lastStatus: 'completed'
+                }
                 }
               : n
           )
@@ -285,11 +333,12 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
           n.id === id
             ? {
                 ...n,
-                data: {
-                  ...n.data,
-                  lastExecutedAt: new Date().toISOString(),
-                  lastStatus: 'failed'
-                }
+              data: {
+                ...n.data,
+                isExecuting: false,
+                lastExecutedAt: new Date().toISOString(),
+                lastStatus: 'failed'
+              }
               }
             : n
         )
@@ -307,7 +356,9 @@ export function ConditionNode({ data, id }: NodeProps<BaseNodeProps>) {
     setNodes,
     saveIfChanged,
     isAnyOperationPending,
-    setIsExecutingNode
+    setIsExecutingNode,
+    demoAdapter,
+    node.label
   ])
   const nodeColor = node.color
   const iconBackgroundStyle = nodeColor
